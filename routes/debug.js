@@ -353,4 +353,426 @@ function generateDebugHTML(title, data) {
   return html;
 }
 
+/**
+ * GET /_debug/fieldSelector/:table
+ * Page de test pour le composant fieldSelectorUI
+ */
+router.get('/fieldSelector/:table', async (req, res) => {
+  try {
+    const { table } = req.params;
+    const user = req.user || { roles: 'public' };
+
+    // Vérifier si la table existe
+    if (!schema.tables[table]) {
+      return res.status(404).send(generateDebugHTML('Table non trouvée', {
+        error: `La table "${table}" n'existe pas dans le schéma`
+      }));
+    }
+
+    const html = `
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Field Selector - ${table}</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f5;
+      padding: 20px;
+    }
+    .container { max-width: 1000px; margin: 0 auto; }
+    h1 { color: #333; margin-bottom: 10px; font-size: 24px; }
+    .subtitle { color: #666; margin-bottom: 20px; font-size: 14px; }
+    .nav {
+      margin-bottom: 20px;
+      padding: 15px;
+      background: white;
+      border-radius: 8px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .nav a {
+      padding: 8px 16px;
+      background: #007bff;
+      color: white;
+      text-decoration: none;
+      border-radius: 4px;
+      font-size: 14px;
+      transition: background 0.2s;
+    }
+    .nav a:hover { background: #0056b3; }
+    .demo-section {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .demo-section h2 {
+      color: #333;
+      font-size: 18px;
+      margin-bottom: 15px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #007bff;
+    }
+    .output-section {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .output-section h2 {
+      color: #333;
+      font-size: 18px;
+      margin-bottom: 15px;
+    }
+    .output-content {
+      background: #f8f9fa;
+      padding: 15px;
+      border-radius: 4px;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 14px;
+      color: #333;
+      min-height: 60px;
+    }
+    .output-label {
+      font-weight: 600;
+      color: #495057;
+      margin-bottom: 5px;
+    }
+    .output-value {
+      color: #007bff;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Field Selector UI - Test</h1>
+    <div class="subtitle">Table: ${table}</div>
+
+    <div class="nav">
+      <a href="/">← Accueil</a>
+      <a href="/_debug/json">Debug JSON</a>
+      <a href="/_debug/user">Fiche utilisateur</a>
+    </div>
+
+    <div class="demo-section">
+      <h2>Démo du composant</h2>
+      <div id="field-selector-container"></div>
+    </div>
+
+    <div class="output-section">
+      <h2>Sortie de sélection</h2>
+      <div class="output-content">
+        <div class="output-label">Chemin sélectionné :</div>
+        <div class="output-value" id="output-path">Aucun champ sélectionné</div>
+        <br>
+        <div class="output-label">Détails du champ :</div>
+        <div class="output-value" id="output-details">-</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/fieldSelectorUI.js"></script>
+  <script>
+    // Initialiser le field selector
+    let fieldSelectorInstance;
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      const container = document.getElementById('field-selector-container');
+
+      fieldSelectorInstance = new FieldSelectorUI({
+        table: '${table}',
+        container: container,
+        showSystemFields: false,
+        onFieldSelect: (path, field) => {
+          document.getElementById('output-path').textContent = path;
+          document.getElementById('output-details').textContent = JSON.stringify(field, null, 2);
+        }
+      });
+
+      try {
+        await fieldSelectorInstance.init();
+      } catch (error) {
+        container.innerHTML = '<div style="color: red; padding: 20px;">Erreur lors du chargement: ' + error.message + '</div>';
+      }
+    });
+  </script>
+</body>
+</html>
+    `;
+
+    res.send(html);
+
+  } catch (error) {
+    console.error('Erreur lors de la génération de la page field selector:', error);
+    res.status(500).send(generateDebugHTML('Erreur', {
+      error: 'Erreur serveur lors de la génération de la page field selector'
+    }));
+  }
+});
+
+/**
+ * GET /_debug/json
+ * Affiche une page avec menu pour naviguer les JSON des routes /:page et /_crud/:table
+ */
+router.get('/json', async (req, res) => {
+  try {
+    const user = req.user || { roles: 'public' };
+
+    // Récupérer toutes les pages accessibles
+    const [pages] = await pool.query('SELECT slug, name FROM Page ORDER BY position ASC');
+
+    // Récupérer toutes les tables du schéma
+    const tables = Object.keys(schema.tables);
+
+    const html = `
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Debug JSON - Navigation</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, monospace;
+      background: #1e1e1e;
+      color: #d4d4d4;
+      padding: 20px;
+    }
+    .container { max-width: 1400px; margin: 0 auto; }
+    h1 { color: #4ec9b0; margin-bottom: 10px; font-size: 24px; }
+    .subtitle { color: #9cdcfe; margin-bottom: 20px; font-size: 14px; }
+    .nav {
+      margin-bottom: 20px;
+      padding: 15px;
+      background: #252526;
+      border-radius: 4px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .nav a {
+      padding: 8px 16px;
+      background: #0e639c;
+      color: white;
+      text-decoration: none;
+      border-radius: 4px;
+      font-size: 14px;
+      transition: background 0.2s;
+    }
+    .nav a:hover { background: #1177bb; }
+    .main-content {
+      display: grid;
+      grid-template-columns: 300px 1fr;
+      gap: 20px;
+    }
+    .sidebar {
+      background: #252526;
+      border-radius: 4px;
+      padding: 20px;
+      height: fit-content;
+      position: sticky;
+      top: 20px;
+    }
+    .sidebar h2 {
+      color: #4ec9b0;
+      font-size: 16px;
+      margin-bottom: 15px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #3e3e42;
+    }
+    .sidebar-section { margin-bottom: 25px; }
+    .sidebar-list {
+      list-style: none;
+    }
+    .sidebar-list li {
+      margin-bottom: 8px;
+    }
+    .sidebar-list a {
+      color: #9cdcfe;
+      text-decoration: none;
+      font-size: 14px;
+      display: block;
+      padding: 6px 10px;
+      border-radius: 3px;
+      transition: background 0.2s;
+    }
+    .sidebar-list a:hover {
+      background: #2d2d30;
+      color: #4fc1ff;
+    }
+    .content {
+      background: #1e1e1e;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .content-header {
+      background: #252526;
+      padding: 15px 20px;
+      border-bottom: 1px solid #3e3e42;
+    }
+    .content-header h3 {
+      color: #4ec9b0;
+      font-size: 18px;
+    }
+    .json-display {
+      padding: 20px;
+      background: #1e1e1e;
+      overflow-x: auto;
+    }
+    pre {
+      margin: 0;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 13px;
+      line-height: 1.6;
+      color: #d4d4d4;
+    }
+    .json-key { color: #9cdcfe; }
+    .json-string { color: #ce9178; }
+    .json-number { color: #b5cea8; }
+    .json-boolean { color: #569cd6; }
+    .json-null { color: #569cd6; }
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #858585;
+    }
+    @media (max-width: 768px) {
+      .main-content {
+        grid-template-columns: 1fr;
+      }
+      .sidebar {
+        position: relative;
+        top: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔍 Debug JSON Navigator</h1>
+    <div class="subtitle">Exploration des structures de données</div>
+
+    <div class="nav">
+      <a href="/">← Accueil</a>
+      <a href="/_debug/user">Fiche utilisateur</a>
+      <a href="/_debug/user/grant">Autorisations</a>
+    </div>
+
+    <div class="main-content">
+      <div class="sidebar">
+        <div class="sidebar-section">
+          <h2>📄 Pages</h2>
+          <ul class="sidebar-list">
+            ${pages.map(page => `
+              <li><a href="#" onclick="loadPageJson('${page.slug}'); return false;">/${page.slug} - ${page.name}</a></li>
+            `).join('')}
+          </ul>
+        </div>
+
+        <div class="sidebar-section">
+          <h2>🗄️ Tables CRUD</h2>
+          <ul class="sidebar-list">
+            ${tables.map(table => `
+              <li><a href="#" onclick="loadCrudJson('${table}'); return false;">${table}</a></li>
+            `).join('')}
+          </ul>
+        </div>
+      </div>
+
+      <div class="content">
+        <div class="content-header">
+          <h3 id="content-title">Sélectionnez une page ou une table</h3>
+        </div>
+        <div class="json-display" id="json-content">
+          <div class="loading">
+            👈 Utilisez le menu de gauche pour charger les données JSON
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function syntaxHighlight(json) {
+      if (typeof json !== 'string') {
+        json = JSON.stringify(json, null, 2);
+      }
+      json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\\s*:)?|\\b(true|false|null)\\b|-?\\d+(?:\\.\\d*)?(?:[eE][+\\-]?\\d+)?)/g, function (match) {
+        var cls = 'json-number';
+        if (/^"/.test(match)) {
+          if (/:$/.test(match)) {
+            cls = 'json-key';
+          } else {
+            cls = 'json-string';
+          }
+        } else if (/true|false/.test(match)) {
+          cls = 'json-boolean';
+        } else if (/null/.test(match)) {
+          cls = 'json-null';
+        }
+        return '<span class="' + cls + '">' + match + '</span>';
+      });
+    }
+
+    async function loadPageJson(slug) {
+      const contentTitle = document.getElementById('content-title');
+      const jsonContent = document.getElementById('json-content');
+
+      contentTitle.textContent = 'Chargement...';
+      jsonContent.innerHTML = '<div class="loading">⏳ Chargement des données...</div>';
+
+      try {
+        const response = await fetch('/' + slug);
+        const data = await response.json();
+
+        contentTitle.textContent = 'Route: /' + slug;
+        jsonContent.innerHTML = '<pre>' + syntaxHighlight(data) + '</pre>';
+      } catch (error) {
+        contentTitle.textContent = 'Erreur';
+        jsonContent.innerHTML = '<div class="loading" style="color: #f48771;">❌ Erreur: ' + error.message + '</div>';
+      }
+    }
+
+    async function loadCrudJson(table) {
+      const contentTitle = document.getElementById('content-title');
+      const jsonContent = document.getElementById('json-content');
+
+      contentTitle.textContent = 'Chargement...';
+      jsonContent.innerHTML = '<div class="loading">⏳ Chargement des données...</div>';
+
+      try {
+        const response = await fetch('/_crud/' + table);
+        const data = await response.json();
+
+        contentTitle.textContent = 'Route: /_crud/' + table;
+        jsonContent.innerHTML = '<pre>' + syntaxHighlight(data) + '</pre>';
+      } catch (error) {
+        contentTitle.textContent = 'Erreur';
+        jsonContent.innerHTML = '<div class="loading" style="color: #f48771;">❌ Erreur: ' + error.message + '</div>';
+      }
+    }
+  </script>
+</body>
+</html>
+    `;
+
+    res.send(html);
+
+  } catch (error) {
+    console.error('Erreur lors de la génération de la page debug JSON:', error);
+    res.status(500).send(generateDebugHTML('Erreur', {
+      error: 'Erreur serveur lors de la génération de la page debug JSON'
+    }));
+  }
+});
+
 module.exports = router;
