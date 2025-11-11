@@ -5,6 +5,28 @@ const { hasPermission, getUserAllRoles } = require('../utils/permissions');
 const schema = require('../schema.js');
 
 /**
+ * Trouve le nom exact d'une table dans le schéma, indépendamment de la casse
+ * @param {string} tableName - Nom de la table (peut être en minuscules, majuscules, etc.)
+ * @returns {string|null} - Nom exact de la table ou null si non trouvée
+ */
+function getTableName(tableName) {
+  // Vérifier si le nom exact existe
+  if (schema.tables[tableName]) {
+    return tableName;
+  }
+
+  // Chercher en ignorant la casse
+  const tableNameLower = tableName.toLowerCase();
+  for (const key in schema.tables) {
+    if (key.toLowerCase() === tableNameLower) {
+      return key;
+    }
+  }
+
+  return null;
+}
+
+/**
  * Vérifie si un utilisateur peut accéder à une row selon son granted
  * @param {Object} user - L'utilisateur
  * @param {Object} row - La row avec son champ granted
@@ -147,24 +169,27 @@ function buildWhereClause(user, baseWhere = null) {
  */
 router.get('/:table', async (req, res) => {
   try {
-    const { table } = req.params;
+    const { table: tableParam } = req.params;
     const user = req.user;
     const { limit, offset, orderBy, order, where: customWhere, relation, schema: includeSchema, compact } = req.query;
 
     // Si l'utilisateur n'est pas connecté, utiliser un user par défaut avec rôle public
     const effectiveUser = user || { roles: 'public' };
 
+    // Normaliser le nom de la table (case-insensitive)
+    const table = getTableName(tableParam);
+
+    // Vérifier si la table existe dans le schéma
+    if (!table) {
+      return res.status(404).json({
+        error: 'Table non trouvée'
+      });
+    }
+
     // Vérifier si l'utilisateur a accès à la table
     if (!hasPermission(effectiveUser, table, 'read')) {
       return res.status(403).json({
         error: 'Accès refusé à cette table'
-      });
-    }
-
-    // Vérifier si la table existe dans le schéma
-    if (!schema.tables[table]) {
-      return res.status(404).json({
-        error: 'Table non trouvée'
       });
     }
 
@@ -564,24 +589,27 @@ function buildFilteredSchema(user, tableName) {
  */
 router.get('/:table/:id', async (req, res) => {
   try {
-    const { table, id } = req.params;
+    const { table: tableParam, id } = req.params;
     const user = req.user;
     const { relation, schema: includeSchema, compact } = req.query;
 
     // Si l'utilisateur n'est pas connecté, utiliser un user par défaut avec rôle public
     const effectiveUser = user || { roles: 'public' };
 
+    // Normaliser le nom de la table (case-insensitive)
+    const table = getTableName(tableParam);
+
+    // Vérifier si la table existe dans le schéma
+    if (!table) {
+      return res.status(404).json({
+        error: 'Table non trouvée'
+      });
+    }
+
     // Vérifier si l'utilisateur a accès à la table
     if (!hasPermission(effectiveUser, table, 'read')) {
       return res.status(403).json({
         error: 'Accès refusé à cette table'
-      });
-    }
-
-    // Vérifier si la table existe dans le schéma
-    if (!schema.tables[table]) {
-      return res.status(404).json({
-        error: 'Table non trouvée'
       });
     }
 
