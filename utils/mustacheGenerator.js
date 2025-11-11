@@ -133,11 +133,11 @@ function generateSectionTemplate(sectionData, sectionSlug) {
     <h2>{{name}}</h2>
     {{#description}}<p class="section-description">{{description}}</p>{{/description}}
 
-    {{#data}}
+    {{#rows}}
       <div class="section-data">
         ${generateDataTemplate(sectionData, tableName)}
       </div>
-    {{/data}}
+    {{/rows}}
   </section>`;
 
   return template;
@@ -151,9 +151,9 @@ function generateSectionTemplate(sectionData, sectionSlug) {
  */
 function generateDataTemplate(sectionData, tableName) {
   // Si on a des exemples de données, analyser leur structure
-  if (sectionData.data && sectionData.data.length > 0) {
+  if (sectionData.rows && sectionData.rows.length > 0) {
     // Collecter tous les champs et relations de TOUTES les rows
-    const { fields, relations1n, relationsN1 } = collectAllFieldsAndRelations(sectionData.data, tableName);
+    const { fields, relations1n, relationsN1 } = collectAllFieldsAndRelations(sectionData.rows, tableName);
     return generateRowTemplateFromCollection(fields, relations1n, relationsN1, tableName);
   }
 

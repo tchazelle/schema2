@@ -267,7 +267,7 @@ router.get('/:table', async (req, res) => {
     const response = {
       success: true,
       table: table,
-      data: filteredRows,
+      rows: filteredRows,
       pagination: {
         total: total,
         count: filteredRows.length,
@@ -613,7 +613,7 @@ router.get('/_section/:section', async (req, res) => {
           title: sectionData.title,
           description: sectionData.description
         },
-        data: apiData,
+        rows: apiData,
         source: 'apiData'
       });
     }
@@ -718,7 +718,7 @@ router.get('/_section/:section', async (req, res) => {
         title: sectionData.title,
         description: sectionData.description
       },
-      data: filteredRows,
+      rows: filteredRows,
       pagination: {
         count: filteredRows.length
       },
@@ -803,7 +803,7 @@ router.get('/_page/:page', async (req, res) => {
         id: sectionData.id,
         name: sectionData.title,
         description: sectionData.description,
-        data: null
+        rows: null
       };
 
       // Parser reqQuery pour obtenir les valeurs par défaut
@@ -815,7 +815,7 @@ router.get('/_page/:page', async (req, res) => {
       // Si apiData est fourni et pas de sqlTable/sqlQueryRaw, utiliser apiData directement
       if (sectionData.apiData && !sectionData.sqlTable && !sectionData.sqlQueryRaw) {
         const apiData = safeJsonParse(sectionData.apiData);
-        sectionsObject[sectionSlug].data = apiData;
+        sectionsObject[sectionSlug].rows = apiData;
         continue;
       }
 
@@ -908,11 +908,11 @@ router.get('/_page/:page', async (req, res) => {
           filteredRows.push(filteredRow);
         }
 
-        sectionsObject[sectionSlug].data = filteredRows;
+        sectionsObject[sectionSlug].rows = filteredRows;
 
       } catch (error) {
         console.error(`Erreur lors du chargement de la section ${sectionData.id}:`, error);
-        sectionsObject[sectionSlug].data = [];
+        sectionsObject[sectionSlug].rows = [];
       }
     }
 
@@ -1100,7 +1100,7 @@ router.get('/:table/:id', async (req, res) => {
       success: true,
       table: table,
       id: id,
-      data: filteredRow
+      rows: filteredRow
     };
 
     // Ajouter le schéma si demandé
