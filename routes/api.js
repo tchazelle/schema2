@@ -140,12 +140,15 @@ function buildWhereClause(user, baseWhere = null) {
  * - orderBy: champ de tri
  * - order: ASC ou DESC
  * - where: clause WHERE personnalisée
+ * - relation: liste de relations à inclure (ex: rel1,rel2,rel3) ou "all" pour toutes
+ *   Par défaut : inclut toutes les relations n:1 et les relations 1:n "Strong"
+ * - schema: si "1", retourne également le schéma filtré de la table
  */
 router.get('/:table', async (req, res) => {
   try {
     const { table } = req.params;
     const user = req.user;
-    const { limit, offset, orderBy, order, where: customWhere } = req.query;
+    const { limit, offset, orderBy, order, where: customWhere, relation, schema: includeSchema } = req.query;
 
     // Si l'utilisateur n'est pas connecté, utiliser un user par défaut avec rôle public
     const effectiveUser = user || { roles: 'public' };
@@ -190,16 +193,51 @@ router.get('/:table', async (req, res) => {
     const [rows] = await pool.query(query, params);
 
     // Filtrer les rows selon granted et les champs selon les permissions
-    const filteredRows = rows
-      .filter(row => canAccessRow(effectiveUser, row, table))
-      .map(row => filterRowFields(effectiveUser, table, row));
+    const accessibleRows = rows.filter(row => canAccessRow(effectiveUser, row, table));
+
+    // Charger les relations si demandées
+    const { relationsN1, relations1N } = getTableRelations(effectiveUser, table);
+
+    // Déterminer quelles relations charger
+    let requestedRelations = [];
+    if (relation === 'all') {
+      // Toutes les relations
+      requestedRelations = [...Object.keys(relationsN1), ...Object.keys(relations1N)];
+    } else if (relation) {
+      // Relations spécifiées dans le query param
+      requestedRelations = relation.split(',').map(r => r.trim());
+    } else {
+      // Par défaut : toutes les relations n:1 et les relations 1:n "Strong"
+      requestedRelations = [
+        ...Object.keys(relationsN1),
+        ...Object.keys(relations1N).filter(relName => relations1N[relName].relationshipStrength === 'Strong')
+      ];
+    }
+
+    // Filtrer les rows et charger les relations
+    const filteredRows = [];
+    for (const row of accessibleRows) {
+      const filteredRow = filterRowFields(effectiveUser, table, row);
+
+      // Charger les relations pour cette row
+      if (requestedRelations.length > 0) {
+        const relations = await loadRelationsForRow(effectiveUser, table, row, requestedRelations, true);
+
+        // Ajouter les relations au résultat
+        if (Object.keys(relations).length > 0) {
+          filteredRow.relations = relations;
+        }
+      }
+
+      filteredRows.push(filteredRow);
+    }
 
     // Compter le nombre total de résultats (sans limit)
     const countQuery = `SELECT COUNT(*) as total FROM ${table} WHERE ${where}`;
     const [countResult] = await pool.query(countQuery, params.slice(0, params.length - (limit ? 1 : 0) - (offset ? 1 : 0)));
     const total = countResult[0].total;
 
-    res.json({
+    const response = {
       success: true,
       table: table,
       data: filteredRows,
@@ -209,7 +247,14 @@ router.get('/:table', async (req, res) => {
         limit: limit ? parseInt(limit) : null,
         offset: offset ? parseInt(offset) : 0
       }
-    });
+    };
+
+    // Ajouter le schéma si demandé
+    if (includeSchema === '1') {
+      response.schema = buildFilteredSchema(effectiveUser, table);
+    }
+
+    res.json(response);
 
   } catch (error) {
     console.error('Erreur lors de la récupération des données:', error);
@@ -271,17 +316,191 @@ function getTableRelations(user, tableName) {
 }
 
 /**
+ * Charge les relations d'une row de manière récursive
+ * @param {Object} user - L'utilisateur
+ * @param {string} tableName - Nom de la table
+ * @param {Object} row - La row dont on veut charger les relations
+ * @param {Array} requestedRelations - Liste des relations à charger
+ * @param {boolean} loadN1InRelations - Charger automatiquement les relations N:1 dans les relations 1:N
+ * @returns {Object} - Objet des relations chargées
+ */
+async function loadRelationsForRow(user, tableName, row, requestedRelations, loadN1InRelations = false) {
+  const { relationsN1, relations1N } = getTableRelations(user, tableName);
+  const relations = {};
+
+  // Charger les relations n:1 (many-to-one)
+  for (const fieldName of requestedRelations) {
+    if (relationsN1[fieldName]) {
+      const relConfig = relationsN1[fieldName];
+      const foreignValue = row[fieldName];
+
+      if (foreignValue) {
+        // Charger l'enregistrement lié
+        const [relatedRows] = await pool.query(
+          `SELECT * FROM ${relConfig.relatedTable} WHERE ${relConfig.foreignKey} = ?`,
+          [foreignValue]
+        );
+
+        if (relatedRows.length > 0) {
+          const relatedRow = relatedRows[0];
+          if (canAccessRow(user, relatedRow, relConfig.relatedTable)) {
+            const filteredRelatedRow = filterRowFields(user, relConfig.relatedTable, relatedRow);
+            // Ajouter le champ _table pour marquer la provenance
+            filteredRelatedRow._table = relConfig.relatedTable;
+            relations[fieldName] = filteredRelatedRow;
+          }
+        }
+      }
+    }
+  }
+
+  // Charger les relations 1:n (one-to-many)
+  for (const relationName of requestedRelations) {
+    if (relations1N[relationName]) {
+      const relConfig = relations1N[relationName];
+
+      // Construire la requête avec ORDER BY si défini
+      let query = `SELECT * FROM ${relConfig.relatedTable} WHERE ${relConfig.relatedField} = ?`;
+      const params = [row.id];
+
+      if (relConfig.defaultSort) {
+        if (Array.isArray(relConfig.defaultSort)) {
+          const sortClauses = relConfig.defaultSort.map(sort => `${sort.field} ${sort.order}`).join(', ');
+          query += ` ORDER BY ${sortClauses}`;
+        } else {
+          query += ` ORDER BY ${relConfig.defaultSort.field} ${relConfig.defaultSort.order}`;
+        }
+      }
+
+      const [relatedRows] = await pool.query(query, params);
+
+      // Filtrer et vérifier les permissions pour chaque row
+      const filteredRelatedRows = [];
+
+      for (const relRow of relatedRows) {
+        if (canAccessRow(user, relRow, relConfig.relatedTable)) {
+          const filteredRelRow = filterRowFields(user, relConfig.relatedTable, relRow);
+          // Ajouter le champ _table pour marquer la provenance
+          filteredRelRow._table = relConfig.relatedTable;
+
+          // Si loadN1InRelations est true, charger automatiquement les relations N:1 de cette row
+          if (loadN1InRelations) {
+            const { relationsN1: subRelationsN1 } = getTableRelations(user, relConfig.relatedTable);
+            const subRelations = {};
+
+            for (const subFieldName in subRelationsN1) {
+              const subRelConfig = subRelationsN1[subFieldName];
+              const subForeignValue = relRow[subFieldName];
+
+              if (subForeignValue) {
+                // Charger l'enregistrement lié
+                const [subRelatedRows] = await pool.query(
+                  `SELECT * FROM ${subRelConfig.relatedTable} WHERE ${subRelConfig.foreignKey} = ?`,
+                  [subForeignValue]
+                );
+
+                if (subRelatedRows.length > 0) {
+                  const subRelatedRow = subRelatedRows[0];
+                  if (canAccessRow(user, subRelatedRow, subRelConfig.relatedTable)) {
+                    const filteredSubRelatedRow = filterRowFields(user, subRelConfig.relatedTable, subRelatedRow);
+                    // Ajouter le champ _table pour marquer la provenance
+                    filteredSubRelatedRow._table = subRelConfig.relatedTable;
+                    subRelations[subFieldName] = filteredSubRelatedRow;
+                  }
+                }
+              }
+            }
+
+            // Ajouter les sous-relations si elles existent
+            if (Object.keys(subRelations).length > 0) {
+              filteredRelRow.relations = subRelations;
+            }
+          }
+
+          filteredRelatedRows.push(filteredRelRow);
+        }
+      }
+
+      if (filteredRelatedRows.length > 0) {
+        relations[relationName] = filteredRelatedRows;
+      }
+    }
+  }
+
+  return relations;
+}
+
+/**
+ * Construit le schéma filtré selon les permissions de l'utilisateur
+ * @param {Object} user - L'utilisateur
+ * @param {string} tableName - Nom de la table
+ * @returns {Object} - Schéma filtré
+ */
+function buildFilteredSchema(user, tableName) {
+  const tableConfig = schema.tables[tableName];
+  if (!tableConfig) {
+    return null;
+  }
+
+  const userRoles = getUserAllRoles(user);
+  const filteredSchema = {
+    table: tableName,
+    fields: {},
+    relations: {
+      n1: {},
+      "1n": {}
+    }
+  };
+
+  // Filtrer les champs selon les permissions
+  for (const fieldName in tableConfig.fields) {
+    const fieldConfig = tableConfig.fields[fieldName];
+
+    // Vérifier les permissions spécifiques au champ
+    let fieldAccessible = true;
+    if (fieldConfig.grant) {
+      fieldAccessible = false;
+      for (const role of userRoles) {
+        if (fieldConfig.grant[role] && fieldConfig.grant[role].includes('read')) {
+          fieldAccessible = true;
+          break;
+        }
+      }
+    }
+
+    if (fieldAccessible) {
+      filteredSchema.fields[fieldName] = {
+        type: fieldConfig.type,
+        ...(fieldConfig.relation && { relation: fieldConfig.relation }),
+        ...(fieldConfig.foreignKey && { foreignKey: fieldConfig.foreignKey }),
+        ...(fieldConfig.arrayName && { arrayName: fieldConfig.arrayName }),
+        ...(fieldConfig.relationshipStrength && { relationshipStrength: fieldConfig.relationshipStrength }),
+        ...(fieldConfig.defaultSort && { defaultSort: fieldConfig.defaultSort })
+      };
+    }
+  }
+
+  // Ajouter les relations N:1 et 1:N
+  const { relationsN1, relations1N } = getTableRelations(user, tableName);
+  filteredSchema.relations.n1 = relationsN1;
+  filteredSchema.relations["1n"] = relations1N;
+
+  return filteredSchema;
+}
+
+/**
  * GET /_api/:table/:id
  * Récupère un enregistrement spécifique avec vérification des permissions
  * Query params:
  * - relation: liste de relations à inclure (ex: rel1,rel2,rel3) ou "all" pour toutes
  *   Par défaut : inclut toutes les relations n:1 et les relations 1:n "Strong"
+ * - schema: si "1", retourne également le schéma filtré de la table
  */
 router.get('/:table/:id', async (req, res) => {
   try {
     const { table, id } = req.params;
     const user = req.user;
-    const { relation } = req.query;
+    const { relation, schema: includeSchema } = req.query;
 
     // Si l'utilisateur n'est pas connecté, utiliser un user par défaut avec rôle public
     const effectiveUser = user || { roles: 'public' };
@@ -328,7 +547,6 @@ router.get('/:table/:id', async (req, res) => {
 
     // Charger les relations
     const { relationsN1, relations1N } = getTableRelations(effectiveUser, table);
-    const relations = {};
 
     // Déterminer quelles relations charger
     let requestedRelations = [];
@@ -346,71 +564,27 @@ router.get('/:table/:id', async (req, res) => {
       ];
     }
 
-    // Charger les relations n:1 (many-to-one)
-    for (const fieldName of requestedRelations) {
-      if (relationsN1[fieldName]) {
-        const relConfig = relationsN1[fieldName];
-        const foreignValue = row[fieldName];
-
-        if (foreignValue) {
-          // Charger l'enregistrement lié
-          const [relatedRows] = await pool.query(
-            `SELECT * FROM ${relConfig.relatedTable} WHERE ${relConfig.foreignKey} = ?`,
-            [foreignValue]
-          );
-
-          if (relatedRows.length > 0) {
-            const relatedRow = relatedRows[0];
-            if (canAccessRow(effectiveUser, relatedRow, relConfig.relatedTable)) {
-              relations[fieldName] = filterRowFields(effectiveUser, relConfig.relatedTable, relatedRow);
-            }
-          }
-        }
-      }
-    }
-
-    // Charger les relations 1:n (one-to-many)
-    for (const relationName of requestedRelations) {
-      if (relations1N[relationName]) {
-        const relConfig = relations1N[relationName];
-
-        // Construire la requête avec ORDER BY si défini
-        let query = `SELECT * FROM ${relConfig.relatedTable} WHERE ${relConfig.relatedField} = ?`;
-        const params = [id];
-
-        if (relConfig.defaultSort) {
-          if (Array.isArray(relConfig.defaultSort)) {
-            const sortClauses = relConfig.defaultSort.map(sort => `${sort.field} ${sort.order}`).join(', ');
-            query += ` ORDER BY ${sortClauses}`;
-          } else {
-            query += ` ORDER BY ${relConfig.defaultSort.field} ${relConfig.defaultSort.order}`;
-          }
-        }
-
-        const [relatedRows] = await pool.query(query, params);
-
-        // Filtrer et vérifier les permissions pour chaque row
-        const filteredRelatedRows = relatedRows
-          .filter(relRow => canAccessRow(effectiveUser, relRow, relConfig.relatedTable))
-          .map(relRow => filterRowFields(effectiveUser, relConfig.relatedTable, relRow));
-
-        if (filteredRelatedRows.length > 0) {
-          relations[relationName] = filteredRelatedRows;
-        }
-      }
-    }
+    // Charger les relations pour cette row (avec chargement automatique des relations N:1 dans les 1:N)
+    const relations = await loadRelationsForRow(effectiveUser, table, row, requestedRelations, true);
 
     // Ajouter les relations au résultat
     if (Object.keys(relations).length > 0) {
       filteredRow.relations = relations;
     }
 
-    res.json({
+    const response = {
       success: true,
       table: table,
       id: id,
       data: filteredRow
-    });
+    };
+
+    // Ajouter le schéma si demandé
+    if (includeSchema === '1') {
+      response.schema = buildFilteredSchema(effectiveUser, table);
+    }
+
+    res.json(response);
 
   } catch (error) {
     console.error('Erreur lors de la récupération de l\'enregistrement:', error);
