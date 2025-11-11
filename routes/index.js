@@ -401,8 +401,8 @@ function generateHomeHTML(user, pages, accessibleTables, allRoles, isAuthenticat
     <div class="sidebar-section">
       <h3>Debug</h3>
       <ul>
-        <li><a href="/debug/user">Fiche utilisateur</a></li>
-        <li><a href="/debug/user/grant">Autorisations</a></li>
+        <li><a href="/_debug/user">Fiche utilisateur</a></li>
+        <li><a href="/_debug/user/grant">Autorisations</a></li>
       </ul>
     </div>
     ` : ''}
@@ -425,8 +425,8 @@ function generateHomeHTML(user, pages, accessibleTables, allRoles, isAuthenticat
             ${user.email}<br>
             <strong>Rôles:</strong> ${allRoles.join(', ')}
           </div>
-          <a href="/debug/user">Mon profil</a>
-          <a href="/debug/user/grant">Mes autorisations</a>
+          <a href="/_debug/user">Mon profil</a>
+          <a href="/_debug/user/grant">Mes autorisations</a>
           <div class="divider"></div>
           <button onclick="logout()">Déconnexion</button>
         ` : `
@@ -516,7 +516,7 @@ function generateHomeHTML(user, pages, accessibleTables, allRoles, isAuthenticat
       const errorMessage = document.getElementById('errorMessage');
 
       try {
-        const response = await fetch('/auth/login', {
+        const response = await fetch('/_user/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password })
@@ -539,7 +539,7 @@ function generateHomeHTML(user, pages, accessibleTables, allRoles, isAuthenticat
     // Logout
     async function logout() {
       try {
-        await fetch('/auth/logout', { method: 'POST' });
+        await fetch('/_user/logout', { method: 'POST' });
         window.location.reload();
       } catch (error) {
         console.error('Erreur lors de la déconnexion:', error);
