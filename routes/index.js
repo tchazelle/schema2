@@ -90,11 +90,14 @@ function generateHomeHTML(user, pages, accessibleTables, allRoles, isAuthenticat
       color: #333;
     }
 
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
     /* Menu hamburger */
     .menu-toggle {
-      position: fixed;
-      top: 20px;
-      left: 20px;
       background: #007bff;
       color: white;
       border: none;
@@ -102,24 +105,23 @@ function generateHomeHTML(user, pages, accessibleTables, allRoles, isAuthenticat
       border-radius: 4px;
       cursor: pointer;
       font-size: 18px;
-      z-index: 1001;
     }
     .menu-toggle:hover { background: #0056b3; }
 
     .sidebar {
       position: fixed;
       top: 0;
-      left: -300px;
+      right: -300px;
       width: 300px;
       height: 100vh;
       background: white;
-      box-shadow: 2px 0 8px rgba(0,0,0,0.1);
-      transition: left 0.3s ease;
+      box-shadow: -2px 0 8px rgba(0,0,0,0.1);
+      transition: right 0.3s ease;
       z-index: 1000;
       overflow-y: auto;
     }
 
-    .sidebar.open { left: 0; }
+    .sidebar.open { right: 0; }
 
     .sidebar-header {
       padding: 20px;
@@ -369,9 +371,6 @@ function generateHomeHTML(user, pages, accessibleTables, allRoles, isAuthenticat
   <!-- Overlay -->
   <div class="overlay" id="overlay" onclick="closeMenu()"></div>
 
-  <!-- Menu hamburger -->
-  <button class="menu-toggle" onclick="toggleMenu()">☰</button>
-
   <!-- Sidebar -->
   <nav class="sidebar" id="sidebar">
     <div class="sidebar-header">
@@ -380,7 +379,6 @@ function generateHomeHTML(user, pages, accessibleTables, allRoles, isAuthenticat
     </div>
 
     <div class="sidebar-section">
-      <h3>Pages</h3>
       <ul>
         ${pages.length > 0 ? pages.map(page => `
           <li><a href="/${page.slug}">${page.name}</a></li>
@@ -388,16 +386,18 @@ function generateHomeHTML(user, pages, accessibleTables, allRoles, isAuthenticat
       </ul>
     </div>
 
+    ${accessibleTables.length > 0 ? `
     <div class="sidebar-section">
       <h3>Tables</h3>
       <ul>
-        ${accessibleTables.length > 0 ? accessibleTables.map(table => `
+        ${accessibleTables.map(table => `
           <li><a href="/_crud/${table}">${table}</a></li>
-        `).join('') : '<li style="color: #999; padding: 8px 12px;">Aucune table accessible</li>'}
+        `).join('')}
       </ul>
     </div>
+    ` : ''}
 
-    ${isAuthenticated ? `
+    ${allRoles.includes('dev') ? `
     <div class="sidebar-section">
       <h3>Debug</h3>
       <ul>
@@ -413,27 +413,32 @@ function generateHomeHTML(user, pages, accessibleTables, allRoles, isAuthenticat
   <header>
     <div class="logo">${schema.appName}</div>
 
-    <!-- Menu utilisateur -->
-    <div class="user-menu">
-      <button class="user-button" onclick="toggleUserMenu()">
-        <span class="user-icon">${userName.charAt(0).toUpperCase()}</span>
-        <span>${userName}</span>
-      </button>
+    <div class="header-right">
+      <!-- Menu utilisateur -->
+      <div class="user-menu">
+        <button class="user-button" onclick="toggleUserMenu()">
+          <span class="user-icon">${userName.charAt(0).toUpperCase()}</span>
+          <span>${userName}</span>
+        </button>
 
-      <div class="user-dropdown" id="userDropdown">
-        ${isAuthenticated ? `
-          <div class="user-info">
-            ${user.email}<br>
-            <strong>Rôles:</strong> ${allRoles.join(', ')}
-          </div>
-          <a href="/_debug/user">Mon profil</a>
-          <a href="/_debug/user/grant">Mes autorisations</a>
-          <div class="divider"></div>
-          <button onclick="logout()">Déconnexion</button>
-        ` : `
-          <a href="#" onclick="showLoginForm(); return false;">Connexion</a>
-        `}
+        <div class="user-dropdown" id="userDropdown">
+          ${isAuthenticated ? `
+            <div class="user-info">
+              ${user.email}<br>
+              <strong>Rôles:</strong> ${allRoles.join(', ')}
+            </div>
+            <a href="/_debug/user">Mon profil</a>
+            <a href="/_debug/user/grant">Mes autorisations</a>
+            <div class="divider"></div>
+            <button onclick="logout()">Déconnexion</button>
+          ` : `
+            <a href="#" onclick="showLoginForm(); return false;">Connexion</a>
+          `}
+        </div>
       </div>
+
+      <!-- Menu hamburger -->
+      <button class="menu-toggle" onclick="toggleMenu()">☰</button>
     </div>
   </header>
 
