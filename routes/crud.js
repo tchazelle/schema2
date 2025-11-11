@@ -142,8 +142,10 @@ function getTableStructure(user, tableName) {
       if (otherFieldConfig.relation === tableName) {
         // Vérifier si l'utilisateur a accès à l'autre table
         if (hasPermission(user, otherTableName, 'read')) {
-          // Créer le nom de la relation inverse (utiliser arrayName s'il existe)
-          const inverseRelationName = otherFieldConfig.arrayName || `${otherTableName}_via_${otherFieldName}`;
+          // Créer le nom de la relation inverse selon la doctrine :
+          // - si arrayName existe, utiliser sa valeur
+          // - sinon, utiliser la valeur de "relation" (le nom de la table cible)
+          const inverseRelationName = otherFieldConfig.arrayName || otherFieldConfig.relation;
 
           // Ajouter cette relation 1:n
           structure.relations[inverseRelationName] = {
@@ -157,7 +159,7 @@ function getTableStructure(user, tableName) {
           };
         } else {
           // L'utilisateur n'a pas accès à la table liée
-          const inverseRelationName = otherFieldConfig.arrayName || `${otherTableName}_via_${otherFieldName}`;
+          const inverseRelationName = otherFieldConfig.arrayName || otherFieldConfig.relation;
           structure.relations[inverseRelationName] = {
             type: 'one-to-many',
             relatedTable: otherTableName,

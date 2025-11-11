@@ -132,9 +132,17 @@ class FieldSelectorUI {
     let html = '<div class="field-list">';
 
     // Séparer les champs et les relations
-    const fields = [];
-    const relationsN1 = [];
+    const fieldsAndRelationsN1 = [];
     const relations1N = [];
+
+    // Créer un Set des champs qui ont une relation n:1 pour les exclure de la liste des champs
+    const fieldsWithRelations = new Set();
+    for (const relationName in structure.relations) {
+      const relation = structure.relations[relationName];
+      if (relation.type === 'many-to-one' && relation.accessible) {
+        fieldsWithRelations.add(relationName);
+      }
+    }
 
     // Parcourir les champs
     for (const fieldName in structure.fields) {
@@ -145,7 +153,12 @@ class FieldSelectorUI {
         continue;
       }
 
-      fields.push({ name: fieldName, field });
+      // Ignorer les champs qui ont une relation (ils seront remplacés par la relation elle-même)
+      if (field.relation && fieldsWithRelations.has(fieldName)) {
+        continue;
+      }
+
+      fieldsAndRelationsN1.push({ name: fieldName, field, type: 'field' });
     }
 
     // Parcourir les relations
@@ -157,16 +170,15 @@ class FieldSelectorUI {
       }
 
       if (relation.type === 'many-to-one') {
-        relationsN1.push({ name: relationName, relation });
+        fieldsAndRelationsN1.push({ name: relationName, relation, type: 'relation-n1' });
       } else if (relation.type === 'one-to-many') {
-        relations1N.push({ name: relationName, relation });
+        relations1N.push({ name: relationName, relation, type: 'relation-1n' });
       }
     }
 
-    // Afficher les champs directs
-    if (fields.length > 0) {
-      html += '<div class="field-group"><div class="field-group-title">Champs</div>';
-      fields.forEach(({ name, field }) => {
+    // Afficher les champs directs et les relations n:1 ensemble (sans titre de section)
+    fieldsAndRelationsN1.forEach(({ name, field, relation, type }) => {
+      if (type === 'field') {
         const isSelectable = !field.relation;
         html += `
           <div class="field-item ${isSelectable ? 'selectable' : ''}"
@@ -176,14 +188,7 @@ class FieldSelectorUI {
             <span class="field-type">${field.type}</span>
           </div>
         `;
-      });
-      html += '</div>';
-    }
-
-    // Afficher les relations n:1
-    if (relationsN1.length > 0) {
-      html += '<div class="field-group"><div class="field-group-title">Relations n:1</div>';
-      relationsN1.forEach(({ name, relation }) => {
+      } else if (type === 'relation-n1') {
         html += `
           <div class="field-item navigable" onclick="fieldSelectorInstance.navigateToRelation('${name}', 'many-to-one')">
             <span class="field-icon">🔗</span>
@@ -192,25 +197,20 @@ class FieldSelectorUI {
             <span class="field-arrow">›</span>
           </div>
         `;
-      });
-      html += '</div>';
-    }
+      }
+    });
 
-    // Afficher les relations 1:n
-    if (relations1N.length > 0) {
-      html += '<div class="field-group"><div class="field-group-title">Relations 1:n</div>';
-      relations1N.forEach(({ name, relation }) => {
-        html += `
-          <div class="field-item navigable" onclick="fieldSelectorInstance.navigateToRelation('${name}', 'one-to-many')">
-            <span class="field-icon">📚</span>
-            <span class="field-name">${name}</span>
-            <span class="field-type">${relation.relatedTable}</span>
-            <span class="field-arrow">›</span>
-          </div>
-        `;
-      });
-      html += '</div>';
-    }
+    // Afficher les relations 1:n à la fin (sans titre de section)
+    relations1N.forEach(({ name, relation }) => {
+      html += `
+        <div class="field-item navigable" onclick="fieldSelectorInstance.navigateToRelation('${name}', 'one-to-many')">
+          <span class="field-icon">📚</span>
+          <span class="field-name">${name}</span>
+          <span class="field-type">${relation.relatedTable}</span>
+          <span class="field-arrow">›</span>
+        </div>
+      `;
+    });
 
     html += '</div>';
     return html;
