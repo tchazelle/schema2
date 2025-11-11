@@ -5,7 +5,8 @@
  * 1. Relations 1:n deviennent des propriétés directes (ex: member[] au lieu de relations.member[])
  * 2. Relations n:1 remplacent la clé porteuse (ex: idPerson devient un objet Person)
  * 3. Les éléments des relations 1:n sont également proxifiés
- * 4. La clé "relations" est masquée de l'énumération
+ * 4. La clé "relations" est masquée de l'énumération SEULEMENT si c'est un objet (relations API)
+ * 5. Le champ "relations" (type string/text de la DB) est accessible normalement
  */
 
 /**
@@ -30,8 +31,13 @@ function createDataForMustacheProxy(data) {
      * Intercepteur de lecture de propriété
      */
     get(target, prop, receiver) {
-      // Si on accède à "relations", retourner undefined (masqué)
+      // Si on accède à "relations"
       if (prop === 'relations') {
+        // Si c'est une chaîne (champ DB), la retourner normalement
+        if (typeof target.relations === 'string') {
+          return target.relations;
+        }
+        // Si c'est un objet (relations API), le masquer
         return undefined;
       }
 
@@ -47,8 +53,8 @@ function createDataForMustacheProxy(data) {
         return value;
       }
 
-      // Sinon, chercher dans les relations
-      if (target.relations) {
+      // Sinon, chercher dans les relations (seulement si c'est un objet, pas une chaîne)
+      if (target.relations && typeof target.relations === 'object') {
         // 1. Chercher dans les relations 1:n (arrays)
         if (target.relations[prop] && Array.isArray(target.relations[prop])) {
           // Proxifier chaque élément du tableau
@@ -67,13 +73,16 @@ function createDataForMustacheProxy(data) {
 
     /**
      * Intercepteur d'énumération (Object.keys, for...in, etc.)
-     * Cache la clé "relations" et expose les relations comme propriétés directes
+     * Cache la clé "relations" (si objet API) et expose les relations comme propriétés directes
      */
     ownKeys(target) {
-      const keys = Object.keys(target).filter(key => key !== 'relations');
+      // Si relations est une chaîne (champ DB), ne pas la filtrer
+      const keys = typeof target.relations === 'string'
+        ? Object.keys(target)
+        : Object.keys(target).filter(key => key !== 'relations');
 
-      // Ajouter les clés des relations comme propriétés directes
-      if (target.relations) {
+      // Ajouter les clés des relations comme propriétés directes (seulement si c'est un objet API)
+      if (target.relations && typeof target.relations === 'object') {
         for (const relKey in target.relations) {
           if (!keys.includes(relKey)) {
             keys.push(relKey);
@@ -89,8 +98,16 @@ function createDataForMustacheProxy(data) {
      * Nécessaire pour que Object.keys fonctionne correctement
      */
     getOwnPropertyDescriptor(target, prop) {
-      // Si c'est la clé "relations", la masquer
+      // Si c'est la clé "relations"
       if (prop === 'relations') {
+        // Si c'est une chaîne (champ DB), la retourner normalement
+        if (typeof target.relations === 'string') {
+          return Object.getOwnPropertyDescriptor(target, prop) || {
+            enumerable: true,
+            configurable: true
+          };
+        }
+        // Si c'est un objet (relations API), la masquer
         return undefined;
       }
 
@@ -102,8 +119,8 @@ function createDataForMustacheProxy(data) {
         };
       }
 
-      // Si c'est une relation
-      if (target.relations && prop in target.relations) {
+      // Si c'est une relation (seulement si c'est un objet API)
+      if (target.relations && typeof target.relations === 'object' && prop in target.relations) {
         return {
           enumerable: true,
           configurable: true
@@ -117,14 +134,27 @@ function createDataForMustacheProxy(data) {
      * Intercepteur de has (opérateur 'in')
      */
     has(target, prop) {
-      // "relations" n'existe pas dans le proxy
+      // Si c'est "relations"
       if (prop === 'relations') {
+        // Si c'est une chaîne (champ DB), elle existe
+        if (typeof target.relations === 'string') {
+          return true;
+        }
+        // Si c'est un objet (relations API), elle n'existe pas dans le proxy
         return false;
       }
 
-      // Vérifier si la propriété existe directement ou dans les relations
-      return (prop in target && prop !== 'relations') ||
-             (target.relations && prop in target.relations);
+      // Vérifier si la propriété existe directement
+      if (prop in target && prop !== 'relations') {
+        return true;
+      }
+
+      // Vérifier dans les relations (seulement si c'est un objet API)
+      if (target.relations && typeof target.relations === 'object' && prop in target.relations) {
+        return true;
+      }
+
+      return false;
     }
   });
 }
