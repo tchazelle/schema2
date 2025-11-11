@@ -401,6 +401,7 @@ function generateHomeHTML(user, pages, accessibleTables, allRoles, isAuthenticat
     <div class="sidebar-section">
       <h3>Debug</h3>
       <ul>
+        <li><a href="/_debug/">Index Debug</a></li>
         <li><a href="/_debug/user">Fiche utilisateur</a></li>
         <li><a href="/_debug/user/grant">Autorisations</a></li>
       </ul>

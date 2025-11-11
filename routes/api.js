@@ -221,16 +221,67 @@ router.get('/:table', async (req, res) => {
 });
 
 /**
+ * Charge la structure d'une table pour obtenir les relations
+ */
+function getTableRelations(user, tableName) {
+  const tableConfig = schema.tables[tableName];
+  if (!tableConfig) {
+    return { relationsN1: {}, relations1N: {} };
+  }
+
+  const relationsN1 = {};
+  const relations1N = {};
+
+  // Relations n:1 (many-to-one) : champs avec relation dans la table actuelle
+  for (const fieldName in tableConfig.fields) {
+    const fieldConfig = tableConfig.fields[fieldName];
+    if (fieldConfig.relation && hasPermission(user, fieldConfig.relation, 'read')) {
+      relationsN1[fieldName] = {
+        relatedTable: fieldConfig.relation,
+        foreignKey: fieldConfig.foreignKey,
+        arrayName: fieldConfig.arrayName,
+        relationshipStrength: fieldConfig.relationshipStrength
+      };
+    }
+  }
+
+  // Relations 1:n (one-to-many) : chercher les tables qui ont une relation vers cette table
+  for (const otherTableName in schema.tables) {
+    const otherTableConfig = schema.tables[otherTableName];
+
+    for (const otherFieldName in otherTableConfig.fields) {
+      const otherFieldConfig = otherTableConfig.fields[otherFieldName];
+
+      if (otherFieldConfig.relation === tableName && hasPermission(user, otherTableName, 'read')) {
+        // Nom de la relation selon la doctrine
+        const relationName = otherFieldConfig.arrayName || otherFieldConfig.relation;
+
+        relations1N[relationName] = {
+          relatedTable: otherTableName,
+          relatedField: otherFieldName,
+          foreignKey: otherFieldConfig.foreignKey,
+          relationshipStrength: otherFieldConfig.relationshipStrength,
+          defaultSort: otherFieldConfig.defaultSort
+        };
+      }
+    }
+  }
+
+  return { relationsN1, relations1N };
+}
+
+/**
  * GET /_api/:table/:id
  * Récupère un enregistrement spécifique avec vérification des permissions
  * Query params:
- * - includeRelations: true/false pour inclure les relations
+ * - relation: liste de relations à inclure (ex: rel1,rel2,rel3) ou "all" pour toutes
+ *   Par défaut : inclut toutes les relations n:1 et les relations 1:n "Strong"
  */
 router.get('/:table/:id', async (req, res) => {
   try {
     const { table, id } = req.params;
     const user = req.user;
-    const { includeRelations } = req.query;
+    const { relation } = req.query;
 
     // Si l'utilisateur n'est pas connecté, utiliser un user par défaut avec rôle public
     const effectiveUser = user || { roles: 'public' };
@@ -275,37 +326,82 @@ router.get('/:table/:id', async (req, res) => {
     // Filtrer les champs selon les permissions
     let filteredRow = filterRowFields(effectiveUser, table, row);
 
-    // Si includeRelations est true, charger les relations
-    if (includeRelations === 'true') {
-      const tableConfig = schema.tables[table];
-      const relations = {};
+    // Charger les relations
+    const { relationsN1, relations1N } = getTableRelations(effectiveUser, table);
+    const relations = {};
 
-      for (const fieldName in tableConfig.fields) {
-        const fieldConfig = tableConfig.fields[fieldName];
+    // Déterminer quelles relations charger
+    let requestedRelations = [];
+    if (relation === 'all') {
+      // Toutes les relations
+      requestedRelations = [...Object.keys(relationsN1), ...Object.keys(relations1N)];
+    } else if (relation) {
+      // Relations spécifiées dans le query param
+      requestedRelations = relation.split(',').map(r => r.trim());
+    } else {
+      // Par défaut : toutes les relations n:1 et les relations 1:n "Strong"
+      requestedRelations = [
+        ...Object.keys(relationsN1),
+        ...Object.keys(relations1N).filter(relName => relations1N[relName].relationshipStrength === 'Strong')
+      ];
+    }
 
-        // Si c'est une relation et que l'utilisateur y a accès
-        if (fieldConfig.relation && hasPermission(effectiveUser, fieldConfig.relation, 'read')) {
-          const relatedTable = fieldConfig.relation;
-          const foreignKey = fieldConfig.foreignKey;
-          const foreignValue = row[fieldName];
+    // Charger les relations n:1 (many-to-one)
+    for (const fieldName of requestedRelations) {
+      if (relationsN1[fieldName]) {
+        const relConfig = relationsN1[fieldName];
+        const foreignValue = row[fieldName];
 
-          if (foreignValue) {
-            // Charger l'enregistrement lié
-            const [relatedRows] = await pool.query(
-              `SELECT * FROM ${relatedTable} WHERE ${foreignKey} = ?`,
-              [foreignValue]
-            );
+        if (foreignValue) {
+          // Charger l'enregistrement lié
+          const [relatedRows] = await pool.query(
+            `SELECT * FROM ${relConfig.relatedTable} WHERE ${relConfig.foreignKey} = ?`,
+            [foreignValue]
+          );
 
-            if (relatedRows.length > 0) {
-              const relatedRow = relatedRows[0];
-              if (canAccessRow(effectiveUser, relatedRow, relatedTable)) {
-                relations[fieldName] = filterRowFields(effectiveUser, relatedTable, relatedRow);
-              }
+          if (relatedRows.length > 0) {
+            const relatedRow = relatedRows[0];
+            if (canAccessRow(effectiveUser, relatedRow, relConfig.relatedTable)) {
+              relations[fieldName] = filterRowFields(effectiveUser, relConfig.relatedTable, relatedRow);
             }
           }
         }
       }
+    }
 
+    // Charger les relations 1:n (one-to-many)
+    for (const relationName of requestedRelations) {
+      if (relations1N[relationName]) {
+        const relConfig = relations1N[relationName];
+
+        // Construire la requête avec ORDER BY si défini
+        let query = `SELECT * FROM ${relConfig.relatedTable} WHERE ${relConfig.relatedField} = ?`;
+        const params = [id];
+
+        if (relConfig.defaultSort) {
+          if (Array.isArray(relConfig.defaultSort)) {
+            const sortClauses = relConfig.defaultSort.map(sort => `${sort.field} ${sort.order}`).join(', ');
+            query += ` ORDER BY ${sortClauses}`;
+          } else {
+            query += ` ORDER BY ${relConfig.defaultSort.field} ${relConfig.defaultSort.order}`;
+          }
+        }
+
+        const [relatedRows] = await pool.query(query, params);
+
+        // Filtrer et vérifier les permissions pour chaque row
+        const filteredRelatedRows = relatedRows
+          .filter(relRow => canAccessRow(effectiveUser, relRow, relConfig.relatedTable))
+          .map(relRow => filterRowFields(effectiveUser, relConfig.relatedTable, relRow));
+
+        if (filteredRelatedRows.length > 0) {
+          relations[relationName] = filteredRelatedRows;
+        }
+      }
+    }
+
+    // Ajouter les relations au résultat
+    if (Object.keys(relations).length > 0) {
       filteredRow.relations = relations;
     }
 
