@@ -7,6 +7,78 @@
 const schema = require('../schema.js');
 
 /**
+ * Collecte tous les champs et relations en parcourant toutes les rows
+ * @param {Array} dataArray - Tableau de rows
+ * @param {string} tableName - Nom de la table
+ * @returns {Object} - { fields: Set, relations1n: Map, relationsN1: Map }
+ */
+function collectAllFieldsAndRelations(dataArray, tableName) {
+  const fields = new Set();
+  const relations1n = new Map(); // Map<relationName, { tableName, sampleData }>
+  const relationsN1 = new Map(); // Map<relationName, { tableName, sampleData }>
+
+  if (!Array.isArray(dataArray) || dataArray.length === 0) {
+    return { fields, relations1n, relationsN1 };
+  }
+
+  // Parcourir TOUTES les rows pour collecter tous les champs et relations
+  for (const row of dataArray) {
+    for (const key in row) {
+      // Ignorer les champs spéciaux
+      if (shouldIgnoreField(key)) {
+        continue;
+      }
+
+      const value = row[key];
+
+      // Si c'est un tableau (relation 1:n)
+      if (Array.isArray(value)) {
+        if (!relations1n.has(key)) {
+          const relTableName = value.length > 0 && value[0]._table ? value[0]._table : key;
+          relations1n.set(key, { tableName: relTableName, sampleData: value });
+        }
+      }
+      // Si c'est un objet (relation n:1)
+      else if (value && typeof value === 'object' && value._table) {
+        if (!relationsN1.has(key)) {
+          relationsN1.set(key, { tableName: value._table, sampleData: value });
+        }
+      }
+      // Si c'est une valeur simple
+      else {
+        fields.add(key);
+      }
+    }
+  }
+
+  return { fields, relations1n, relationsN1 };
+}
+
+/**
+ * Obtient le renderer pour un champ donné
+ * @param {string} fieldName - Nom du champ
+ * @param {string} tableName - Nom de la table
+ * @returns {string|null} - Template du renderer ou null
+ */
+function getFieldRenderer(fieldName, tableName) {
+  if (!tableName || !schema.tables[tableName]) {
+    return null;
+  }
+
+  const tableConfig = schema.tables[tableName];
+  const fieldConfig = tableConfig.fields[fieldName];
+
+  if (fieldConfig && fieldConfig.renderer && schema.renderer[fieldConfig.renderer]) {
+    // Remplacer {{key}} par le nom du champ et {{value}} par {{fieldName}}
+    return schema.renderer[fieldConfig.renderer]
+      .replace(/\{\{key\}\}/g, fieldName)
+      .replace(/\{\{value\}\}/g, `{{${fieldName}}}`);
+  }
+
+  return null;
+}
+
+/**
  * Génère un template automatique pour une page
  * @param {Object} pageData - Données de la page
  * @param {Object} sectionsData - Données des sections de la page
@@ -18,8 +90,8 @@ function generatePageTemplate(pageData, sectionsData) {
     return pageData.mustache;
   }
 
-  // Sinon, générer un template automatique
-  let template = `<div class="{{slug}}" data-id="{{id}}" data-table="Page">
+  // Sinon, générer un template automatique avec la classe page
+  let template = `<div class="page {{slug}}" data-id="{{id}}" data-table="Page">
   {{#css}}<style>{{{css}}}</style>{{/css}}
   <h1>{{name}}</h1>
   {{#description}}<p class="description">{{description}}</p>{{/description}}
@@ -56,9 +128,8 @@ function generateSectionTemplate(sectionData, sectionSlug) {
 
   // Sinon, générer un template automatique
   const tableName = sectionData.sqlTable || sectionData._table;
-  const sectionClass = tableName ? `${tableName} ${sectionSlug}` : sectionSlug;
 
-  let template = `<section class="${sectionClass}" data-id="{{id}}" data-table="Section">
+  let template = `<section class="section {{slug}} table ${tableName || 'unknown'}" data-id="{{id}}" data-table="Section">
     <h2>{{name}}</h2>
     {{#description}}<p class="section-description">{{description}}</p>{{/description}}
 
@@ -81,8 +152,9 @@ function generateSectionTemplate(sectionData, sectionSlug) {
 function generateDataTemplate(sectionData, tableName) {
   // Si on a des exemples de données, analyser leur structure
   if (sectionData.data && sectionData.data.length > 0) {
-    const firstRow = sectionData.data[0];
-    return generateRowTemplate(firstRow, tableName);
+    // Collecter tous les champs et relations de TOUTES les rows
+    const { fields, relations1n, relationsN1 } = collectAllFieldsAndRelations(sectionData.data, tableName);
+    return generateRowTemplateFromCollection(fields, relations1n, relationsN1, tableName);
   }
 
   // Sinon, utiliser le schéma si disponible
@@ -92,58 +164,56 @@ function generateDataTemplate(sectionData, tableName) {
 
   // Template minimal par défaut
   return `{{#.}}
-      <div class="item" data-id="{{id}}" data-table="${tableName || 'unknown'}">
-        {{#name}}<div class="name">{{name}}</div>{{/name}}
-        {{#title}}<div class="title">{{title}}</div>{{/title}}
-        {{#description}}<div class="description">{{description}}</div>{{/description}}
+      <div class="row" data-id="{{id}}" data-table="${tableName || 'unknown'}">
+        {{#name}}<div class="field name">{{name}}</div>{{/name}}
+        {{#title}}<div class="field title">{{title}}</div>{{/title}}
+        {{#description}}<div class="field description">{{description}}</div>{{/description}}
       </div>
     {{/.}}`;
 }
 
 /**
- * Génère un template à partir d'une row de données
- * @param {Object} row - Exemple de row
+ * Génère un template à partir d'une collection de champs et relations
+ * @param {Set} fields - Ensemble des champs simples
+ * @param {Map} relations1n - Map des relations 1:n
+ * @param {Map} relationsN1 - Map des relations n:1
  * @param {string} tableName - Nom de la table
  * @returns {string} - Template Mustache
  */
-function generateRowTemplate(row, tableName) {
-  const tableClass = row._table || tableName || 'item';
-
+function generateRowTemplateFromCollection(fields, relations1n, relationsN1, tableName) {
   let template = `{{#.}}
-    <div class="${tableClass}" data-id="{{id}}" data-table="${tableClass}">`;
+    <div class="row" data-id="{{id}}" data-table="${tableName || 'item'}">`;
 
-  // Parcourir les champs de la row
-  for (const key in row) {
-    // Ignorer les champs spéciaux
-    if (shouldIgnoreField(key)) {
-      continue;
-    }
-
+  // Générer les champs simples
+  for (const fieldName of fields) {
     // Gérer le champ css
-    if (key === 'css') {
-      template += `\n      {{#${key}}}<style>{{{${key}}}}</style>{{/${key}}}`;
+    if (fieldName === 'css') {
+      template += `\n      {{#${fieldName}}}<style>{{{${fieldName}}}}</style>{{/${fieldName}}}`;
       continue;
     }
 
-    // Gérer le champ template (pas affiché mais utilisé)
-    if (key === 'template') {
+    // Gérer le champ template
+    if (fieldName === 'template' || fieldName === 'mustache') {
       continue;
     }
 
-    const value = row[key];
+    // Vérifier si un renderer est défini pour ce champ
+    const renderer = getFieldRenderer(fieldName, tableName);
+    if (renderer) {
+      template += `\n      {{#${fieldName}}}${renderer}{{/${fieldName}}}`;
+    } else {
+      template += `\n      {{#${fieldName}}}<div class="field ${fieldName}">{{${fieldName}}}</div>{{/${fieldName}}}`;
+    }
+  }
 
-    // Si c'est un tableau (relation 1:n)
-    if (Array.isArray(value)) {
-      template += generateRelationTemplate(key, value, '1:n');
-    }
-    // Si c'est un objet (relation n:1)
-    else if (value && typeof value === 'object' && value._table) {
-      template += generateRelationTemplate(key, value, 'n:1');
-    }
-    // Si c'est une valeur simple
-    else {
-      template += generateFieldTemplate(key, value);
-    }
+  // Générer les relations n:1
+  for (const [relationName, relationInfo] of relationsN1) {
+    template += generateRelationTemplate(relationName, relationInfo.sampleData, 'n:1');
+  }
+
+  // Générer les relations 1:n
+  for (const [relationName, relationInfo] of relations1n) {
+    template += generateRelationTemplate(relationName, relationInfo.sampleData, '1:n');
   }
 
   template += `
@@ -154,13 +224,32 @@ function generateRowTemplate(row, tableName) {
 }
 
 /**
+ * Génère un template à partir d'une row de données (ancienne méthode - conservée pour compatibilité)
+ * @param {Object} row - Exemple de row
+ * @param {string} tableName - Nom de la table
+ * @returns {string} - Template Mustache
+ */
+function generateRowTemplate(row, tableName) {
+  // Utiliser la nouvelle méthode avec collection
+  const { fields, relations1n, relationsN1 } = collectAllFieldsAndRelations([row], tableName);
+  return generateRowTemplateFromCollection(fields, relations1n, relationsN1, tableName);
+}
+
+/**
  * Génère un template pour un champ simple
  * @param {string} fieldName - Nom du champ
  * @param {*} value - Valeur du champ
+ * @param {string} tableName - Nom de la table
  * @returns {string} - Template Mustache
  */
-function generateFieldTemplate(fieldName, value) {
-  return `\n      {{#${fieldName}}}<div class="${fieldName}">{{${fieldName}}}</div>{{/${fieldName}}}`;
+function generateFieldTemplate(fieldName, value, tableName = null) {
+  // Vérifier si un renderer est défini pour ce champ
+  const renderer = getFieldRenderer(fieldName, tableName);
+  if (renderer) {
+    return `\n      {{#${fieldName}}}${renderer}{{/${fieldName}}}`;
+  }
+
+  return `\n      {{#${fieldName}}}<div class="field ${fieldName}">{{${fieldName}}}</div>{{/${fieldName}}}`;
 }
 
 /**
@@ -177,9 +266,12 @@ function generateRelationTemplate(relationName, relationData, relationType) {
       ? relationData[0]._table || relationName
       : relationName;
 
+    // Collecter tous les champs et relations de toutes les rows de cette relation
+    const { fields, relations1n, relationsN1 } = collectAllFieldsAndRelations(relationData, tableClass);
+
     return `\n      {{#${relationName}}}
-        <div class="${relationName}">
-          ${generateRowTemplate(Array.isArray(relationData) && relationData[0] || {}, tableClass)}
+        <div class="relation oneToMany ${relationName}">
+          ${generateRowTemplateFromCollection(fields, relations1n, relationsN1, tableClass)}
         </div>
       {{/${relationName}}}`;
   } else {
@@ -187,9 +279,9 @@ function generateRelationTemplate(relationName, relationData, relationType) {
     const tableClass = relationData._table || relationName;
 
     return `\n      {{#${relationName}}}
-        <div class="${relationName}">
-          <div class="${tableClass}" data-id="{{id}}" data-table="${tableClass}">
-            {{#name}}<span class="name">{{name}}</span>{{/name}}
+        <div class="relation manyToOne ${relationName}">
+          <div class="row" data-id="{{id}}" data-table="${tableClass}">
+            {{#name}}<span class="field name">{{name}}</span>{{/name}}
           </div>
         </div>
       {{/${relationName}}}`;
@@ -204,11 +296,11 @@ function generateRelationTemplate(relationName, relationData, relationType) {
 function generateTemplateFromSchema(tableName) {
   const tableConfig = schema.tables[tableName];
   if (!tableConfig) {
-    return '{{#.}}<div>{{.}}</div>{{/.}}';
+    return '{{#.}}<div class="row">{{.}}</div>{{/.}}';
   }
 
   let template = `{{#.}}
-    <div class="${tableName}" data-id="{{id}}" data-table="${tableName}">`;
+    <div class="row" data-id="{{id}}" data-table="${tableName}">`;
 
   // Parcourir les champs du schéma
   for (const fieldName in tableConfig.fields) {
@@ -226,24 +318,60 @@ function generateTemplateFromSchema(tableName) {
     }
 
     // Gérer le champ template
-    if (fieldName === 'template') {
+    if (fieldName === 'template' || fieldName === 'mustache') {
       continue;
     }
 
     // Si c'est une relation
     if (fieldConfig.relation) {
       const relatedTable = fieldConfig.relation;
-      template += `\n      {{#${fieldName}}}
-        <div class="${fieldName}">
-          <div class="${relatedTable}" data-id="{{id}}" data-table="${relatedTable}">
-            {{#name}}<span class="name">{{name}}</span>{{/name}}
+      const arrayName = fieldConfig.arrayName || fieldName;
+
+      // Déterminer si c'est une relation 1:n ou n:1
+      // Si le champ est une foreign key (idXXX), c'est une relation n:1
+      // Sinon, c'est une relation 1:n (utilisera arrayName)
+      const isN1 = fieldName.startsWith('id') && fieldName !== 'id';
+
+      if (isN1) {
+        template += `\n      {{#${fieldName}}}
+        <div class="relation manyToOne ${fieldName}">
+          <div class="row" data-id="{{id}}" data-table="${relatedTable}">
+            {{#name}}<span class="field name">{{name}}</span>{{/name}}
           </div>
         </div>
       {{/${fieldName}}}`;
+      }
     }
     // Sinon c'est un champ simple
     else {
-      template += `\n      {{#${fieldName}}}<div class="${fieldName}">{{${fieldName}}}</div>{{/${fieldName}}}`;
+      // Vérifier si un renderer est défini pour ce champ
+      const renderer = getFieldRenderer(fieldName, tableName);
+      if (renderer) {
+        template += `\n      {{#${fieldName}}}${renderer}{{/${fieldName}}}`;
+      } else {
+        template += `\n      {{#${fieldName}}}<div class="field ${fieldName}">{{${fieldName}}}</div>{{/${fieldName}}}`;
+      }
+    }
+  }
+
+  // Ajouter les relations 1:n depuis le schéma
+  // On les détecte en cherchant les arrayName dans les autres tables
+  for (const otherTableName in schema.tables) {
+    const otherTable = schema.tables[otherTableName];
+    for (const otherFieldName in otherTable.fields) {
+      const otherFieldConfig = otherTable.fields[otherFieldName];
+      if (otherFieldConfig.relation === tableName && otherFieldConfig.arrayName) {
+        const relationName = otherFieldConfig.arrayName;
+        template += `\n      {{#${relationName}}}
+        <div class="relation oneToMany ${relationName}">
+          {{#.}}
+            <div class="row" data-id="{{id}}" data-table="${otherTableName}">
+              {{#name}}<span class="field name">{{name}}</span>{{/name}}
+            </div>
+          {{/.}}
+        </div>
+      {{/${relationName}}}`;
+      }
     }
   }
 
@@ -266,6 +394,7 @@ function shouldIgnoreField(fieldName) {
     '_table',       // Affiché dans data-table
     '_relations',   // Champ interne
     'ownerId',      // Champ système
+    'granted',      // Champ système
     'createdAt',    // Champ système (peut être affiché si nécessaire)
     'updatedAt'     // Champ système (peut être affiché si nécessaire)
   ];

@@ -70,12 +70,19 @@ module.exports = {
 
   },
 
-  renderer: { // interprétation BABEL pour React ?
-    image: "<img src='{{value}}' />",
-    email: "<span><a href='mailto:{{value}}'> 📧 </a>{{value}}</span>",
-    telephone: "<span><a href='tel:{{value}}'> 📞 </a>{{value}}</span>",
-    url: "<span><a href='tel:{{value}}'> 🔗 </a> {{value}}</span>",
-    filePreview:"#filePreview" // appel fonction nodejs ?
+  renderer: {
+    image: "<img class='field image {{key}}' src='{{value}}' alt='{{value}}' />",
+    email: "<a class='field email {{key}}' href='mailto:{{value}}'> 📧 {{value}}</a>",
+    telephone: "<a class='field telephone {{key}}' href='tel:{{value}}'> 📞 {{value}}</a>",
+    url: "<a class='field url {{key}}' href='{{value}}' target='_blank'>🔗 {{value}}</a>",
+    date: "<time class='field date {{key}}' datetime='{{value}}'>{{value}}</time>",
+    datetime: "<time class='field datetime {{key}}' datetime='{{value}}'>{{value}}</time>",
+    time: "<time class='field time {{key}}'>{{value}}</time>",
+    boolean: "<span class='field boolean {{key}} {{#value}}true{{/value}}{{^value}}false{{/value}}'>{{#value}}✓{{/value}}{{^value}}✗{{/value}}</span>",
+    number: "<span class='field number {{key}}'>{{value}}</span>",
+    currency: "<span class='field currency {{key}}'>{{value}} €</span>",
+    percentage: "<span class='field percentage {{key}}'>{{value}}%</span>",
+    filePreview: "#filePreview"
   },
 
   // Tables de l'application
