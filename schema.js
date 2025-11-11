@@ -97,7 +97,14 @@ module.exports = {
       // ... defaultConfigPage
       fields: {
         id: { type: "integer", isPrimary: true, autoIncrement: true },
-        idPage: { type: "integer", relation: "Page", foreignKey: "id", arrayName: "sections", relationshipStrength: "Strong", defaultSort: { field: "sectionOrder", order: "ASC" } },
+        idPage: { 
+          type: "integer", 
+          relation: "Page", 
+          foreignKey: "id", 
+          arrayName: "sections", 
+          relationshipStrength: "Strong", 
+          defaultSort: { field: "sectionOrder", order: "ASC" } 
+        },
         title: { type: "varchar" }, // Titre de la section
         description: { type: "text" }, // Description de la section
         tableName: { type: "varchar" }, // Nom de la table à afficher
