@@ -867,6 +867,20 @@ router.get('/api', async (req, res) => {
       </div>
 
       <div class="control-group">
+        <label>Options:</label>
+        <div style="display: flex; gap: 15px; align-items: center;">
+          <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; min-width: auto;">
+            <input type="checkbox" id="schema-checkbox" style="cursor: pointer; min-width: auto;">
+            <span>schema</span>
+          </label>
+          <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; min-width: auto;">
+            <input type="checkbox" id="compact-checkbox" style="cursor: pointer; min-width: auto;">
+            <span>compact</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="control-group">
         <label></label>
         <button onclick="loadApiData()">🔄 Charger les données</button>
       </div>
@@ -956,6 +970,8 @@ router.get('/api', async (req, res) => {
       const table = document.getElementById('table-select').value;
       const id = document.getElementById('id-input').value.trim();
       const relation = document.getElementById('relation-input').value.trim();
+      const includeSchema = document.getElementById('schema-checkbox').checked;
+      const useCompact = document.getElementById('compact-checkbox').checked;
 
       if (!table) {
         alert('Veuillez sélectionner une table');
@@ -974,8 +990,21 @@ router.get('/api', async (req, res) => {
         if (id) {
           url += '/' + id;
         }
+
+        // Construire les query params
+        const params = [];
         if (relation) {
-          url += '?relation=' + encodeURIComponent(relation);
+          params.push('relation=' + encodeURIComponent(relation));
+        }
+        if (includeSchema) {
+          params.push('schema=1');
+        }
+        if (useCompact) {
+          params.push('compact=1');
+        }
+
+        if (params.length > 0) {
+          url += '?' + params.join('&');
         }
 
         // Charger les données brutes
@@ -1007,9 +1036,9 @@ router.get('/api', async (req, res) => {
 
       const result = {};
 
-      // Copier toutes les propriétés sauf "relations"
+      // Copier toutes les propriétés sauf "_relations"
       for (const key in data) {
-        if (key === 'relations') continue;
+        if (key === '_relations') continue;
 
         if (data[key] && typeof data[key] === 'object') {
           result[key] = applyDataForMustacheProxy(data[key]);
@@ -1019,16 +1048,16 @@ router.get('/api', async (req, res) => {
       }
 
       // Ajouter les relations comme propriétés directes
-      if (data.relations) {
-        for (const relKey in data.relations) {
-          if (Array.isArray(data.relations[relKey])) {
+      if (data._relations) {
+        for (const relKey in data._relations) {
+          if (Array.isArray(data._relations[relKey])) {
             // Relation 1:n - proxifier chaque élément
-            result[relKey] = data.relations[relKey].map(item => applyDataForMustacheProxy(item));
-          } else if (data.relations[relKey] && typeof data.relations[relKey] === 'object') {
+            result[relKey] = data._relations[relKey].map(item => applyDataForMustacheProxy(item));
+          } else if (data._relations[relKey] && typeof data._relations[relKey] === 'object') {
             // Relation n:1 - proxifier l'objet
-            result[relKey] = applyDataForMustacheProxy(data.relations[relKey]);
+            result[relKey] = applyDataForMustacheProxy(data._relations[relKey]);
           } else {
-            result[relKey] = data.relations[relKey];
+            result[relKey] = data._relations[relKey];
           }
         }
       }

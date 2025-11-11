@@ -143,12 +143,13 @@ function buildWhereClause(user, baseWhere = null) {
  * - relation: liste de relations à inclure (ex: rel1,rel2,rel3) ou "all" pour toutes
  *   Par défaut : inclut toutes les relations n:1 et les relations 1:n "Strong"
  * - schema: si "1", retourne également le schéma filtré de la table
+ * - compact: si "1", réduit les relations n:1 à leur version compacte (displayFields uniquement)
  */
 router.get('/:table', async (req, res) => {
   try {
     const { table } = req.params;
     const user = req.user;
-    const { limit, offset, orderBy, order, where: customWhere, relation, schema: includeSchema } = req.query;
+    const { limit, offset, orderBy, order, where: customWhere, relation, schema: includeSchema, compact } = req.query;
 
     // Si l'utilisateur n'est pas connecté, utiliser un user par défaut avec rôle public
     const effectiveUser = user || { roles: 'public' };
@@ -221,11 +222,12 @@ router.get('/:table', async (req, res) => {
 
       // Charger les relations pour cette row
       if (requestedRelations.length > 0) {
-        const relations = await loadRelationsForRow(effectiveUser, table, row, requestedRelations, true);
+        const useCompact = compact === '1';
+        const relations = await loadRelationsForRow(effectiveUser, table, row, requestedRelations, true, useCompact);
 
-        // Ajouter les relations au résultat
+        // Ajouter les relations au résultat (utilise _relations pour éviter conflit avec champ DB)
         if (Object.keys(relations).length > 0) {
-          filteredRow.relations = relations;
+          filteredRow._relations = relations;
         }
       }
 
@@ -316,15 +318,50 @@ function getTableRelations(user, tableName) {
 }
 
 /**
+ * Réduit une relation n:1 à sa version compacte selon les displayFields du schéma
+ * @param {Object} relatedRow - La row de la relation
+ * @param {string} relatedTable - Nom de la table de la relation
+ * @returns {Object} - Version compacte de la relation
+ */
+function compactRelation(relatedRow, relatedTable) {
+  const tableConfig = schema.tables[relatedTable];
+  if (!tableConfig) {
+    return relatedRow; // Si pas de config, retourner la row complète
+  }
+
+  // Déterminer les displayFields
+  let displayFields = tableConfig.displayField || 'name';
+  if (!Array.isArray(displayFields)) {
+    displayFields = [displayFields];
+  }
+
+  // Construire l'objet compact
+  const compact = {
+    _table: relatedRow._table,
+    id: relatedRow.id
+  };
+
+  // Ajouter les displayFields
+  for (const field of displayFields) {
+    if (relatedRow[field] !== undefined) {
+      compact[field] = relatedRow[field];
+    }
+  }
+
+  return compact;
+}
+
+/**
  * Charge les relations d'une row de manière récursive
  * @param {Object} user - L'utilisateur
  * @param {string} tableName - Nom de la table
  * @param {Object} row - La row dont on veut charger les relations
  * @param {Array} requestedRelations - Liste des relations à charger
  * @param {boolean} loadN1InRelations - Charger automatiquement les relations N:1 dans les relations 1:N
+ * @param {boolean} compact - Réduire les relations n:1 à leur version compacte (displayFields uniquement)
  * @returns {Object} - Objet des relations chargées
  */
-async function loadRelationsForRow(user, tableName, row, requestedRelations, loadN1InRelations = false) {
+async function loadRelationsForRow(user, tableName, row, requestedRelations, loadN1InRelations = false, compact = false) {
   const { relationsN1, relations1N } = getTableRelations(user, tableName);
   const relations = {};
 
@@ -344,9 +381,15 @@ async function loadRelationsForRow(user, tableName, row, requestedRelations, loa
         if (relatedRows.length > 0) {
           const relatedRow = relatedRows[0];
           if (canAccessRow(user, relatedRow, relConfig.relatedTable)) {
-            const filteredRelatedRow = filterRowFields(user, relConfig.relatedTable, relatedRow);
+            let filteredRelatedRow = filterRowFields(user, relConfig.relatedTable, relatedRow);
             // Ajouter le champ _table pour marquer la provenance
             filteredRelatedRow._table = relConfig.relatedTable;
+
+            // Appliquer le mode compact si demandé
+            if (compact) {
+              filteredRelatedRow = compactRelation(filteredRelatedRow, relConfig.relatedTable);
+            }
+
             relations[fieldName] = filteredRelatedRow;
           }
         }
@@ -409,18 +452,24 @@ async function loadRelationsForRow(user, tableName, row, requestedRelations, loa
                 if (subRelatedRows.length > 0) {
                   const subRelatedRow = subRelatedRows[0];
                   if (canAccessRow(user, subRelatedRow, subRelConfig.relatedTable)) {
-                    const filteredSubRelatedRow = filterRowFields(user, subRelConfig.relatedTable, subRelatedRow);
+                    let filteredSubRelatedRow = filterRowFields(user, subRelConfig.relatedTable, subRelatedRow);
                     // Ajouter le champ _table pour marquer la provenance
                     filteredSubRelatedRow._table = subRelConfig.relatedTable;
+
+                    // Appliquer le mode compact si demandé
+                    if (compact) {
+                      filteredSubRelatedRow = compactRelation(filteredSubRelatedRow, subRelConfig.relatedTable);
+                    }
+
                     subRelations[subFieldName] = filteredSubRelatedRow;
                   }
                 }
               }
             }
 
-            // Ajouter les sous-relations si elles existent
+            // Ajouter les sous-relations si elles existent (utilise _relations pour éviter conflit avec champ DB)
             if (Object.keys(subRelations).length > 0) {
-              filteredRelRow.relations = subRelations;
+              filteredRelRow._relations = subRelations;
             }
           }
 
@@ -511,12 +560,13 @@ function buildFilteredSchema(user, tableName) {
  * - relation: liste de relations à inclure (ex: rel1,rel2,rel3) ou "all" pour toutes
  *   Par défaut : inclut toutes les relations n:1 et les relations 1:n "Strong"
  * - schema: si "1", retourne également le schéma filtré de la table
+ * - compact: si "1", réduit les relations n:1 à leur version compacte (displayFields uniquement)
  */
 router.get('/:table/:id', async (req, res) => {
   try {
     const { table, id } = req.params;
     const user = req.user;
-    const { relation, schema: includeSchema } = req.query;
+    const { relation, schema: includeSchema, compact } = req.query;
 
     // Si l'utilisateur n'est pas connecté, utiliser un user par défaut avec rôle public
     const effectiveUser = user || { roles: 'public' };
@@ -581,11 +631,12 @@ router.get('/:table/:id', async (req, res) => {
     }
 
     // Charger les relations pour cette row (avec chargement automatique des relations N:1 dans les 1:N)
-    const relations = await loadRelationsForRow(effectiveUser, table, row, requestedRelations, true);
+    const useCompact = compact === '1';
+    const relations = await loadRelationsForRow(effectiveUser, table, row, requestedRelations, true, useCompact);
 
-    // Ajouter les relations au résultat
+    // Ajouter les relations au résultat (utilise _relations pour éviter conflit avec champ DB)
     if (Object.keys(relations).length > 0) {
-      filteredRow.relations = relations;
+      filteredRow._relations = relations;
     }
 
     const response = {
