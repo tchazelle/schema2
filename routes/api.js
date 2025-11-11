@@ -512,205 +512,6 @@ async function loadRelationsForRow(user, tableName, row, requestedRelations, loa
 }
 
 /**
- * Construit le schéma filtré selon les permissions de l'utilisateur
- * @param {Object} user - L'utilisateur
- * @param {string} tableName - Nom de la table
- * @returns {Object} - Schéma filtré
- */
-function buildFilteredSchema(user, tableName) {
-  const tableConfig = schema.tables[tableName];
-  if (!tableConfig) {
-    return null;
-  }
-
-  const userRoles = getUserAllRoles(user);
-  const filteredSchema = {
-    table: tableName,
-    fields: {},
-    relations: {
-      n1: {},
-      "1n": {}
-    }
-  };
-
-  // Filtrer les champs selon les permissions
-  for (const fieldName in tableConfig.fields) {
-    const fieldConfig = tableConfig.fields[fieldName];
-
-    // Vérifier les permissions spécifiques au champ
-    let fieldAccessible = true;
-    if (fieldConfig.grant) {
-      fieldAccessible = false;
-      for (const role of userRoles) {
-        if (fieldConfig.grant[role] && fieldConfig.grant[role].includes('read')) {
-          fieldAccessible = true;
-          break;
-        }
-      }
-    }
-
-    if (fieldAccessible) {
-      // Déterminer si le champ est calculé (non physique)
-      const isComputed = (
-        // Champ calculé via fonction JavaScript
-        (fieldConfig.calculate && typeof fieldConfig.calculate === 'function') ||
-        // Champ calculé via MySQL (propriété 'as')
-        fieldConfig.as
-      );
-
-      filteredSchema.fields[fieldName] = {
-        type: fieldConfig.type,
-        ...(isComputed && { computed: true }),
-        ...(fieldConfig.relation && { relation: fieldConfig.relation }),
-        ...(fieldConfig.foreignKey && { foreignKey: fieldConfig.foreignKey }),
-        ...(fieldConfig.arrayName && { arrayName: fieldConfig.arrayName }),
-        ...(fieldConfig.relationshipStrength && { relationshipStrength: fieldConfig.relationshipStrength }),
-        ...(fieldConfig.defaultSort && { defaultSort: fieldConfig.defaultSort })
-      };
-    }
-  }
-
-  // Ajouter les relations N:1 et 1:N
-  const { relationsN1, relations1N } = getTableRelations(user, tableName);
-  filteredSchema.relations.n1 = relationsN1;
-  filteredSchema.relations["1n"] = relations1N;
-
-  return filteredSchema;
-}
-
-/**
- * GET /_api/:table/:id
- * Récupère un enregistrement spécifique avec vérification des permissions
- * Query params:
- * - relation: liste de relations à inclure (ex: rel1,rel2,rel3) ou "all" pour toutes
- *   Par défaut : inclut toutes les relations n:1 et les relations 1:n "Strong"
- * - schema: si "1", retourne également le schéma filtré de la table
- * - compact: si "1", réduit les relations n:1 à leur version compacte (displayFields uniquement)
- */
-router.get('/:table/:id', async (req, res) => {
-  try {
-    const { table: tableParam, id } = req.params;
-    const user = req.user;
-    const { relation, schema: includeSchema, compact } = req.query;
-
-    // Si l'utilisateur n'est pas connecté, utiliser un user par défaut avec rôle public
-    const effectiveUser = user || { roles: 'public' };
-
-    // Normaliser le nom de la table (case-insensitive)
-    const table = getTableName(tableParam);
-
-    // Vérifier si la table existe dans le schéma
-    if (!table) {
-      return res.status(404).json({
-        error: 'Table non trouvée'
-      });
-    }
-
-    // Vérifier si l'utilisateur a accès à la table
-    if (!hasPermission(effectiveUser, table, 'read')) {
-      return res.status(403).json({
-        error: 'Accès refusé à cette table'
-      });
-    }
-
-    // Récupérer l'enregistrement
-    const [rows] = await pool.query(
-      `SELECT * FROM ${table} WHERE id = ?`,
-      [id]
-    );
-
-    if (rows.length === 0) {
-      return res.status(404).json({
-        error: 'Enregistrement non trouvé',
-        table: table,
-        id: id
-      });
-    }
-
-    const row = rows[0];
-
-    // Vérifier si l'utilisateur peut accéder à cette row
-    if (!canAccessRow(effectiveUser, row, table)) {
-      return res.status(403).json({
-        error: 'Accès refusé à cet enregistrement'
-      });
-    }
-
-    // Filtrer les champs selon les permissions
-    let filteredRow = filterRowFields(effectiveUser, table, row);
-
-    // Charger les relations
-    const { relationsN1, relations1N } = getTableRelations(effectiveUser, table);
-
-    // Déterminer quelles relations charger
-    let requestedRelations = [];
-    if (relation === 'all') {
-      // Toutes les relations
-      requestedRelations = [...Object.keys(relationsN1), ...Object.keys(relations1N)];
-    } else if (relation) {
-      // Relations spécifiées dans le query param
-      requestedRelations = relation.split(',').map(r => r.trim());
-    } else {
-      // Par défaut : toutes les relations n:1 et les relations 1:n "Strong"
-      requestedRelations = [
-        ...Object.keys(relationsN1),
-        ...Object.keys(relations1N).filter(relName => relations1N[relName].relationshipStrength === 'Strong')
-      ];
-    }
-
-    // Charger les relations pour cette row (avec chargement automatique des relations N:1 dans les 1:N)
-    const useCompact = compact === '1';
-    const relations = await loadRelationsForRow(effectiveUser, table, row, requestedRelations, true, useCompact);
-
-    // Ajouter les relations au résultat (utilise _relations pour éviter conflit avec champ DB)
-    if (Object.keys(relations).length > 0) {
-      filteredRow._relations = relations;
-    }
-
-    const response = {
-      success: true,
-      table: table,
-      id: id,
-      data: filteredRow
-    };
-
-    // Ajouter le schéma si demandé
-    if (includeSchema === '1') {
-      response.schema = buildFilteredSchema(effectiveUser, table);
-    }
-
-    res.json(response);
-
-  } catch (error) {
-    console.error('Erreur lors de la récupération de l\'enregistrement:', error);
-    res.status(500).json({
-      error: 'Erreur serveur lors de la récupération de l\'enregistrement',
-      details: error.message
-    });
-  }
-});
-
-/**
- * Applique les templates mustache simples sur une chaîne
- * Remplace {{key}} par la valeur correspondante dans data
- * @param {string} template - Template à rendre
- * @param {Object} data - Données pour remplacer les variables
- * @returns {string} - Template rendu
- */
-function renderMustacheSimple(template, data) {
-  if (!template || typeof template !== 'string') {
-    return template;
-  }
-
-  let result = template;
-  for (const key in data) {
-    const regex = new RegExp(`\\{\\{${key}\\}\\}`, 'g');
-    result = result.replace(regex, data[key]);
-  }
-  return result;
-}
-
-/**
  * Parse un JSON de manière sécurisée pour MariaDB/MySQL
  * @param {string} jsonString - String JSON à parser
  * @returns {Object|null} - Objet parsé ou null si erreur
@@ -730,6 +531,26 @@ function safeJsonParse(jsonString) {
     console.error('Erreur lors du parsing JSON:', error);
     return null;
   }
+}
+
+/**
+ * Applique les templates mustache simples sur une chaîne
+ * Remplace {{key}} par la valeur correspondante dans data
+ * @param {string} template - Template à rendre
+ * @param {Object} data - Données pour remplacer les variables
+ * @returns {string} - Template rendu
+ */
+function renderMustacheSimple(template, data) {
+  if (!template || typeof template !== 'string') {
+    return template;
+  }
+
+  let result = template;
+  for (const key in data) {
+    const regex = new RegExp(`\\{\\{${key}\\}\\}`, 'g');
+    result = result.replace(regex, data[key]);
+  }
+  return result;
 }
 
 /**
@@ -1113,6 +934,185 @@ router.get('/_page/:page', async (req, res) => {
     console.error('Erreur lors de la récupération de la page:', error);
     res.status(500).json({
       error: 'Erreur serveur lors de la récupération de la page',
+      details: error.message
+    });
+  }
+});
+
+/**
+ * Construit le schéma filtré selon les permissions de l'utilisateur
+ * @param {Object} user - L'utilisateur
+ * @param {string} tableName - Nom de la table
+ * @returns {Object} - Schéma filtré
+ */
+function buildFilteredSchema(user, tableName) {
+  const tableConfig = schema.tables[tableName];
+  if (!tableConfig) {
+    return null;
+  }
+
+  const userRoles = getUserAllRoles(user);
+  const filteredSchema = {
+    table: tableName,
+    fields: {},
+    relations: {
+      n1: {},
+      "1n": {}
+    }
+  };
+
+  // Filtrer les champs selon les permissions
+  for (const fieldName in tableConfig.fields) {
+    const fieldConfig = tableConfig.fields[fieldName];
+
+    // Vérifier les permissions spécifiques au champ
+    let fieldAccessible = true;
+    if (fieldConfig.grant) {
+      fieldAccessible = false;
+      for (const role of userRoles) {
+        if (fieldConfig.grant[role] && fieldConfig.grant[role].includes('read')) {
+          fieldAccessible = true;
+          break;
+        }
+      }
+    }
+
+    if (fieldAccessible) {
+      // Déterminer si le champ est calculé (non physique)
+      const isComputed = (
+        // Champ calculé via fonction JavaScript
+        (fieldConfig.calculate && typeof fieldConfig.calculate === 'function') ||
+        // Champ calculé via MySQL (propriété 'as')
+        fieldConfig.as
+      );
+
+      filteredSchema.fields[fieldName] = {
+        type: fieldConfig.type,
+        ...(isComputed && { computed: true }),
+        ...(fieldConfig.relation && { relation: fieldConfig.relation }),
+        ...(fieldConfig.foreignKey && { foreignKey: fieldConfig.foreignKey }),
+        ...(fieldConfig.arrayName && { arrayName: fieldConfig.arrayName }),
+        ...(fieldConfig.relationshipStrength && { relationshipStrength: fieldConfig.relationshipStrength }),
+        ...(fieldConfig.defaultSort && { defaultSort: fieldConfig.defaultSort })
+      };
+    }
+  }
+
+  // Ajouter les relations N:1 et 1:N
+  const { relationsN1, relations1N } = getTableRelations(user, tableName);
+  filteredSchema.relations.n1 = relationsN1;
+  filteredSchema.relations["1n"] = relations1N;
+
+  return filteredSchema;
+}
+
+/**
+ * GET /_api/:table/:id
+ * Récupère un enregistrement spécifique avec vérification des permissions
+ * Query params:
+ * - relation: liste de relations à inclure (ex: rel1,rel2,rel3) ou "all" pour toutes
+ *   Par défaut : inclut toutes les relations n:1 et les relations 1:n "Strong"
+ * - schema: si "1", retourne également le schéma filtré de la table
+ * - compact: si "1", réduit les relations n:1 à leur version compacte (displayFields uniquement)
+ */
+router.get('/:table/:id', async (req, res) => {
+  try {
+    const { table: tableParam, id } = req.params;
+    const user = req.user;
+    const { relation, schema: includeSchema, compact } = req.query;
+
+    // Si l'utilisateur n'est pas connecté, utiliser un user par défaut avec rôle public
+    const effectiveUser = user || { roles: 'public' };
+
+    // Normaliser le nom de la table (case-insensitive)
+    const table = getTableName(tableParam);
+
+    // Vérifier si la table existe dans le schéma
+    if (!table) {
+      return res.status(404).json({
+        error: 'Table non trouvée'
+      });
+    }
+
+    // Vérifier si l'utilisateur a accès à la table
+    if (!hasPermission(effectiveUser, table, 'read')) {
+      return res.status(403).json({
+        error: 'Accès refusé à cette table'
+      });
+    }
+
+    // Récupérer l'enregistrement
+    const [rows] = await pool.query(
+      `SELECT * FROM ${table} WHERE id = ?`,
+      [id]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({
+        error: 'Enregistrement non trouvé',
+        table: table,
+        id: id
+      });
+    }
+
+    const row = rows[0];
+
+    // Vérifier si l'utilisateur peut accéder à cette row
+    if (!canAccessRow(effectiveUser, row, table)) {
+      return res.status(403).json({
+        error: 'Accès refusé à cet enregistrement'
+      });
+    }
+
+    // Filtrer les champs selon les permissions
+    let filteredRow = filterRowFields(effectiveUser, table, row);
+
+    // Charger les relations
+    const { relationsN1, relations1N } = getTableRelations(effectiveUser, table);
+
+    // Déterminer quelles relations charger
+    let requestedRelations = [];
+    if (relation === 'all') {
+      // Toutes les relations
+      requestedRelations = [...Object.keys(relationsN1), ...Object.keys(relations1N)];
+    } else if (relation) {
+      // Relations spécifiées dans le query param
+      requestedRelations = relation.split(',').map(r => r.trim());
+    } else {
+      // Par défaut : toutes les relations n:1 et les relations 1:n "Strong"
+      requestedRelations = [
+        ...Object.keys(relationsN1),
+        ...Object.keys(relations1N).filter(relName => relations1N[relName].relationshipStrength === 'Strong')
+      ];
+    }
+
+    // Charger les relations pour cette row (avec chargement automatique des relations N:1 dans les 1:N)
+    const useCompact = compact === '1';
+    const relations = await loadRelationsForRow(effectiveUser, table, row, requestedRelations, true, useCompact);
+
+    // Ajouter les relations au résultat (utilise _relations pour éviter conflit avec champ DB)
+    if (Object.keys(relations).length > 0) {
+      filteredRow._relations = relations;
+    }
+
+    const response = {
+      success: true,
+      table: table,
+      id: id,
+      data: filteredRow
+    };
+
+    // Ajouter le schéma si demandé
+    if (includeSchema === '1') {
+      response.schema = buildFilteredSchema(effectiveUser, table);
+    }
+
+    res.json(response);
+
+  } catch (error) {
+    console.error('Erreur lors de la récupération de l\'enregistrement:', error);
+    res.status(500).json({
+      error: 'Erreur serveur lors de la récupération de l\'enregistrement',
       details: error.message
     });
   }

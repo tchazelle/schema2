@@ -63,8 +63,8 @@ module.exports = {
   menu: {
     table: "Pages",
     tableContent: "Section",
-    style: "hamburger", 
-    position: "top left",
+    style: "hamburger",
+    position: "top right",
     animate: "slidein",
     content:["pages","tables"] // selon granted
 
