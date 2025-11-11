@@ -478,6 +478,13 @@ router.get('/', async (req, res) => {
       </div>
 
       <div class="section">
+        <h2>🎨 Templates</h2>
+        <ul>
+          <li><a href="/_debug/template">Debug Templates Mustache (data/template/render)</a></li>
+        </ul>
+      </div>
+
+      <div class="section">
         <h2>🧩 Field Selector UI</h2>
         <ul>
           ${tables.map(table => `
@@ -1716,6 +1723,479 @@ router.get('/api/section', async (req, res) => {
     res.status(500).send(generateDebugHTML('Erreur', {
       error: 'Erreur serveur lors de la génération de la page debug API sections'
     }));
+  }
+});
+
+/**
+ * GET /_debug/template
+ * Page de debug des templates Mustache : data / template / render
+ */
+router.get('/template', async (req, res) => {
+  try {
+    const user = req.user || { roles: 'public' };
+
+    // Récupérer toutes les pages accessibles
+    const [pages] = await pool.query('SELECT id, slug, name FROM Page ORDER BY position ASC');
+
+    const html = `
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Debug Templates - Mustache</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, monospace;
+      background: #1e1e1e;
+      color: #d4d4d4;
+      padding: 20px;
+    }
+    .container { max-width: 1800px; margin: 0 auto; }
+    h1 { color: #4ec9b0; margin-bottom: 10px; font-size: 24px; }
+    .subtitle { color: #9cdcfe; margin-bottom: 20px; font-size: 14px; }
+    .nav {
+      margin-bottom: 20px;
+      padding: 15px;
+      background: #252526;
+      border-radius: 4px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .nav a {
+      padding: 8px 16px;
+      background: #0e639c;
+      color: white;
+      text-decoration: none;
+      border-radius: 4px;
+      font-size: 14px;
+      transition: background 0.2s;
+    }
+    .nav a:hover { background: #1177bb; }
+    .controls {
+      background: #252526;
+      padding: 20px;
+      border-radius: 4px;
+      margin-bottom: 20px;
+    }
+    .controls h2 {
+      color: #4ec9b0;
+      font-size: 16px;
+      margin-bottom: 15px;
+    }
+    .control-group {
+      display: flex;
+      gap: 15px;
+      align-items: center;
+      margin-bottom: 15px;
+      flex-wrap: wrap;
+    }
+    .control-group label {
+      color: #9cdcfe;
+      font-size: 14px;
+      min-width: 80px;
+    }
+    .control-group select {
+      padding: 8px 12px;
+      background: #3c3c3c;
+      color: #d4d4d4;
+      border: 1px solid #555;
+      border-radius: 4px;
+      font-size: 14px;
+      min-width: 200px;
+    }
+    .control-group button {
+      padding: 8px 20px;
+      background: #0e639c;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .control-group button:hover {
+      background: #1177bb;
+    }
+    .results {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 20px;
+    }
+    .result-panel {
+      background: #252526;
+      border-radius: 4px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .result-header {
+      background: #2d2d30;
+      padding: 15px 20px;
+      border-bottom: 1px solid #3e3e42;
+    }
+    .result-header h3 {
+      color: #4ec9b0;
+      font-size: 16px;
+    }
+    .result-content {
+      padding: 20px;
+      overflow-x: auto;
+      overflow-y: auto;
+      max-height: 80vh;
+      flex: 1;
+    }
+    .result-content.render {
+      background: white;
+      color: #333;
+    }
+    pre {
+      margin: 0;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 13px;
+      line-height: 1.6;
+      color: #d4d4d4;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+    .json-key { color: #9cdcfe; }
+    .json-string { color: #ce9178; }
+    .json-number { color: #b5cea8; }
+    .json-boolean { color: #569cd6; }
+    .json-null { color: #569cd6; }
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #858585;
+    }
+    .error {
+      color: #f48771;
+      padding: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎨 Debug Templates Mustache</h1>
+    <div class="subtitle">Visualisation : Data / Template / Render</div>
+
+    <div class="nav">
+      <a href="/">← Accueil</a>
+      <a href="/_debug/">Debug Index</a>
+      <a href="/_debug/api">Debug API</a>
+    </div>
+
+    <div class="controls">
+      <h2>Sélection de la page</h2>
+
+      <div class="control-group">
+        <label for="page-select">Page:</label>
+        <select id="page-select">
+          <option value="">-- Sélectionner une page --</option>
+          ${pages.map(page => `<option value="${page.slug || page.id}">${page.name || page.slug || 'Page ' + page.id}</option>`).join('')}
+        </select>
+      </div>
+
+      <div class="control-group">
+        <label></label>
+        <button onclick="loadPageTemplate()">🔄 Charger la page</button>
+        <button onclick="generateAutoTemplate()">✨ Générer template automatique</button>
+      </div>
+    </div>
+
+    <div class="results" id="results-container">
+      <div class="result-panel">
+        <div class="result-header">
+          <h3>📊 Data (via dataForMustache)</h3>
+        </div>
+        <div class="result-content" id="data-content">
+          <div class="loading">Aucune donnée chargée</div>
+        </div>
+      </div>
+
+      <div class="result-panel">
+        <div class="result-header">
+          <h3>📝 Template Mustache</h3>
+        </div>
+        <div class="result-content" id="template-content">
+          <div class="loading">Aucun template chargé</div>
+        </div>
+      </div>
+
+      <div class="result-panel">
+        <div class="result-header">
+          <h3>🎨 Render HTML</h3>
+        </div>
+        <div class="result-content render" id="render-content">
+          <div class="loading">Aucun rendu disponible</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/mustache@4.2.0/mustache.min.js"></script>
+  <script>
+    function syntaxHighlight(json) {
+      if (typeof json !== 'string') {
+        json = JSON.stringify(json, null, 2);
+      }
+      json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      return json.replace(/("(\\\\u[a-zA-Z0-9]{4}|\\\\[^u]|[^\\\\"])*"(\\s*:)?|\\b(true|false|null)\\b|-?\\d+(?:\\.\\d*)?(?:[eE][+\\-]?\\d+)?)/g, function (match) {
+        var cls = 'json-number';
+        if (/^"/.test(match)) {
+          if (/:$/.test(match)) {
+            cls = 'json-key';
+          } else {
+            cls = 'json-string';
+          }
+        } else if (/true|false/.test(match)) {
+          cls = 'json-boolean';
+        } else if (/null/.test(match)) {
+          cls = 'json-null';
+        }
+        return '<span class="' + cls + '">' + match + '</span>';
+      });
+    }
+
+    // Reproduction de la logique du proxy dataForMustache côté client
+    function applyDataForMustacheProxy(data) {
+      if (Array.isArray(data)) {
+        return data.map(item => applyDataForMustacheProxy(item));
+      }
+
+      if (!data || typeof data !== 'object') {
+        return data;
+      }
+
+      const result = {};
+
+      // Copier toutes les propriétés sauf "_relations"
+      for (const key in data) {
+        if (key === '_relations') continue;
+
+        if (data[key] && typeof data[key] === 'object') {
+          result[key] = applyDataForMustacheProxy(data[key]);
+        } else {
+          result[key] = data[key];
+        }
+      }
+
+      // Ajouter les relations comme propriétés directes
+      if (data._relations) {
+        for (const relKey in data._relations) {
+          if (Array.isArray(data._relations[relKey])) {
+            result[relKey] = data._relations[relKey].map(item => applyDataForMustacheProxy(item));
+          } else if (data._relations[relKey] && typeof data._relations[relKey] === 'object') {
+            result[relKey] = applyDataForMustacheProxy(data._relations[relKey]);
+          } else {
+            result[relKey] = data._relations[relKey];
+          }
+        }
+      }
+
+      return result;
+    }
+
+    async function loadPageTemplate() {
+      const page = document.getElementById('page-select').value;
+
+      if (!page) {
+        alert('Veuillez sélectionner une page');
+        return;
+      }
+
+      const dataContent = document.getElementById('data-content');
+      const templateContent = document.getElementById('template-content');
+      const renderContent = document.getElementById('render-content');
+
+      dataContent.innerHTML = '<div class="loading">⏳ Chargement...</div>';
+      templateContent.innerHTML = '<div class="loading">⏳ Chargement...</div>';
+      renderContent.innerHTML = '<div class="loading">⏳ Chargement...</div>';
+
+      try {
+        // Charger les données de la page
+        const response = await fetch('/_api/_page/' + page);
+        const apiData = await response.json();
+
+        // Appliquer le proxy dataForMustache
+        const mustacheData = applyDataForMustacheProxy(apiData.page);
+
+        // Afficher les données
+        dataContent.innerHTML = '<pre>' + syntaxHighlight(mustacheData) + '</pre>';
+
+        // Utiliser le template de la page ou un template par défaut
+        let template = apiData.page.mustache || '<div>Pas de template défini pour cette page</div>';
+
+        // Afficher le template
+        templateContent.innerHTML = '<pre>' + template.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</pre>';
+
+        // Render le template avec Mustache
+        try {
+          const rendered = Mustache.render(template, mustacheData);
+          renderContent.innerHTML = rendered;
+        } catch (err) {
+          renderContent.innerHTML = '<div class="error">❌ Erreur de rendu: ' + err.message + '</div>';
+        }
+
+      } catch (error) {
+        dataContent.innerHTML = '<div class="error">❌ Erreur: ' + error.message + '</div>';
+        templateContent.innerHTML = '<div class="error">❌ Erreur: ' + error.message + '</div>';
+        renderContent.innerHTML = '<div class="error">❌ Erreur: ' + error.message + '</div>';
+      }
+    }
+
+    async function generateAutoTemplate() {
+      const page = document.getElementById('page-select').value;
+
+      if (!page) {
+        alert('Veuillez sélectionner une page');
+        return;
+      }
+
+      const dataContent = document.getElementById('data-content');
+      const templateContent = document.getElementById('template-content');
+      const renderContent = document.getElementById('render-content');
+
+      dataContent.innerHTML = '<div class="loading">⏳ Chargement...</div>';
+      templateContent.innerHTML = '<div class="loading">⏳ Génération du template...</div>';
+      renderContent.innerHTML = '<div class="loading">⏳ Chargement...</div>';
+
+      try {
+        // Charger les données de la page
+        const response = await fetch('/_api/_page/' + page);
+        const apiData = await response.json();
+
+        // Appliquer le proxy dataForMustache
+        const mustacheData = applyDataForMustacheProxy(apiData.page);
+
+        // Afficher les données
+        dataContent.innerHTML = '<pre>' + syntaxHighlight(mustacheData) + '</pre>';
+
+        // Générer automatiquement le template
+        const templateResponse = await fetch('/_debug/template/generate/' + page);
+        const templateData = await templateResponse.json();
+
+        const template = templateData.template;
+
+        // Afficher le template
+        templateContent.innerHTML = '<pre>' + template.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</pre>';
+
+        // Render le template avec Mustache
+        try {
+          const rendered = Mustache.render(template, mustacheData);
+          renderContent.innerHTML = rendered;
+        } catch (err) {
+          renderContent.innerHTML = '<div class="error">❌ Erreur de rendu: ' + err.message + '</div>';
+        }
+
+      } catch (error) {
+        dataContent.innerHTML = '<div class="error">❌ Erreur: ' + error.message + '</div>';
+        templateContent.innerHTML = '<div class="error">❌ Erreur: ' + error.message + '</div>';
+        renderContent.innerHTML = '<div class="error">❌ Erreur: ' + error.message + '</div>';
+      }
+    }
+  </script>
+</body>
+</html>
+    `;
+
+    res.send(html);
+
+  } catch (error) {
+    console.error('Erreur lors de la génération de la page debug templates:', error);
+    res.status(500).send(generateDebugHTML('Erreur', {
+      error: 'Erreur serveur lors de la génération de la page debug templates'
+    }));
+  }
+});
+
+/**
+ * GET /_debug/template/generate/:page
+ * Génère automatiquement un template Mustache pour une page
+ */
+router.get('/template/generate/:page', async (req, res) => {
+  try {
+    const { page } = req.params;
+    const user = req.user;
+    const effectiveUser = user || { roles: 'public' };
+
+    // Charger les données de la page via l'API interne (sans fetch)
+    // Récupérer la page par slug ou id
+    let pageQuery = 'SELECT * FROM Page WHERE ';
+    let pageParam;
+
+    if (isNaN(page)) {
+      // C'est un slug
+      pageQuery += 'slug = ?';
+      pageParam = page;
+    } else {
+      // C'est un id
+      pageQuery += 'id = ?';
+      pageParam = parseInt(page);
+    }
+
+    const [pages] = await pool.query(pageQuery, [pageParam]);
+
+    if (pages.length === 0) {
+      return res.status(404).json({
+        error: 'Page non trouvée'
+      });
+    }
+
+    const pageData = pages[0];
+
+    // Récupérer toutes les sections de la page
+    const [sections] = await pool.query(
+      'SELECT * FROM Section WHERE idPage = ? ORDER BY position ASC',
+      [pageData.id]
+    );
+
+    // Construire l'objet apiData similaire à ce que retourne /_api/_page/:page
+    const sectionsObject = {};
+
+    for (const sectionData of sections) {
+      const sectionSlug = sectionData.slug || `section_${sectionData.id}`;
+      sectionsObject[sectionSlug] = {
+        id: sectionData.id,
+        name: sectionData.title,
+        description: sectionData.description,
+        sqlTable: sectionData.sqlTable,
+        mustache: sectionData.mustache,
+        data: [] // Simplified for template generation
+      };
+    }
+
+    const apiData = {
+      success: true,
+      page: {
+        id: pageData.id,
+        slug: pageData.slug,
+        name: pageData.name,
+        description: pageData.description,
+        mustache: pageData.mustache,
+        css: pageData.css,
+        section: sectionsObject
+      }
+    };
+
+    // Générer le template automatique
+    const { generateCompleteTemplate } = require('../utils/mustacheGenerator');
+    const template = generateCompleteTemplate(apiData);
+
+    res.json({
+      success: true,
+      page: page,
+      template: template
+    });
+
+  } catch (error) {
+    console.error('Erreur lors de la génération du template:', error);
+    res.status(500).json({
+      error: 'Erreur serveur lors de la génération du template',
+      details: error.message
+    });
   }
 });
 
