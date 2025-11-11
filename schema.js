@@ -97,21 +97,27 @@ module.exports = {
       // ... defaultConfigPage
       fields: {
         id: { type: "integer", isPrimary: true, autoIncrement: true },
-        idPage: { 
-          type: "integer", 
-          relation: "Page", 
-          foreignKey: "id", 
-          arrayName: "sections", 
-          relationshipStrength: "Strong", 
-          defaultSort: { field: "sectionOrder", order: "ASC" } 
+        idPage: {
+          type: "integer",
+          relation: "Page",
+          foreignKey: "id",
+          arrayName: "sections",
+          relationshipStrength: "Strong",
+          defaultSort: { field: "sectionOrder", order: "ASC" }
         },
         title: { type: "varchar" }, // Titre de la section
         description: { type: "text" }, // Description de la section
-        tableName: { type: "varchar" }, // Nom de la table à afficher
-        whereClause: { type: "text" }, // Clause WHERE optionnelle (ex: "granted = 'published @public'")
-        orderBy: { type: "varchar" }, // Clause ORDER BY optionnelle (ex: "datePublished DESC")
-        limit: { type: "integer" }, // Nombre maximum d'enregistrements à afficher
-        relations: { type: "text" }, // Liste JSON des relations à inclure (ex: ["byArtist", "recordLabel"])
+        slug: { type: "varchar" }, // Version compactée du name pour l'URL
+        sqlTable: { type: "varchar" }, // Nom de la table à afficher (ancien: tableName)
+        sqlWhere: { type: "text" }, // Clause WHERE optionnelle - mustachable (ancien: whereClause)
+        sqlOrderBy: { type: "varchar" }, // Clause ORDER BY optionnelle - mustachable (ancien: orderBy)
+        sqlLimit: { type: "integer" }, // Nombre maximum d'enregistrements - mustachable (ancien: limit)
+        sqlQueryRaw: { type: "text" }, // Query brut qui bypass le système des tables - mustachable
+        apiRelations: { type: "text" }, // Liste des relations à inclure (ex: "byArtist,recordLabel") (ancien: relations)
+        apiCompact: { type: "integer", default: 0 }, // Format réduit pour les liens n:1 (0 ou 1)
+        apiSchema: { type: "integer", default: 0 }, // Inclure le schéma dans la réponse (0 ou 1)
+        reqQuery: { type: "text" }, // JSON des req.query par défaut pour mustacher le query
+        apiData: { type: "text" }, // JSON optionnel utilisé en substitution du résultat si sqlTable/sqlQuery vides
         presentationType: { type: "enum", values: ["cards", "list", "table", "grid"], default: "cards" }, // Type de présentation
         mustache: { type: "text" }, // Template Mustache optionnel pour le rendu personnalisé
         sectionOrder: { type: "integer", default: 0 }, // Ordre d'affichage dans la page

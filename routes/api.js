@@ -662,4 +662,432 @@ router.get('/:table/:id', async (req, res) => {
   }
 });
 
+/**
+ * Applique les templates mustache simples sur une chaîne
+ * Remplace {{key}} par la valeur correspondante dans data
+ * @param {string} template - Template à rendre
+ * @param {Object} data - Données pour remplacer les variables
+ * @returns {string} - Template rendu
+ */
+function renderMustacheSimple(template, data) {
+  if (!template || typeof template !== 'string') {
+    return template;
+  }
+
+  let result = template;
+  for (const key in data) {
+    const regex = new RegExp(`\\{\\{${key}\\}\\}`, 'g');
+    result = result.replace(regex, data[key]);
+  }
+  return result;
+}
+
+/**
+ * Parse un JSON de manière sécurisée pour MariaDB/MySQL
+ * @param {string} jsonString - String JSON à parser
+ * @returns {Object|null} - Objet parsé ou null si erreur
+ */
+function safeJsonParse(jsonString) {
+  if (!jsonString) return null;
+
+  try {
+    // Si c'est déjà un objet, le retourner
+    if (typeof jsonString === 'object') {
+      return jsonString;
+    }
+
+    // Parser le JSON
+    return JSON.parse(jsonString);
+  } catch (error) {
+    console.error('Erreur lors du parsing JSON:', error);
+    return null;
+  }
+}
+
+/**
+ * GET /_api/_section/:section
+ * Récupère les données d'une section spécifique
+ * Query params supportés depuis req.query pour le mustache templating
+ */
+router.get('/_section/:section', async (req, res) => {
+  try {
+    const { section } = req.params;
+    const user = req.user;
+    const effectiveUser = user || { roles: 'public' };
+
+    // Récupérer la section par slug ou id
+    let sectionQuery = 'SELECT * FROM Section WHERE ';
+    let sectionParam;
+
+    if (isNaN(section)) {
+      // C'est un slug
+      sectionQuery += 'slug = ?';
+      sectionParam = section;
+    } else {
+      // C'est un id
+      sectionQuery += 'id = ?';
+      sectionParam = parseInt(section);
+    }
+
+    const [sections] = await pool.query(sectionQuery, [sectionParam]);
+
+    if (sections.length === 0) {
+      return res.status(404).json({
+        error: 'Section non trouvée'
+      });
+    }
+
+    const sectionData = sections[0];
+
+    // Vérifier les permissions d'accès à la section
+    if (!canAccessRow(effectiveUser, sectionData, 'Section')) {
+      return res.status(403).json({
+        error: 'Accès refusé à cette section'
+      });
+    }
+
+    // Parser reqQuery pour obtenir les valeurs par défaut
+    const defaultQuery = safeJsonParse(sectionData.reqQuery) || {};
+
+    // Fusionner avec req.query (req.query a priorité)
+    const queryData = { ...defaultQuery, ...req.query };
+
+    // Si apiData est fourni et pas de sqlTable/sqlQueryRaw, utiliser apiData directement
+    if (sectionData.apiData && !sectionData.sqlTable && !sectionData.sqlQueryRaw) {
+      const apiData = safeJsonParse(sectionData.apiData);
+
+      return res.json({
+        success: true,
+        section: {
+          id: sectionData.id,
+          slug: sectionData.slug,
+          title: sectionData.title,
+          description: sectionData.description
+        },
+        data: apiData,
+        source: 'apiData'
+      });
+    }
+
+    // Construire la requête SQL
+    let sqlQuery;
+    let queryParams = [];
+    let tableName = sectionData.sqlTable;
+
+    if (sectionData.sqlQueryRaw) {
+      // Utiliser le query brut avec mustache templating
+      sqlQuery = renderMustacheSimple(sectionData.sqlQueryRaw, queryData);
+    } else if (sectionData.sqlTable) {
+      // Construire le query à partir de sqlTable
+      if (!schema.tables[tableName]) {
+        return res.status(400).json({
+          error: `Table "${tableName}" non trouvée dans le schéma`
+        });
+      }
+
+      // Vérifier les permissions sur la table
+      if (!hasPermission(effectiveUser, tableName, 'read')) {
+        return res.status(403).json({
+          error: `Accès refusé à la table "${tableName}"`
+        });
+      }
+
+      // Construire la clause WHERE avec granted
+      const { where, params } = buildWhereClause(effectiveUser, null);
+      queryParams = params;
+
+      sqlQuery = `SELECT * FROM ${tableName} WHERE ${where}`;
+
+      // Ajouter sqlWhere si présent
+      if (sectionData.sqlWhere) {
+        const renderedWhere = renderMustacheSimple(sectionData.sqlWhere, queryData);
+        sqlQuery += ` AND (${renderedWhere})`;
+      }
+
+      // Ajouter sqlOrderBy si présent
+      if (sectionData.sqlOrderBy) {
+        const renderedOrderBy = renderMustacheSimple(sectionData.sqlOrderBy, queryData);
+        sqlQuery += ` ORDER BY ${renderedOrderBy}`;
+      }
+
+      // Ajouter sqlLimit si présent
+      if (sectionData.sqlLimit) {
+        const renderedLimit = renderMustacheSimple(String(sectionData.sqlLimit), queryData);
+        sqlQuery += ` LIMIT ${renderedLimit}`;
+      }
+    } else {
+      return res.status(400).json({
+        error: 'Section sans sqlTable, sqlQueryRaw ou apiData'
+      });
+    }
+
+    // Exécuter la requête
+    const [rows] = await pool.query(sqlQuery, queryParams);
+
+    // Filtrer les rows selon granted et les champs selon les permissions
+    const accessibleRows = rows.filter(row => canAccessRow(effectiveUser, row, tableName));
+
+    // Déterminer les relations à charger
+    let requestedRelations = [];
+    if (sectionData.apiRelations) {
+      // Utiliser les relations spécifiées dans apiRelations
+      requestedRelations = sectionData.apiRelations.split(',').map(r => r.trim());
+    } else {
+      // Par défaut : toutes les relations n:1 et les relations 1:n "Strong"
+      const { relationsN1, relations1N } = getTableRelations(effectiveUser, tableName);
+      requestedRelations = [
+        ...Object.keys(relationsN1),
+        ...Object.keys(relations1N).filter(relName => relations1N[relName].relationshipStrength === 'Strong')
+      ];
+    }
+
+    // Utiliser les valeurs de apiCompact et apiSchema de la section
+    const useCompact = sectionData.apiCompact === 1;
+    const includeSchema = sectionData.apiSchema === 1;
+
+    // Charger les relations pour chaque row
+    const filteredRows = [];
+    for (const row of accessibleRows) {
+      const filteredRow = filterRowFields(effectiveUser, tableName, row);
+
+      if (requestedRelations.length > 0) {
+        const relations = await loadRelationsForRow(effectiveUser, tableName, row, requestedRelations, true, useCompact);
+
+        if (Object.keys(relations).length > 0) {
+          filteredRow._relations = relations;
+        }
+      }
+
+      filteredRows.push(filteredRow);
+    }
+
+    const response = {
+      success: true,
+      section: {
+        id: sectionData.id,
+        slug: sectionData.slug,
+        title: sectionData.title,
+        description: sectionData.description
+      },
+      data: filteredRows,
+      pagination: {
+        count: filteredRows.length
+      },
+      source: sectionData.sqlQueryRaw ? 'sqlQueryRaw' : 'sqlTable'
+    };
+
+    // Ajouter le schéma si demandé
+    if (includeSchema && tableName) {
+      response.schema = buildFilteredSchema(effectiveUser, tableName);
+    }
+
+    res.json(response);
+
+  } catch (error) {
+    console.error('Erreur lors de la récupération de la section:', error);
+    res.status(500).json({
+      error: 'Erreur serveur lors de la récupération de la section',
+      details: error.message
+    });
+  }
+});
+
+/**
+ * GET /_api/_page/:page
+ * Récupère les données d'une page avec toutes ses sections
+ * Query params supportés depuis req.query pour le mustache templating des sections
+ */
+router.get('/_page/:page', async (req, res) => {
+  try {
+    const { page } = req.params;
+    const user = req.user;
+    const effectiveUser = user || { roles: 'public' };
+
+    // Récupérer la page par slug ou id
+    let pageQuery = 'SELECT * FROM Page WHERE ';
+    let pageParam;
+
+    if (isNaN(page)) {
+      // C'est un slug
+      pageQuery += 'slug = ?';
+      pageParam = page;
+    } else {
+      // C'est un id
+      pageQuery += 'id = ?';
+      pageParam = parseInt(page);
+    }
+
+    const [pages] = await pool.query(pageQuery, [pageParam]);
+
+    if (pages.length === 0) {
+      return res.status(404).json({
+        error: 'Page non trouvée'
+      });
+    }
+
+    const pageData = pages[0];
+
+    // Vérifier les permissions d'accès à la page
+    if (!canAccessRow(effectiveUser, pageData, 'Page')) {
+      return res.status(403).json({
+        error: 'Accès refusé à cette page'
+      });
+    }
+
+    // Récupérer toutes les sections de la page
+    const [sections] = await pool.query(
+      'SELECT * FROM Section WHERE idPage = ? ORDER BY sectionOrder ASC',
+      [pageData.id]
+    );
+
+    // Filtrer les sections accessibles
+    const accessibleSections = sections.filter(section => canAccessRow(effectiveUser, section, 'Section'));
+
+    // Charger les données pour chaque section
+    const sectionsData = {};
+
+    for (const sectionData of accessibleSections) {
+      const sectionSlug = sectionData.slug || `section_${sectionData.id}`;
+
+      // Parser reqQuery pour obtenir les valeurs par défaut
+      const defaultQuery = safeJsonParse(sectionData.reqQuery) || {};
+
+      // Fusionner avec req.query (req.query a priorité)
+      const queryData = { ...defaultQuery, ...req.query };
+
+      // Si apiData est fourni et pas de sqlTable/sqlQueryRaw, utiliser apiData directement
+      if (sectionData.apiData && !sectionData.sqlTable && !sectionData.sqlQueryRaw) {
+        const apiData = safeJsonParse(sectionData.apiData);
+        sectionsData[sectionSlug] = apiData;
+        continue;
+      }
+
+      // Construire la requête SQL
+      let sqlQuery;
+      let queryParams = [];
+      let tableName = sectionData.sqlTable;
+
+      if (sectionData.sqlQueryRaw) {
+        // Utiliser le query brut avec mustache templating
+        sqlQuery = renderMustacheSimple(sectionData.sqlQueryRaw, queryData);
+      } else if (sectionData.sqlTable) {
+        // Construire le query à partir de sqlTable
+        if (!schema.tables[tableName]) {
+          console.error(`Table "${tableName}" non trouvée dans le schéma pour section ${sectionData.id}`);
+          continue;
+        }
+
+        // Vérifier les permissions sur la table
+        if (!hasPermission(effectiveUser, tableName, 'read')) {
+          console.error(`Accès refusé à la table "${tableName}" pour section ${sectionData.id}`);
+          continue;
+        }
+
+        // Construire la clause WHERE avec granted
+        const { where, params } = buildWhereClause(effectiveUser, null);
+        queryParams = params;
+
+        sqlQuery = `SELECT * FROM ${tableName} WHERE ${where}`;
+
+        // Ajouter sqlWhere si présent
+        if (sectionData.sqlWhere) {
+          const renderedWhere = renderMustacheSimple(sectionData.sqlWhere, queryData);
+          sqlQuery += ` AND (${renderedWhere})`;
+        }
+
+        // Ajouter sqlOrderBy si présent
+        if (sectionData.sqlOrderBy) {
+          const renderedOrderBy = renderMustacheSimple(sectionData.sqlOrderBy, queryData);
+          sqlQuery += ` ORDER BY ${renderedOrderBy}`;
+        }
+
+        // Ajouter sqlLimit si présent
+        if (sectionData.sqlLimit) {
+          const renderedLimit = renderMustacheSimple(String(sectionData.sqlLimit), queryData);
+          sqlQuery += ` LIMIT ${renderedLimit}`;
+        }
+      } else {
+        console.error(`Section ${sectionData.id} sans sqlTable, sqlQueryRaw ou apiData`);
+        continue;
+      }
+
+      try {
+        // Exécuter la requête
+        const [rows] = await pool.query(sqlQuery, queryParams);
+
+        // Filtrer les rows selon granted et les champs selon les permissions
+        const accessibleRows = rows.filter(row => canAccessRow(effectiveUser, row, tableName));
+
+        // Déterminer les relations à charger
+        let requestedRelations = [];
+        if (sectionData.apiRelations) {
+          // Utiliser les relations spécifiées dans apiRelations
+          requestedRelations = sectionData.apiRelations.split(',').map(r => r.trim());
+        } else {
+          // Par défaut : toutes les relations n:1 et les relations 1:n "Strong"
+          const { relationsN1, relations1N } = getTableRelations(effectiveUser, tableName);
+          requestedRelations = [
+            ...Object.keys(relationsN1),
+            ...Object.keys(relations1N).filter(relName => relations1N[relName].relationshipStrength === 'Strong')
+          ];
+        }
+
+        // Utiliser les valeurs de apiCompact et apiSchema de la section
+        const useCompact = sectionData.apiCompact === 1;
+
+        // Charger les relations pour chaque row
+        const filteredRows = [];
+        for (const row of accessibleRows) {
+          const filteredRow = filterRowFields(effectiveUser, tableName, row);
+
+          if (requestedRelations.length > 0) {
+            const relations = await loadRelationsForRow(effectiveUser, tableName, row, requestedRelations, true, useCompact);
+
+            if (Object.keys(relations).length > 0) {
+              filteredRow._relations = relations;
+            }
+          }
+
+          filteredRows.push(filteredRow);
+        }
+
+        sectionsData[sectionSlug] = filteredRows;
+
+      } catch (error) {
+        console.error(`Erreur lors du chargement de la section ${sectionData.id}:`, error);
+        sectionsData[sectionSlug] = [];
+      }
+    }
+
+    const response = {
+      success: true,
+      page: {
+        id: pageData.id,
+        slug: pageData.slug,
+        name: pageData.name,
+        description: pageData.description,
+        mustache: pageData.mustache,
+        css: pageData.css
+      },
+      sections: accessibleSections.map(s => ({
+        id: s.id,
+        slug: s.slug || `section_${s.id}`,
+        title: s.title,
+        description: s.description,
+        presentationType: s.presentationType
+      })),
+      data: sectionsData
+    };
+
+    res.json(response);
+
+  } catch (error) {
+    console.error('Erreur lors de la récupération de la page:', error);
+    res.status(500).json({
+      error: 'Erreur serveur lors de la récupération de la page',
+      details: error.message
+    });
+  }
+});
+
 module.exports = router;
