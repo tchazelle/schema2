@@ -26,14 +26,14 @@ function getTableStructure(user, tableName) {
   const userRoles = getUserAllRoles(user);
   const structure = {
     tableName: tableName,
-    displayField: tableConfig.displayField || schema.defaultConfigPage.displayField,
-    searchFields: tableConfig.searchFields || schema.defaultConfigPage.searchFields,
-    pageSize: tableConfig.pageSize || schema.defaultConfigPage.pageSize,
-    dateFormat: tableConfig.dateFormat || schema.defaultConfigPage.dateFormat,
-    cardWidth: tableConfig.cardWidth || schema.defaultConfigPage.cardWidth,
+    displayField: tableConfig.displayField || schema.defaultConfigTable.displayField,
+    searchFields: tableConfig.searchFields || schema.defaultConfigTable.searchFields,
+    pageSize: tableConfig.pageSize || schema.defaultConfigTable.pageSize,
+    dateFormat: tableConfig.dateFormat || schema.defaultConfigTable.dateFormat,
+    cardWidth: tableConfig.cardWidth || schema.defaultConfigTable.cardWidth,
     hasAttachmentsTab: tableConfig.hasAttachmentsTab !== undefined
       ? tableConfig.hasAttachmentsTab
-      : schema.defaultConfigPage.hasAttachmentsTab,
+      : schema.defaultConfigTable.hasAttachmentsTab,
     fields: {},
     relations: {},
     permissions: {

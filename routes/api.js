@@ -936,7 +936,7 @@ router.get('/_page/:page', async (req, res) => {
 
     // Récupérer toutes les sections de la page
     const [sections] = await pool.query(
-      'SELECT * FROM Section WHERE idPage = ? ORDER BY sectionOrder ASC',
+      'SELECT * FROM Section WHERE idPage = ? ORDER BY position ASC',
       [pageData.id]
     );
 

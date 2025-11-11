@@ -89,7 +89,7 @@ function hasPermission(user, tableName, action) {
   }
 
   // Récupérer les permissions de la table (ou utiliser defaultConfigPage)
-  const tableGrants = tableConfig.granted || schema.defaultConfigPage.granted;
+  const tableGrants = tableConfig.granted || schema.defaultConfigTable.granted;
 
   // Récupérer tous les rôles de l'utilisateur (avec héritage)
   const userRoles = getUserAllRoles(user);
@@ -116,7 +116,7 @@ function getAllPermissions(user) {
   // Pour chaque table
   for (const tableName in schema.tables) {
     const tableConfig = schema.tables[tableName];
-    const tableGrants = tableConfig.granted || schema.defaultConfigPage.granted;
+    const tableGrants = tableConfig.granted || schema.defaultConfigTable.granted;
 
     permissions[tableName] = {
       read: false,

@@ -37,7 +37,7 @@ module.exports = {
   // => grâce à published, une row peut donc devenir lisible par un user même si le granted de sa table l'interdit à priori
 
 
-  defaultConfigPage : {
+  defaultConfigTable : {
     displayField: "name", // identifiant utilisateur, peut être un array (par exemple pour symboliser un lien n:1)
     searchFields: null, // par défaut tous les champs varchar ou text de la structure
     pageSize: 100, // nombre maximum de fiches par page (bouton +lignes pour ajouter dynamiquement)
@@ -81,7 +81,7 @@ module.exports = {
   // Tables de l'application
   tables: {
     Page: {
-      // ... defaultConfigPage
+      // ... defaultConfigTable
       fields: {
         id: { type: "integer", isPrimary: true, autoIncrement: true },
         slug: { type: "varchar" }, // URL slug pour la page (ex: "albums", "concerts")
@@ -94,7 +94,7 @@ module.exports = {
       }
     },
     Section: {
-      // ... defaultConfigPage
+      // ... defaultConfigTable
       fields: {
         id: { type: "integer", isPrimary: true, autoIncrement: true },
         idPage: {
@@ -103,9 +103,9 @@ module.exports = {
           foreignKey: "id",
           arrayName: "sections",
           relationshipStrength: "Strong",
-          defaultSort: { field: "sectionOrder", order: "ASC" }
+          defaultSort: { field: "position", order: "ASC" }
         },
-        title: { type: "varchar" }, // Titre de la section
+        name: { type: "varchar" }, // Nom de la section
         description: { type: "text" }, // Description de la section
         slug: { type: "varchar" }, // Version compactée du name pour l'URL
         sqlTable: { type: "varchar" }, // Nom de la table à afficher (ancien: tableName)
@@ -120,12 +120,12 @@ module.exports = {
         apiData: { type: "text" }, // JSON optionnel utilisé en substitution du résultat si sqlTable/sqlQuery vides
         presentationType: { type: "enum", values: ["cards", "list", "table", "grid"], default: "cards" }, // Type de présentation
         mustache: { type: "text" }, // Template Mustache optionnel pour le rendu personnalisé
-        sectionOrder: { type: "integer", default: 0 }, // Ordre d'affichage dans la page
+        position: { type: "integer", default: 0 }, // Ordre d'affichage dans la page
         // ... commonFields
       }
     },
     Person: {
-      // ... defaultConfigPage
+      // ... defaultConfigTable
       displayField:["givenName","familyName"],
       granted: {
         "admin": ["read", "create", "update", "delete", "publish"]
@@ -145,7 +145,7 @@ module.exports = {
       }
     },
     Organization: {
-      // ... defaultConfigPage
+      // ... defaultConfigTable
       granted: {
         "admin": ["read", "create", "update", "delete", "publish"]
       },
@@ -169,7 +169,7 @@ module.exports = {
       }
     },
     OrganizationPerson: {
-      // ... defaultConfigPage
+      // ... defaultConfigTable
       granted: {
         "admin": ["read", "create", "update", "delete", "publish"]
       },
@@ -183,7 +183,7 @@ module.exports = {
       }
     },
     CommunicateAction: {
-      // ... defaultConfigPage
+      // ... defaultConfigTable
       granted: {
         "admin": ["read", "create", "update", "delete", "publish"]
       },
@@ -199,7 +199,7 @@ module.exports = {
       }
     },
     Project: {
-      // ... defaultConfigPage
+      // ... defaultConfigTable
       granted: {
         "admin": ["read", "create", "update", "delete", "publish"]
       },
@@ -211,7 +211,7 @@ module.exports = {
       }
     },
     Contrat: {
-      // ... defaultConfigPage
+      // ... defaultConfigTable
       granted: {
         "admin": ["read", "create", "update", "delete", "publish"]
       },
@@ -226,7 +226,7 @@ module.exports = {
       }
     },
     Notes: {
-      // ... defaultConfigPage
+      // ... defaultConfigTable
       granted: {
         "promo": ["read", "create", "update", "delete"],
         "road": ["read", "create", "update", "delete"],
@@ -265,7 +265,7 @@ module.exports = {
       }
     },
     MusicRecording: {
-      // ... defaultConfigPage
+      // ... defaultConfigTable
       granted: {
         "public" : ["read"],
         "admin": ["read", "create", "update", "delete", "publish"]
@@ -280,7 +280,7 @@ module.exports = {
       }
     },
     MusicAlbumTrack: {
-      // ... defaultConfigPage
+      // ... defaultConfigTable
       granted: {
         "public" : ["read"],
         "admin": ["read", "create", "update", "delete", "publish"]
@@ -313,7 +313,7 @@ module.exports = {
       }
     },
     Attachment: {
-      // ... defaultConfigPage
+      // ... defaultConfigTable
       granted: {"inherit":"rowLink"}, // cas particulier , autorisation = celle de rowLink
       hasAttachmentsTab: false, // Table de liaison - pas besoin d'attachments
       hasAttachmentsTab: false, // Les attachments eux-mêmes n'ont pas besoin d'attachments
