@@ -1036,9 +1036,9 @@ router.get('/api', async (req, res) => {
 
       const result = {};
 
-      // Copier toutes les propriétés sauf "relations"
+      // Copier toutes les propriétés sauf "_relations"
       for (const key in data) {
-        if (key === 'relations') continue;
+        if (key === '_relations') continue;
 
         if (data[key] && typeof data[key] === 'object') {
           result[key] = applyDataForMustacheProxy(data[key]);
@@ -1048,16 +1048,16 @@ router.get('/api', async (req, res) => {
       }
 
       // Ajouter les relations comme propriétés directes
-      if (data.relations) {
-        for (const relKey in data.relations) {
-          if (Array.isArray(data.relations[relKey])) {
+      if (data._relations) {
+        for (const relKey in data._relations) {
+          if (Array.isArray(data._relations[relKey])) {
             // Relation 1:n - proxifier chaque élément
-            result[relKey] = data.relations[relKey].map(item => applyDataForMustacheProxy(item));
-          } else if (data.relations[relKey] && typeof data.relations[relKey] === 'object') {
+            result[relKey] = data._relations[relKey].map(item => applyDataForMustacheProxy(item));
+          } else if (data._relations[relKey] && typeof data._relations[relKey] === 'object') {
             // Relation n:1 - proxifier l'objet
-            result[relKey] = applyDataForMustacheProxy(data.relations[relKey]);
+            result[relKey] = applyDataForMustacheProxy(data._relations[relKey]);
           } else {
-            result[relKey] = data.relations[relKey];
+            result[relKey] = data._relations[relKey];
           }
         }
       }

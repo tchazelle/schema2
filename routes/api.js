@@ -225,9 +225,9 @@ router.get('/:table', async (req, res) => {
         const useCompact = compact === '1';
         const relations = await loadRelationsForRow(effectiveUser, table, row, requestedRelations, true, useCompact);
 
-        // Ajouter les relations au résultat
+        // Ajouter les relations au résultat (utilise _relations pour éviter conflit avec champ DB)
         if (Object.keys(relations).length > 0) {
-          filteredRow.relations = relations;
+          filteredRow._relations = relations;
         }
       }
 
@@ -467,9 +467,9 @@ async function loadRelationsForRow(user, tableName, row, requestedRelations, loa
               }
             }
 
-            // Ajouter les sous-relations si elles existent
+            // Ajouter les sous-relations si elles existent (utilise _relations pour éviter conflit avec champ DB)
             if (Object.keys(subRelations).length > 0) {
-              filteredRelRow.relations = subRelations;
+              filteredRelRow._relations = subRelations;
             }
           }
 
@@ -634,9 +634,9 @@ router.get('/:table/:id', async (req, res) => {
     const useCompact = compact === '1';
     const relations = await loadRelationsForRow(effectiveUser, table, row, requestedRelations, true, useCompact);
 
-    // Ajouter les relations au résultat
+    // Ajouter les relations au résultat (utilise _relations pour éviter conflit avec champ DB)
     if (Object.keys(relations).length > 0) {
-      filteredRow.relations = relations;
+      filteredRow._relations = relations;
     }
 
     const response = {
