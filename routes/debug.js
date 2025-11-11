@@ -867,6 +867,20 @@ router.get('/api', async (req, res) => {
       </div>
 
       <div class="control-group">
+        <label>Options:</label>
+        <div style="display: flex; gap: 15px; align-items: center;">
+          <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; min-width: auto;">
+            <input type="checkbox" id="schema-checkbox" style="cursor: pointer; min-width: auto;">
+            <span>schema</span>
+          </label>
+          <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; min-width: auto;">
+            <input type="checkbox" id="compact-checkbox" style="cursor: pointer; min-width: auto;">
+            <span>compact</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="control-group">
         <label></label>
         <button onclick="loadApiData()">🔄 Charger les données</button>
       </div>
@@ -956,6 +970,8 @@ router.get('/api', async (req, res) => {
       const table = document.getElementById('table-select').value;
       const id = document.getElementById('id-input').value.trim();
       const relation = document.getElementById('relation-input').value.trim();
+      const includeSchema = document.getElementById('schema-checkbox').checked;
+      const useCompact = document.getElementById('compact-checkbox').checked;
 
       if (!table) {
         alert('Veuillez sélectionner une table');
@@ -974,8 +990,21 @@ router.get('/api', async (req, res) => {
         if (id) {
           url += '/' + id;
         }
+
+        // Construire les query params
+        const params = [];
         if (relation) {
-          url += '?relation=' + encodeURIComponent(relation);
+          params.push('relation=' + encodeURIComponent(relation));
+        }
+        if (includeSchema) {
+          params.push('schema=1');
+        }
+        if (useCompact) {
+          params.push('compact=1');
+        }
+
+        if (params.length > 0) {
+          url += '?' + params.join('&');
         }
 
         // Charger les données brutes
