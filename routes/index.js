@@ -383,7 +383,7 @@ function generateHomeHTML(user, pages, accessibleTables, allRoles, isAuthenticat
       <h3>Pages</h3>
       <ul>
         ${pages.length > 0 ? pages.map(page => `
-          <li><a href="/page/${page.slug}">${page.name}</a></li>
+          <li><a href="/${page.slug}">${page.name}</a></li>
         `).join('') : '<li style="color: #999; padding: 8px 12px;">Aucune page disponible</li>'}
       </ul>
     </div>
@@ -392,7 +392,7 @@ function generateHomeHTML(user, pages, accessibleTables, allRoles, isAuthenticat
       <h3>Tables</h3>
       <ul>
         ${accessibleTables.length > 0 ? accessibleTables.map(table => `
-          <li><a href="/table/${table}">${table}</a></li>
+          <li><a href="/_crud/${table}">${table}</a></li>
         `).join('') : '<li style="color: #999; padding: 8px 12px;">Aucune table accessible</li>'}
       </ul>
     </div>
