@@ -106,7 +106,7 @@ router.get('/:page', async (req, res) => {
 
     // Récupérer les sections de la page
     const [sections] = await pool.query(
-      'SELECT * FROM Section WHERE idPage = ? ORDER BY sectionOrder ASC',
+      'SELECT * FROM Section WHERE idPage = ? ORDER BY position ASC',
       [pageData.id]
     );
 
@@ -131,7 +131,7 @@ router.get('/:page', async (req, res) => {
 
             accessibleSections.push({
               id: section.id,
-              title: section.title,
+              name: section.name,
               description: section.description,
               tableName: section.tableName,
               whereClause: section.whereClause,
@@ -140,7 +140,7 @@ router.get('/:page', async (req, res) => {
               relations: relations,
               presentationType: section.presentationType,
               mustache: section.mustache,
-              sectionOrder: section.sectionOrder,
+              position: section.position,
               granted: section.granted,
               createdAt: section.createdAt,
               updatedAt: section.updatedAt
@@ -150,22 +150,22 @@ router.get('/:page', async (req, res) => {
             // On peut soit ignorer la section, soit indiquer qu'elle n'est pas accessible
             accessibleSections.push({
               id: section.id,
-              title: section.title,
+              name: section.name,
               description: section.description,
               tableName: section.tableName,
               accessible: false,
               reason: 'Accès refusé à la table',
-              sectionOrder: section.sectionOrder
+              position: section.position
             });
           }
         } else {
           // Section sans table (contenu statique par exemple)
           accessibleSections.push({
             id: section.id,
-            title: section.title,
+            name: section.name,
             description: section.description,
             mustache: section.mustache,
-            sectionOrder: section.sectionOrder,
+            position: section.position,
             granted: section.granted,
             createdAt: section.createdAt,
             updatedAt: section.updatedAt

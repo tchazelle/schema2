@@ -1349,7 +1349,7 @@ router.get('/api/section', async (req, res) => {
     const user = req.user || { roles: 'public' };
 
     // Récupérer toutes les sections accessibles
-    const [sections] = await pool.query('SELECT id, slug, title FROM Section ORDER BY idPage, sectionOrder ASC');
+    const [sections] = await pool.query('SELECT id, slug, name FROM Section ORDER BY idPage, position ASC');
 
     const html = `
 <!DOCTYPE html>
@@ -1529,7 +1529,7 @@ router.get('/api/section', async (req, res) => {
         <label for="section-select">Section:</label>
         <select id="section-select">
           <option value="">-- Sélectionner une section --</option>
-          ${sections.map(section => `<option value="${section.slug || section.id}">${section.title || section.slug || 'Section ' + section.id}</option>`).join('')}
+          ${sections.map(section => `<option value="${section.slug || section.id}">${section.name || section.slug || 'Section ' + section.id}</option>`).join('')}
         </select>
       </div>
 

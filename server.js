@@ -7,6 +7,7 @@ require('dotenv').config();
 const { authMiddleware } = require('./utils/auth');
 const pool = require('./config/database');
 const schema = require('./schema.js');
+const { syncDatabase } = require('./utils/dbSync');
 
 // Import des routes
 const indexRouter = require('./routes/index');
@@ -160,12 +161,15 @@ app.use((err, req, res, next) => {
 });
 
 // Démarrage du serveur
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log('═══════════════════════════════════════════════════════');
   console.log(`✓ ${schema.appName} - Version ${schema.version}`);
   console.log(`✓ Serveur démarré sur http://localhost:${PORT}`);
   console.log(`✓ Environnement: ${process.env.NODE_ENV || 'development'}`);
   console.log('═══════════════════════════════════════════════════════');
+
+  // Vérifier et synchroniser la structure de la base de données
+  await syncDatabase();
 });
 
 // Gestion de l'arrêt propre du serveur
