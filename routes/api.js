@@ -390,6 +390,13 @@ async function loadRelationsForRow(user, tableName, row, requestedRelations, loa
 
             for (const subFieldName in subRelationsN1) {
               const subRelConfig = subRelationsN1[subFieldName];
+
+              // CORRECTION: Exclure la relation qui pointe vers la table parent (éviter le doublon)
+              // Ex: dans OrganizationPerson, ne pas charger Organization car c'est déjà la fiche master
+              if (subRelConfig.relatedTable === tableName) {
+                continue; // Skip cette relation
+              }
+
               const subForeignValue = relRow[subFieldName];
 
               if (subForeignValue) {
@@ -469,8 +476,17 @@ function buildFilteredSchema(user, tableName) {
     }
 
     if (fieldAccessible) {
+      // Déterminer si le champ est calculé (non physique)
+      const isComputed = (
+        // Champ calculé via fonction JavaScript
+        (fieldConfig.calculate && typeof fieldConfig.calculate === 'function') ||
+        // Champ calculé via MySQL (propriété 'as')
+        fieldConfig.as
+      );
+
       filteredSchema.fields[fieldName] = {
         type: fieldConfig.type,
+        ...(isComputed && { computed: true }),
         ...(fieldConfig.relation && { relation: fieldConfig.relation }),
         ...(fieldConfig.foreignKey && { foreignKey: fieldConfig.foreignKey }),
         ...(fieldConfig.arrayName && { arrayName: fieldConfig.arrayName }),
