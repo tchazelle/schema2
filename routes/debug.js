@@ -182,7 +182,7 @@ router.get('/user/grant', async (req, res) => {
 
     <div class="nav">
       <a href="/">← Accueil</a>
-      <a href="/debug/user">Fiche utilisateur</a>
+      <a href="/_debug/user">Fiche utilisateur</a>
     </div>
 
     <div class="section">
@@ -324,8 +324,8 @@ function generateDebugHTML(title, data) {
     <h1>${title}</h1>
     <div class="nav">
       <a href="/">← Accueil</a>
-      <a href="/debug/user">Fiche utilisateur</a>
-      <a href="/debug/user/grant">Autorisations</a>
+      <a href="/_debug/user">Fiche utilisateur</a>
+      <a href="/_debug/user/grant">Autorisations</a>
     </div>
   `;
 

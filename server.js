@@ -12,6 +12,9 @@ const schema = require('./schema.js');
 const indexRouter = require('./routes/index');
 const authRouter = require('./routes/auth');
 const debugRouter = require('./routes/debug');
+const crudRouter = require('./routes/crud');
+const apiRouter = require('./routes/api');
+const pagesRouter = require('./routes/pages');
 
 // Création de l'application Express
 const app = express();
@@ -30,8 +33,12 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // Routes
 app.use('/', indexRouter);
-app.use('/auth', authRouter);
-app.use('/debug', debugRouter);
+app.use('/_user', authRouter);
+app.use('/_debug', debugRouter);
+app.use('/_crud', crudRouter);
+app.use('/_api', apiRouter);
+// Route /:page doit être en dernier car c'est un catch-all
+app.use('/', pagesRouter);
 
 // Gestion des erreurs 404
 app.use((req, res) => {
