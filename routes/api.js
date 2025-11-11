@@ -792,11 +792,19 @@ router.get('/_page/:page', async (req, res) => {
     // Filtrer les sections accessibles
     const accessibleSections = sections.filter(section => canAccessRow(effectiveUser, section, 'Section'));
 
-    // Charger les données pour chaque section
-    const sectionsData = {};
+    // Charger les données pour chaque section et les structurer comme objet indexé par slug
+    const sectionsObject = {};
 
     for (const sectionData of accessibleSections) {
       const sectionSlug = sectionData.slug || `section_${sectionData.id}`;
+
+      // Initialiser l'objet de section avec ses métadonnées
+      sectionsObject[sectionSlug] = {
+        id: sectionData.id,
+        name: sectionData.title,
+        description: sectionData.description,
+        data: null
+      };
 
       // Parser reqQuery pour obtenir les valeurs par défaut
       const defaultQuery = safeJsonParse(sectionData.reqQuery) || {};
@@ -807,7 +815,7 @@ router.get('/_page/:page', async (req, res) => {
       // Si apiData est fourni et pas de sqlTable/sqlQueryRaw, utiliser apiData directement
       if (sectionData.apiData && !sectionData.sqlTable && !sectionData.sqlQueryRaw) {
         const apiData = safeJsonParse(sectionData.apiData);
-        sectionsData[sectionSlug] = apiData;
+        sectionsObject[sectionSlug].data = apiData;
         continue;
       }
 
@@ -900,11 +908,11 @@ router.get('/_page/:page', async (req, res) => {
           filteredRows.push(filteredRow);
         }
 
-        sectionsData[sectionSlug] = filteredRows;
+        sectionsObject[sectionSlug].data = filteredRows;
 
       } catch (error) {
         console.error(`Erreur lors du chargement de la section ${sectionData.id}:`, error);
-        sectionsData[sectionSlug] = [];
+        sectionsObject[sectionSlug].data = [];
       }
     }
 
@@ -916,16 +924,9 @@ router.get('/_page/:page', async (req, res) => {
         name: pageData.name,
         description: pageData.description,
         mustache: pageData.mustache,
-        css: pageData.css
-      },
-      sections: accessibleSections.map(s => ({
-        id: s.id,
-        slug: s.slug || `section_${s.id}`,
-        title: s.title,
-        description: s.description,
-        presentationType: s.presentationType
-      })),
-      data: sectionsData
+        css: pageData.css,
+        section: sectionsObject
+      }
     };
 
     res.json(response);

@@ -127,12 +127,34 @@ function generateHomeHTML(user, pages, accessibleTables, allRoles, isAuthenticat
       padding: 20px;
       background: #f8f9fa;
       border-bottom: 1px solid #e0e0e0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .sidebar-header-content {
+      flex: 1;
     }
 
     .sidebar-header h2 {
       font-size: 18px;
       color: #333;
       margin-bottom: 5px;
+    }
+
+    .sidebar-close {
+      background: none;
+      border: none;
+      font-size: 24px;
+      color: #666;
+      cursor: pointer;
+      padding: 5px 10px;
+      line-height: 1;
+      transition: color 0.2s;
+    }
+
+    .sidebar-close:hover {
+      color: #000;
     }
 
     .sidebar-section {
@@ -374,8 +396,11 @@ function generateHomeHTML(user, pages, accessibleTables, allRoles, isAuthenticat
   <!-- Sidebar -->
   <nav class="sidebar" id="sidebar">
     <div class="sidebar-header">
-      <h2>${schema.appName}</h2>
-      <p style="color: #666; font-size: 12px;">Version ${schema.version}</p>
+      <div class="sidebar-header-content">
+        <h2>${schema.appName}</h2>
+        <p style="color: #666; font-size: 12px;">Version ${schema.version}</p>
+      </div>
+      <button class="sidebar-close" onclick="closeMenu()" aria-label="Fermer le menu">×</button>
     </div>
 
     <div class="sidebar-section">
