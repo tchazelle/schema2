@@ -53,29 +53,9 @@ JWT_SECRET=dev-secret-key-change-in-production
 UPLOADS_DIR=./uploads
 ```
 
-3. S'assurer que la base de données MySQL existe et contient la table `Person` :
-```sql
-CREATE TABLE IF NOT EXISTS Person (
-  id INT PRIMARY KEY AUTO_INCREMENT,
-  givenName VARCHAR(255),
-  familyName VARCHAR(255),
-  email VARCHAR(255) UNIQUE,
-  telephone VARCHAR(50),
-  password VARCHAR(255),
-  roles VARCHAR(255),
-  isActive INT DEFAULT 1,
-  ownerId INT,
-  granted VARCHAR(50) DEFAULT 'draft',
-  createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-  updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
-```
+3. Vérifier que la base de données MySQL `schema2` est accessible avec la table `Person` existante.
 
-4. Créer un utilisateur de test :
-```sql
-INSERT INTO Person (givenName, familyName, email, password, roles, isActive)
-VALUES ('Admin', 'User', 'admin@example.com', 'admin123', '@admin @dev', 1);
-```
+**Note** : La table `Person` est déjà créée et renseignée. Les mots de passe sont stockés **en clair** pendant la phase de développement (pas de hash). Le système se connecte directement avec email/password sans bcrypt.
 
 ## Démarrage
 
@@ -140,13 +120,18 @@ granted: {
 
 ## Sécurité
 
-⚠️ **Important** : Ce code est conçu pour le développement. En production :
+⚠️ **Important - Phase de développement** :
+- Les mots de passe sont actuellement stockés et comparés **en clair** (pas de hash)
+- C'est volontaire pour faciliter le développement et les tests
+- Le code vérifie directement : `if (user.password !== password)`
 
-1. Utilisez bcrypt pour hasher les mots de passe (déjà installé dans `package.json`)
-2. Changez le `JWT_SECRET` dans `.env` par une clé sécurisée
-3. Activez HTTPS (les cookies sont en `secure: false` en développement)
-4. Ajoutez des validations et sanitisation des entrées
-5. Ajoutez un rate limiting pour les tentatives de connexion
+**Pour la production** :
+1. Implémenter bcrypt pour hasher les mots de passe (déjà installé dans `package.json`)
+2. Changer le `JWT_SECRET` dans `.env` par une clé sécurisée et unique
+3. Activer HTTPS (les cookies sont en `secure: false` en développement)
+4. Ajouter des validations et sanitisation des entrées
+5. Ajouter un rate limiting pour les tentatives de connexion
+6. Activer `secure: true` pour les cookies en HTTPS
 
 ## Technologies utilisées
 
@@ -159,9 +144,11 @@ granted: {
 
 ## Développement futur
 
-- [ ] Hash des mots de passe avec bcrypt
+- [ ] Hash des mots de passe avec bcrypt (pour la production)
 - [ ] Gestion complète des pages dynamiques
 - [ ] CRUD complet pour les tables
-- [ ] Upload de fichiers
+- [ ] Upload de fichiers (système d'attachments)
 - [ ] API REST complète
 - [ ] Tests unitaires et d'intégration
+- [ ] Rate limiting et protection contre les attaques
+- [ ] Gestion des sessions et refresh tokens
