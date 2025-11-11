@@ -142,8 +142,8 @@ function createDataForMustacheProxy(data) {
 
 /**
  * Transforme une réponse complète de l'API
- * @param {Object} apiResponse - Réponse de l'API (avec data, pagination, etc.)
- * @returns {Object} - Réponse avec data proxifiée
+ * @param {Object} apiResponse - Réponse de l'API (avec rows, pagination, etc.)
+ * @returns {Object} - Réponse avec rows proxifiée
  */
 function transformApiResponse(apiResponse) {
   if (!apiResponse || typeof apiResponse !== 'object') {
@@ -152,9 +152,9 @@ function transformApiResponse(apiResponse) {
 
   const transformed = { ...apiResponse };
 
-  // Proxifier le champ "data" s'il existe
-  if (transformed.data) {
-    transformed.data = createDataForMustacheProxy(transformed.data);
+  // Proxifier le champ "rows" s'il existe
+  if (transformed.rows) {
+    transformed.rows = createDataForMustacheProxy(transformed.rows);
   }
 
   return transformed;

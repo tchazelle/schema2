@@ -511,7 +511,7 @@ router.get('/:table/:id', async (req, res) => {
       success: true,
       table: table,
       id: id,
-      data: filteredRow
+      rows: filteredRow
     });
 
   } catch (error) {
