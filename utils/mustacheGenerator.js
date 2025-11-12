@@ -23,6 +23,7 @@ function collectAllFieldsAndRelations(dataArray, tableName) {
 
   // Parcourir TOUTES les rows pour collecter tous les champs et relations
   for (const row of dataArray) {
+    // 1. Parcourir les propriétés directes de la row
     for (const key in row) {
       // Ignorer les champs spéciaux
       if (shouldIgnoreField(key)) {
@@ -47,6 +48,28 @@ function collectAllFieldsAndRelations(dataArray, tableName) {
       // Si c'est une valeur simple
       else {
         fields.add(key);
+      }
+    }
+
+    // 2. Parcourir _relations si présent (les relations peuvent être stockées ici par l'API)
+    if (row._relations && typeof row._relations === 'object') {
+      for (const relKey in row._relations) {
+        const relValue = row._relations[relKey];
+
+        // Si c'est un tableau (relation 1:n)
+        if (Array.isArray(relValue)) {
+          if (!relations1n.has(relKey)) {
+            const relTableName = relValue.length > 0 && relValue[0]._table ? relValue[0]._table : relKey;
+            relations1n.set(relKey, { tableName: relTableName, sampleData: relValue });
+          }
+        }
+        // Si c'est un objet (relation n:1)
+        else if (relValue && typeof relValue === 'object') {
+          if (!relationsN1.has(relKey)) {
+            const relTableName = relValue._table || relKey;
+            relationsN1.set(relKey, { tableName: relTableName, sampleData: relValue });
+          }
+        }
       }
     }
   }
