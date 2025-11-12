@@ -258,6 +258,65 @@ function generateFieldTemplate(fieldName, value, tableName = null) {
 }
 
 /**
+ * Détecte si une table est une table de liaison (junction table)
+ * @param {string} tableName - Nom de la table
+ * @param {Map} relationsN1 - Map des relations n:1 détectées dans les données
+ * @returns {boolean|Object} - false ou { parentRelation, linkedRelations, junctionFields }
+ */
+function detectJunctionTable(tableName, relationsN1) {
+  if (!tableName || !schema.tables[tableName]) {
+    return false;
+  }
+
+  const tableConfig = schema.tables[tableName];
+  const n1Relations = [];
+
+  // Collecter toutes les relations n:1 de la table
+  for (const fieldName in tableConfig.fields) {
+    const fieldConfig = tableConfig.fields[fieldName];
+    if (fieldConfig.relation && fieldName.startsWith('id') && fieldName !== 'id') {
+      n1Relations.push({
+        fieldName,
+        relationTable: fieldConfig.relation,
+        relationshipStrength: fieldConfig.relationshipStrength,
+        arrayName: fieldConfig.arrayName
+      });
+    }
+  }
+
+  // Une table de liaison a au moins 2 relations n:1
+  if (n1Relations.length < 2) {
+    return false;
+  }
+
+  // Trouver la relation "Strong" (parent) et les autres (linked objects)
+  const strongRelation = n1Relations.find(r => r.relationshipStrength === 'Strong');
+  const linkedRelations = n1Relations.filter(r => r.relationshipStrength !== 'Strong');
+
+  if (linkedRelations.length === 0) {
+    return false;
+  }
+
+  // Collecter les champs propres à la jonction (ni foreign keys, ni champs système)
+  const junctionFields = [];
+  for (const fieldName in tableConfig.fields) {
+    if (!shouldIgnoreField(fieldName) &&
+        !fieldName.startsWith('id') &&
+        fieldName !== 'css' &&
+        fieldName !== 'template' &&
+        fieldName !== 'mustache') {
+      junctionFields.push(fieldName);
+    }
+  }
+
+  return {
+    parentRelation: strongRelation,
+    linkedRelations,
+    junctionFields
+  };
+}
+
+/**
  * Génère un template pour une relation
  * @param {string} relationName - Nom de la relation
  * @param {*} relationData - Données de la relation
@@ -274,6 +333,15 @@ function generateRelationTemplate(relationName, relationData, relationType) {
     // Collecter tous les champs et relations de toutes les rows de cette relation
     const { fields, relations1n, relationsN1 } = collectAllFieldsAndRelations(relationData, tableClass);
 
+    // Vérifier si c'est une table de liaison
+    const junctionInfo = detectJunctionTable(tableClass, relationsN1);
+
+    if (junctionInfo) {
+      // C'est une table de liaison - générer un template spécial
+      return generateJunctionTableTemplate(relationName, junctionInfo, tableClass);
+    }
+
+    // Sinon, générer un template standard
     return `\n      {{#${relationName}}}
         <div class="sub-card relation oneToMany ${relationName}">
           ${generateRowTemplateFromCollection(fields, relations1n, relationsN1, tableClass)}
@@ -291,6 +359,67 @@ function generateRelationTemplate(relationName, relationData, relationType) {
         </div>
       {{/${relationName}}}`;
   }
+}
+
+/**
+ * Génère un template pour une table de liaison (junction table)
+ * @param {string} relationName - Nom de la relation
+ * @param {Object} junctionInfo - Informations sur la table de liaison
+ * @param {string} tableName - Nom de la table de liaison
+ * @returns {string} - Template Mustache
+ */
+function generateJunctionTableTemplate(relationName, junctionInfo, tableName) {
+  const { linkedRelations, junctionFields } = junctionInfo;
+
+  let template = `\n      {{#${relationName}}}`;
+
+  // Pour chaque relation liée (généralement 1, mais peut être plusieurs)
+  for (const linkedRel of linkedRelations) {
+    template += `
+        {{#${linkedRel.fieldName}}}
+          <div class="sub-card row" data-id="{{id}}">`;
+
+    // Ajouter les champs propres à la jonction (comme position)
+    for (const fieldName of junctionFields) {
+      const renderer = getFieldRenderer(fieldName, tableName);
+      if (renderer) {
+        template += `\n            {{#${fieldName}}}${renderer}{{/${fieldName}}}`;
+      } else {
+        template += `\n            {{#${fieldName}}}<span class="field-label ${fieldName}">{{${fieldName}}}</span>{{/${fieldName}}}`;
+      }
+    }
+
+    // Ajouter les champs de l'objet lié
+    const linkedTableConfig = schema.tables[linkedRel.relationTable];
+    if (linkedTableConfig) {
+      // Ajouter les champs principaux de l'objet lié
+      for (const fieldName in linkedTableConfig.fields) {
+        const fieldConfig = linkedTableConfig.fields[fieldName];
+
+        // Ignorer les champs spéciaux et les relations
+        if (shouldIgnoreField(fieldName) || fieldConfig.relation || fieldName === 'css' || fieldName === 'template' || fieldName === 'mustache') {
+          continue;
+        }
+
+        // Utiliser le renderer si défini
+        const renderer = getFieldRenderer(fieldName, linkedRel.relationTable);
+        if (renderer) {
+          template += `\n            {{#${fieldName}}}${renderer}{{/${fieldName}}}`;
+        } else {
+          template += `\n            {{#${fieldName}}}<span class="field-label ${fieldName}">{{${fieldName}}}</span>{{/${fieldName}}}`;
+        }
+      }
+    }
+
+    template += `
+          </div>
+        {{/${linkedRel.fieldName}}}`;
+  }
+
+  template += `
+      {{/${relationName}}}`;
+
+  return template;
 }
 
 /**
