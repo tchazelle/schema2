@@ -16,7 +16,6 @@ const debugRouter = require('./routes/debug');
 const crudRouter = require('./routes/crud');
 const apiRouter = require('./routes/api');
 const pagesRouter = require('./routes/pages');
-const templateGeneratorRouter = require('./routes/template-generator');
 
 // Création de l'application Express
 const app = express();
@@ -39,7 +38,6 @@ app.use('/_user', authRouter);
 app.use('/_debug', debugRouter);
 app.use('/_crud', crudRouter);
 app.use('/_api', apiRouter);
-app.use('/_api/template-generator', templateGeneratorRouter);
 // Route /:page doit être en dernier car c'est un catch-all
 app.use('/', pagesRouter);
 
