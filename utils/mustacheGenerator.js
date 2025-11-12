@@ -150,9 +150,14 @@ function generateSectionTemplate(sectionData, sectionSlug) {
   }
 
   // Sinon, générer un template automatique
-  const tableName = sectionData.sqlTable || sectionData._table;
+  let tableName = sectionData.sqlTable || sectionData._table;
 
-  let template = `<section class="section {{slug}} table ${tableName || 'unknown'}" data-id="{{id}}" data-table="Section">
+  // Si pas de tableName, essayer de le détecter depuis les données
+  if (!tableName && sectionData.rows && Array.isArray(sectionData.rows) && sectionData.rows.length > 0) {
+    tableName = sectionData.rows[0]._table || sectionSlug;
+  }
+
+  let template = `<section class="section {{slug}} table ${tableName || sectionSlug}" data-id="{{id}}" data-table="Section">
     <h2>{{name}}</h2>
     {{#description}}<p class="section-description">{{description}}</p>{{/description}}
 
@@ -172,16 +177,22 @@ function generateSectionTemplate(sectionData, sectionSlug) {
  */
 function generateDataTemplate(sectionData, tableName) {
   let innerTemplate;
+  let detectedTableName = tableName;
+
+  // Si pas de tableName, essayer de le détecter depuis les données
+  if (!detectedTableName && sectionData.rows && Array.isArray(sectionData.rows) && sectionData.rows.length > 0) {
+    detectedTableName = sectionData.rows[0]._table;
+  }
 
   // PRIORITÉ 1: Utiliser le schéma si disponible (plus fiable)
-  if (tableName && schema.tables[tableName]) {
-    innerTemplate = generateTemplateFromSchema(tableName);
+  if (detectedTableName && schema.tables[detectedTableName]) {
+    innerTemplate = generateTemplateFromSchema(detectedTableName);
   }
   // PRIORITÉ 2: Si on a des exemples de données mais pas de schéma
   else if (sectionData.rows && sectionData.rows.length > 0) {
     // Collecter tous les champs et relations de TOUTES les rows
-    const { fields, relations1n, relationsN1 } = collectAllFieldsAndRelations(sectionData.rows, tableName);
-    innerTemplate = generateRowTemplateFromCollection(fields, relations1n, relationsN1, tableName);
+    const { fields, relations1n, relationsN1 } = collectAllFieldsAndRelations(sectionData.rows, detectedTableName);
+    innerTemplate = generateRowTemplateFromCollection(fields, relations1n, relationsN1, detectedTableName);
   }
   // Template minimal par défaut
   else {
@@ -195,7 +206,7 @@ function generateDataTemplate(sectionData, tableName) {
   }
 
   // Envelopper dans le conteneur cards rows
-  return `<div class="cards rows" data-table="${tableName || 'unknown'}">
+  return `<div class="cards rows" data-table="${detectedTableName || 'data'}">
     ${innerTemplate}
   </div>`;
 }
@@ -374,13 +385,43 @@ function generateRelationTemplate(relationName, relationData, relationType) {
     // Relation n:1 (objet)
     const tableClass = relationData._table || relationName;
 
-    return `\n      {{#${relationName}}}
-        <div class="sub-card relation manyToOne ${relationName}">
-          <div class="card row" data-id="{{id}}">
-            {{#name}}<span class="field-label name">{{name}}</span>{{/name}}
-          </div>
+    // Générer le template avec tous les champs de la table cible
+    let template = `\n      {{#${relationName}}}
+        <div class="sub-card relation manyToOne ${relationName}">`;
+
+    // Si on a un schéma pour cette table, utiliser ses champs
+    if (tableClass && schema.tables[tableClass]) {
+      const tableConfig = schema.tables[tableClass];
+
+      for (const fieldName in tableConfig.fields) {
+        const fieldConfig = tableConfig.fields[fieldName];
+
+        // Ignorer les champs spéciaux et les relations
+        if (shouldIgnoreField(fieldName) || fieldConfig.relation || fieldName === 'css' || fieldName === 'template' || fieldName === 'mustache') {
+          continue;
+        }
+
+        // Utiliser le renderer si défini
+        const renderer = getFieldRenderer(fieldName, tableClass);
+        if (renderer) {
+          template += `\n          {{#${fieldName}}}${renderer}{{/${fieldName}}}`;
+        } else {
+          template += `\n          {{#${fieldName}}}<div class="field-label ${fieldName}">{{${fieldName}}}</div>{{/${fieldName}}}`;
+        }
+      }
+    } else {
+      // Fallback : afficher les champs de base
+      template += `
+          {{#id}}<div class="field-label id">{{id}}</div>{{/id}}
+          {{#name}}<div class="field-label name">{{name}}</div>{{/name}}
+          {{#description}}<div class="field-label description">{{description}}</div>{{/description}}`;
+    }
+
+    template += `
         </div>
       {{/${relationName}}}`;
+
+    return template;
   }
 }
 
