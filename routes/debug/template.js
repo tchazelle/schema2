@@ -487,9 +487,9 @@ router.get('/template/generate/:page', async (req, res) => {
 
     const apiData = await apiResponse.json();
 
-    // Générer le template automatique avec les vraies données
-    const { generateCompleteTemplate } = require('../../utils/mustacheGenerator');
-    const template = generateCompleteTemplate(apiData);
+    // Note: Génération automatique de templates de pages désactivée
+    // Utiliser mustacheAuto pour générer des templates de tables individuelles
+    const template = '<div>Génération automatique de templates de pages non supportée. Utilisez mustacheAuto pour les tables.</div>';
 
     res.json({
       success: true,
@@ -818,9 +818,8 @@ router.get('/table-template/data/:table', async (req, res) => {
     // Récupérer les premières lignes de la table (limité à 10 pour le debug)
     const [rows] = await pool.query(`SELECT * FROM ${table} LIMIT 10`);
 
-    // Générer le template simple
-    const generateSimpleTemplate = require('../../utils/simple-template-generator');
-    const template = generateSimpleTemplate(table);
+    // Générer le template avec mustacheAuto
+    const template = mustacheAuto(table);
 
     res.json({
       success: true,
