@@ -62,11 +62,15 @@ function collectAllFieldsAndRelations(dataArray, tableName) {
           relations1n.set(key, { tableName: relTableName, sampleData: value });
         }
       }
-      // Si c'est un objet (relation n:1)
+      // Si c'est un objet avec _table (relation n:1)
       else if (value && typeof value === 'object' && value._table) {
+        // C'est une relation n:1 détectée dans les données
         if (!relationsN1.has(key)) {
           relationsN1.set(key, { tableName: value._table, sampleData: value });
         }
+        // NE PAS AJOUTER aux fields - c'est une relation !
+        // (ajout du continue pour éviter qu'elle soit ajoutée comme field simple)
+        continue;
       }
       // Si c'est une valeur simple (et pas une relation selon le schéma)
       else {
