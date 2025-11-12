@@ -173,15 +173,15 @@ function generateSectionTemplate(sectionData, sectionSlug) {
 function generateDataTemplate(sectionData, tableName) {
   let innerTemplate;
 
-  // Si on a des exemples de données, analyser leur structure
-  if (sectionData.rows && sectionData.rows.length > 0) {
+  // PRIORITÉ 1: Utiliser le schéma si disponible (plus fiable)
+  if (tableName && schema.tables[tableName]) {
+    innerTemplate = generateTemplateFromSchema(tableName);
+  }
+  // PRIORITÉ 2: Si on a des exemples de données mais pas de schéma
+  else if (sectionData.rows && sectionData.rows.length > 0) {
     // Collecter tous les champs et relations de TOUTES les rows
     const { fields, relations1n, relationsN1 } = collectAllFieldsAndRelations(sectionData.rows, tableName);
     innerTemplate = generateRowTemplateFromCollection(fields, relations1n, relationsN1, tableName);
-  }
-  // Sinon, utiliser le schéma si disponible
-  else if (tableName && schema.tables[tableName]) {
-    innerTemplate = generateTemplateFromSchema(tableName);
   }
   // Template minimal par défaut
   else {
@@ -456,87 +456,37 @@ function generateTemplateFromSchema(tableName) {
     return '{{#.}}<div class="card row" data-id="{{id}}">{{.}}</div>{{/.}}';
   }
 
-  let template = `{{#.}}
-    <div class="card row" data-id="{{id}}">`;
+  // Utiliser le nouveau générateur basé sur le schéma
+  const TemplateGenerator = require('./template-generator.js');
+  const generator = new TemplateGenerator();
 
-  // Parcourir les champs du schéma
-  for (const fieldName in tableConfig.fields) {
-    const fieldConfig = tableConfig.fields[fieldName];
+  try {
+    // Générer le template complet avec toutes les relations
+    const fullTemplate = generator.generateTemplate(tableName, 'section');
 
-    // Ignorer les champs spéciaux
-    if (shouldIgnoreField(fieldName)) {
-      continue;
+    // Extraire juste la partie "rows" (sans le conteneur cards rows)
+    // Le template généré est : <div class="cards rows">{{#items}}...{{/items}}</div>
+    // On veut juste la partie {{#items}}...{{/items}} mais avec {{#.}}...{{/.}}
+
+    // Parser le template pour extraire le contenu des rows
+    const match = fullTemplate.match(/{{#items}}([\s\S]*?){{\/items}}/);
+    if (match && match[1]) {
+      // Remplacer {{#items}} par {{#.}} pour correspondre à l'ancien format
+      return `{{#.}}${match[1]}{{/.}}`;
     }
 
-    // Gérer le champ css
-    if (fieldName === 'css') {
-      template += `\n      {{#${fieldName}}}<style>{{{${fieldName}}}}</style>{{/${fieldName}}}`;
-      continue;
-    }
+    // Si le parsing échoue, retourner le template complet
+    return fullTemplate;
+  } catch (error) {
+    console.error('Erreur lors de la génération du template depuis le schéma:', error);
 
-    // Gérer le champ template
-    if (fieldName === 'template' || fieldName === 'mustache') {
-      continue;
-    }
-
-    // Si c'est une relation
-    if (fieldConfig.relation) {
-      const relatedTable = fieldConfig.relation;
-      const arrayName = fieldConfig.arrayName || fieldName;
-
-      // Déterminer si c'est une relation 1:n ou n:1
-      // Si le champ est une foreign key (idXXX), c'est une relation n:1
-      // Sinon, c'est une relation 1:n (utilisera arrayName)
-      const isN1 = fieldName.startsWith('id') && fieldName !== 'id';
-
-      if (isN1) {
-        template += `\n      {{#${fieldName}}}
-        <div class="sub-card relation manyToOne ${fieldName}">
-          <div class="card row" data-id="{{id}}">
-            {{#name}}<span class="field-label name">{{name}}</span>{{/name}}
-          </div>
-        </div>
-      {{/${fieldName}}}`;
-      }
-    }
-    // Sinon c'est un champ simple
-    else {
-      // Vérifier si un renderer est défini pour ce champ
-      const renderer = getFieldRenderer(fieldName, tableName);
-      if (renderer) {
-        template += `\n      {{#${fieldName}}}${renderer}{{/${fieldName}}}`;
-      } else {
-        template += `\n      {{#${fieldName}}}<div class="field-label ${fieldName}">{{${fieldName}}}</div>{{/${fieldName}}}`;
-      }
-    }
-  }
-
-  // Ajouter les relations 1:n depuis le schéma
-  // On les détecte en cherchant les arrayName dans les autres tables
-  for (const otherTableName in schema.tables) {
-    const otherTable = schema.tables[otherTableName];
-    for (const otherFieldName in otherTable.fields) {
-      const otherFieldConfig = otherTable.fields[otherFieldName];
-      if (otherFieldConfig.relation === tableName && otherFieldConfig.arrayName) {
-        const relationName = otherFieldConfig.arrayName;
-        template += `\n      {{#${relationName}}}
-        <div class="sub-card relation oneToMany ${relationName}">
-          {{#.}}
-            <div class="card row" data-id="{{id}}">
-              {{#name}}<span class="field-label name">{{name}}</span>{{/name}}
-            </div>
-          {{/.}}
-        </div>
-      {{/${relationName}}}`;
-      }
-    }
-  }
-
-  template += `
+    // Fallback : template minimal
+    return `{{#.}}
+    <div class="card row" data-id="{{id}}">
+      {{#name}}<div class="field-label name">{{name}}</div>{{/name}}
     </div>
   {{/.}}`;
-
-  return template;
+  }
 }
 
 /**
