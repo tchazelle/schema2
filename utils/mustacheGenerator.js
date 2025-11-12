@@ -183,6 +183,35 @@ function generatePageTemplate(pageData, sectionsData) {
 }
 
 /**
+ * Détecte le mode de template selon le slug de la section ou les données
+ * @param {string} sectionSlug - Slug de la section
+ * @param {Object} sectionData - Données de la section
+ * @returns {string} - Mode de template ('full', 'compact', 'minimal')
+ */
+function detectTemplateMode(sectionSlug, sectionData) {
+  // Si la section spécifie explicitement un templateMode, l'utiliser
+  if (sectionData.templateMode) {
+    return sectionData.templateMode;
+  }
+
+  // Détecter automatiquement selon le slug
+  const lowerSlug = (sectionSlug || '').toLowerCase();
+
+  // Modes minimaux : seulement les champs principaux, pas de relations
+  if (lowerSlug.match(/(genre|stat|summary|count|group)/)) {
+    return 'minimal';
+  }
+
+  // Modes compacts : champs principaux + relations n:1, pas de relations 1:n
+  if (lowerSlug.match(/(compact|list|listing)/)) {
+    return 'compact';
+  }
+
+  // Mode complet par défaut
+  return 'full';
+}
+
+/**
  * Génère un template automatique pour une section
  * @param {Object} sectionData - Données de la section
  * @param {string} sectionSlug - Slug de la section
@@ -202,12 +231,15 @@ function generateSectionTemplate(sectionData, sectionSlug) {
     tableName = sectionData.rows[0]._table || sectionSlug;
   }
 
+  // Détecter le mode de template selon le slug de la section
+  const templateMode = detectTemplateMode(sectionSlug, sectionData);
+
   let template = `<section class="section {{slug}} table ${tableName || sectionSlug}" data-id="{{id}}" data-table="Section">
     <h2>{{name}}</h2>
     {{#description}}<p class="section-description">{{description}}</p>{{/description}}
 
     {{#rows}}
-      ${generateDataTemplate(sectionData, tableName)}
+      ${generateDataTemplate(sectionData, tableName, templateMode)}
     {{/rows}}
   </section>`;
 
@@ -218,9 +250,10 @@ function generateSectionTemplate(sectionData, sectionSlug) {
  * Génère un template automatique pour les données d'une section
  * @param {Object} sectionData - Données de la section
  * @param {string} tableName - Nom de la table
+ * @param {string} templateMode - Mode de template ('full', 'compact', 'minimal')
  * @returns {string} - Template Mustache pour les données
  */
-function generateDataTemplate(sectionData, tableName) {
+function generateDataTemplate(sectionData, tableName, templateMode = 'full') {
   let innerTemplate;
   let detectedTableName = tableName;
 
@@ -231,13 +264,13 @@ function generateDataTemplate(sectionData, tableName) {
 
   // PRIORITÉ 1: Utiliser le schéma si disponible (plus fiable)
   if (detectedTableName && schema.tables[detectedTableName]) {
-    innerTemplate = generateTemplateFromSchema(detectedTableName);
+    innerTemplate = generateTemplateFromSchema(detectedTableName, templateMode);
   }
   // PRIORITÉ 2: Si on a des exemples de données mais pas de schéma
   else if (sectionData.rows && sectionData.rows.length > 0) {
     // Collecter tous les champs et relations de TOUTES les rows
     const { fields, relations1n, relationsN1 } = collectAllFieldsAndRelations(sectionData.rows, detectedTableName);
-    innerTemplate = generateRowTemplateFromCollection(fields, relations1n, relationsN1, detectedTableName);
+    innerTemplate = generateRowTemplateFromCollection(fields, relations1n, relationsN1, detectedTableName, templateMode);
   }
   // Template minimal par défaut
   else {
@@ -262,9 +295,10 @@ function generateDataTemplate(sectionData, tableName) {
  * @param {Map} relations1n - Map des relations 1:n
  * @param {Map} relationsN1 - Map des relations n:1
  * @param {string} tableName - Nom de la table
+ * @param {string} templateMode - Mode de template ('full', 'compact', 'minimal')
  * @returns {string} - Template Mustache
  */
-function generateRowTemplateFromCollection(fields, relations1n, relationsN1, tableName) {
+function generateRowTemplateFromCollection(fields, relations1n, relationsN1, tableName, templateMode = 'full') {
   let template = `{{#.}}
     <div class="card row" data-id="{{id}}">`;
 
@@ -290,14 +324,18 @@ function generateRowTemplateFromCollection(fields, relations1n, relationsN1, tab
     }
   }
 
-  // Générer les relations n:1
-  for (const [relationName, relationInfo] of relationsN1) {
-    template += generateRelationTemplate(relationName, relationInfo.sampleData, 'n:1', relationInfo.tableName);
+  // Générer les relations n:1 seulement si mode != 'minimal'
+  if (templateMode !== 'minimal') {
+    for (const [relationName, relationInfo] of relationsN1) {
+      template += generateRelationTemplate(relationName, relationInfo.sampleData, 'n:1', relationInfo.tableName);
+    }
   }
 
-  // Générer les relations 1:n
-  for (const [relationName, relationInfo] of relations1n) {
-    template += generateRelationTemplate(relationName, relationInfo.sampleData, '1:n', relationInfo.tableName);
+  // Générer les relations 1:n seulement si mode == 'full'
+  if (templateMode === 'full') {
+    for (const [relationName, relationInfo] of relations1n) {
+      template += generateRelationTemplate(relationName, relationInfo.sampleData, '1:n', relationInfo.tableName);
+    }
   }
 
   template += `
@@ -535,12 +573,18 @@ function generateJunctionTableTemplate(relationName, junctionInfo, tableName) {
 /**
  * Génère un template à partir du schéma de la table
  * @param {string} tableName - Nom de la table
+ * @param {string} templateMode - Mode de template ('full', 'compact', 'minimal')
  * @returns {string} - Template Mustache
  */
-function generateTemplateFromSchema(tableName) {
+function generateTemplateFromSchema(tableName, templateMode = 'full') {
   const tableConfig = schema.tables[tableName];
   if (!tableConfig) {
     return '{{#.}}<div class="card row" data-id="{{id}}">{{.}}</div>{{/.}}';
+  }
+
+  // Si mode minimal, générer un template simplifié sans relations
+  if (templateMode === 'minimal') {
+    return generateMinimalTemplateFromSchema(tableName);
   }
 
   // Utiliser le nouveau générateur basé sur le schéma
@@ -559,7 +603,15 @@ function generateTemplateFromSchema(tableName) {
     const match = fullTemplate.match(/{{#items}}([\s\S]*?){{\/items}}/);
     if (match && match[1]) {
       // Remplacer {{#items}} par {{#.}} pour correspondre à l'ancien format
-      return `{{#.}}${match[1]}{{/.}}`;
+      let template = `{{#.}}${match[1]}{{/.}}`;
+
+      // Si mode compact, retirer les relations 1:n
+      if (templateMode === 'compact') {
+        // Supprimer les blocs oneToMany
+        template = template.replace(/{{#\w+}}\s*<div class="sub-card relation oneToMany[\s\S]*?{{\/\w+}}/g, '');
+      }
+
+      return template;
     }
 
     // Si le parsing échoue, retourner le template complet
@@ -568,12 +620,47 @@ function generateTemplateFromSchema(tableName) {
     console.error('Erreur lors de la génération du template depuis le schéma:', error);
 
     // Fallback : template minimal
-    return `{{#.}}
-    <div class="card row" data-id="{{id}}">
-      {{#name}}<div class="field-label name">{{name}}</div>{{/name}}
+    return generateMinimalTemplateFromSchema(tableName);
+  }
+}
+
+/**
+ * Génère un template minimal à partir du schéma (sans relations)
+ * @param {string} tableName - Nom de la table
+ * @returns {string} - Template Mustache minimal
+ */
+function generateMinimalTemplateFromSchema(tableName) {
+  const tableConfig = schema.tables[tableName];
+  if (!tableConfig) {
+    return '{{#.}}<div class="card row" data-id="{{id}}">{{.}}</div>{{/.}}';
+  }
+
+  let template = `{{#.}}
+    <div class="card row" data-id="{{id}}">`;
+
+  // Générer seulement les champs principaux (pas les relations)
+  for (const fieldName in tableConfig.fields) {
+    const fieldConfig = tableConfig.fields[fieldName];
+
+    // Ignorer les champs spéciaux et les relations
+    if (shouldIgnoreField(fieldName) || fieldConfig.relation || fieldName === 'css' || fieldName === 'template' || fieldName === 'mustache') {
+      continue;
+    }
+
+    // Utiliser le renderer si défini
+    const renderer = getFieldRenderer(fieldName, tableName);
+    if (renderer) {
+      template += `\n      {{#${fieldName}}}${renderer}{{/${fieldName}}}`;
+    } else {
+      template += `\n      {{#${fieldName}}}<div class="field-label ${fieldName}">{{${fieldName}}}</div>{{/${fieldName}}}`;
+    }
+  }
+
+  template += `
     </div>
   {{/.}}`;
-  }
+
+  return template;
 }
 
 /**
