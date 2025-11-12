@@ -2,6 +2,10 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../config/database');
 const { hasPermission, getUserAllRoles } = require('../utils/permissions');
+const {
+  createDataForMustacheProxy,
+  transformApiResponse
+} = require('../utils/dataForMustache');
 const schema = require('../schema.js');
 
 /**
@@ -280,8 +284,16 @@ router.get('/:table', async (req, res) => {
     if (includeSchema === '1') {
       response.schema = buildFilteredSchema(effectiveUser, table);
     }
-
-    res.json(response);
+    if(req.query.forMustache) {
+      // CETTE REPONSE EST FAUSSE en passant par le vrai proxy createDataForMustacheProxy:
+      // - il manque la substitution des relations n:1  
+      // alors que applyDataForMustacheProxy DE DEBUG qui est un fake de proxy, donne une bonne réponse
+      // tu as créé un ARTFACT ET un PIEGE ABSOLU !
+      
+      let responseProxyfied = JSON.parse(JSON.stringify(response)) // sinon problème
+      responseProxyfied.rows = responseProxyfied.rows.map(row => createDataForMustacheProxy(row))
+      res.json(responseProxyfied);
+    } else res.json(response);
 
   } catch (error) {
     console.error('Erreur lors de la récupération des données:', error);
