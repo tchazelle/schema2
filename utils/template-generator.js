@@ -107,8 +107,8 @@ class TemplateGenerator {
       valueHTML = `<div class="field-value ${fieldName}">{{${fieldName}}}</div>`;
     }
 
-    // Entourer avec condition Mustache pour gérer les valeurs null
-    return `    {{#${fieldName}}}\n        <div class="field-label ${fieldName}" data-field="${fieldName}">${label}:</div>\n        ${valueHTML}\n    {{/${fieldName}}}\n`;
+    // Format rigoureux : {{#field}} <div data-field> <div class="label"> <div class="value">
+    return `    {{#${fieldName}}}\n    <div data-field="${fieldName}">\n      <div class="label">${label}</div>\n      <div class="value">{{${fieldName}}}</div>\n    </div>\n    {{/${fieldName}}}\n`;
   }
 
   /**
@@ -122,20 +122,22 @@ class TemplateGenerator {
     const targetTableDef = this.schema.tables[relation.targetTable];
     if (!targetTableDef || !targetTableDef.fields) return '';
 
-    // Nouveau format : <div data-field="..." data-relation="..."> AVANT {{#...}}
-    let template = `${indent}<div data-field="${relation.fieldName}" class="relation manyToOne" data-relation="${relation.targetTable}">\n`;
-    template += `${indent}{{#${relation.fieldName}}}\n`;
-    template += `${indent}  <h4>${relation.label}</h4>\n`;
+    // Format rigoureux avec wrapper + label + relation
+    let template = `${indent}<div data-field="${relation.fieldName}">\n`;
+    template += `${indent}  <div class="label">${relation.label}</div>\n`;
+    template += `${indent}  <div data-field="${relation.fieldName}" class="relation manyToOne" data-relation="${relation.targetTable}">\n`;
+    template += `${indent}  {{#${relation.fieldName}}}\n`;
 
     // Afficher les fields de la table cible (déjà avec conditions via generateFieldHTML)
     for (const [fieldName, fieldDef] of Object.entries(targetTableDef.fields)) {
       const fieldHTML = this.generateFieldHTML(fieldName, fieldDef);
       if (fieldHTML) {
-        template += fieldHTML.split('\n').map(line => `${indent}  ${line}`).join('\n') + '\n';
+        template += fieldHTML.split('\n').map(line => `${indent}    ${line}`).join('\n') + '\n';
       }
     }
 
-    template += `${indent}{{/${relation.fieldName}}}\n`;
+    template += `${indent}  {{/${relation.fieldName}}}\n`;
+    template += `${indent}  </div>\n`;
     template += `${indent}</div>\n`;
 
     return template;
