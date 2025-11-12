@@ -2118,76 +2118,32 @@ router.get('/template', async (req, res) => {
 router.get('/template/generate/:page', async (req, res) => {
   try {
     const { page } = req.params;
-    const user = req.user;
-    const effectiveUser = user || { roles: 'public' };
 
-    // Charger les données de la page via l'API interne (sans fetch)
-    // Récupérer la page par slug ou id
-    let pageQuery = 'SELECT * FROM Page WHERE ';
-    let pageParam;
+    // Faire un appel interne à l'API pour récupérer les vraies données avec relations
+    const apiUrl = `http://localhost:${process.env.PORT || 3000}/_api/_page/${page}`;
+    const apiResponse = await fetch(apiUrl, {
+      headers: {
+        'Cookie': req.headers.cookie || '' // Transmettre les cookies pour l'auth
+      }
+    });
 
-    if (isNaN(page)) {
-      // C'est un slug
-      pageQuery += 'slug = ?';
-      pageParam = page;
-    } else {
-      // C'est un id
-      pageQuery += 'id = ?';
-      pageParam = parseInt(page);
-    }
-
-    const [pages] = await pool.query(pageQuery, [pageParam]);
-
-    if (pages.length === 0) {
-      return res.status(404).json({
-        error: 'Page non trouvée'
+    if (!apiResponse.ok) {
+      return res.status(apiResponse.status).json({
+        error: 'Erreur lors de la récupération des données de la page'
       });
     }
 
-    const pageData = pages[0];
+    const apiData = await apiResponse.json();
 
-    // Récupérer toutes les sections de la page
-    const [sections] = await pool.query(
-      'SELECT * FROM Section WHERE idPage = ? ORDER BY position ASC',
-      [pageData.id]
-    );
-
-    // Construire l'objet apiData similaire à ce que retourne /_api/_page/:page
-    const sectionsObject = {};
-
-    for (const sectionData of sections) {
-      const sectionSlug = sectionData.slug || `section_${sectionData.id}`;
-      sectionsObject[sectionSlug] = {
-        id: sectionData.id,
-        name: sectionData.title,
-        description: sectionData.description,
-        sqlTable: sectionData.sqlTable,
-        mustache: sectionData.mustache,
-        data: [] // Simplified for template generation
-      };
-    }
-
-    const apiData = {
-      success: true,
-      page: {
-        id: pageData.id,
-        slug: pageData.slug,
-        name: pageData.name,
-        description: pageData.description,
-        mustache: pageData.mustache,
-        css: pageData.css,
-        section: sectionsObject
-      }
-    };
-
-    // Générer le template automatique
+    // Générer le template automatique avec les vraies données
     const { generateCompleteTemplate } = require('../utils/mustacheGenerator');
     const template = generateCompleteTemplate(apiData);
 
     res.json({
       success: true,
       page: page,
-      template: template
+      template: template,
+      data: apiData // Inclure aussi les données pour le debug
     });
 
   } catch (error) {
