@@ -1,4 +1,5 @@
 const schema = require('../schema.js');
+const MustacheTemplateGenerator = require('./MustacheTemplateGenerator.js');
 
 /**
  * Génère un template Mustache automatique pour une table donnée
@@ -14,9 +15,40 @@ const schema = require('../schema.js');
  *         - Value : div.value (simple|object n:1|array 1:n)
  *
  * @param {string} table - Nom de la table
+ * @param {Object} options - Options de configuration
+ * @param {boolean} options.useLegacy - Utiliser l'ancien générateur (par défaut: false)
+ * @param {boolean} options.useDisplayFields - Utiliser les displayFields du schéma (par défaut: true)
+ * @param {string} options.rowsVarName - Nom de la variable pour les rows (par défaut: 'rows')
+ * @param {number} options.maxDepth - Profondeur maximale pour les relations (par défaut: 2)
  * @returns {string} Template Mustache généré
  */
-function mustacheAuto(table) {
+function mustacheAuto(table, options = {}) {
+  // Par défaut, utiliser le nouveau générateur
+  if (!options.useLegacy) {
+    return mustacheAutoNew(table, options);
+  }
+
+  // Ancien générateur (conservé pour compatibilité)
+  return mustacheAutoLegacy(table);
+}
+
+/**
+ * Nouveau générateur utilisant MustacheTemplateGenerator
+ * @param {string} table - Nom de la table
+ * @param {Object} options - Options de configuration
+ * @returns {string} Template Mustache généré
+ */
+function mustacheAutoNew(table, options = {}) {
+  const generator = new MustacheTemplateGenerator(schema, options);
+  return generator.generateTemplate(table);
+}
+
+/**
+ * Ancien générateur (conservé pour compatibilité)
+ * @param {string} table - Nom de la table
+ * @returns {string} Template Mustache généré
+ */
+function mustacheAutoLegacy(table) {
   // Vérifier que la table existe dans le schéma
   if (!schema.tables[table]) {
     throw new Error(`Table "${table}" non trouvée dans le schéma`);
@@ -178,4 +210,10 @@ function findOneToManyRelations(targetTable) {
   return relations;
 }
 
-module.exports = { mustacheAuto, findOneToManyRelations };
+module.exports = {
+  mustacheAuto,
+  mustacheAutoNew,
+  mustacheAutoLegacy,
+  findOneToManyRelations,
+  MustacheTemplateGenerator
+};
