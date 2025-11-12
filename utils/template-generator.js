@@ -107,7 +107,8 @@ class TemplateGenerator {
       valueHTML = `<div class="field-value ${fieldName}">{{${fieldName}}}</div>`;
     }
 
-    return `    <div class="field-label ${fieldName}">${label}:</div>\n    ${valueHTML}\n`;
+    // Entourer avec condition Mustache pour gérer les valeurs null
+    return `    {{#${fieldName}}}\n        <div class="field-label ${fieldName}" data-field="${fieldName}">${label}:</div>\n        ${valueHTML}\n    {{/${fieldName}}}\n`;
   }
 
   /**
@@ -121,12 +122,12 @@ class TemplateGenerator {
     const targetTableDef = this.schema.tables[relation.targetTable];
     if (!targetTableDef || !targetTableDef.fields) return '';
 
-    const cardClass = isNested ? 'sub-sub-card' : 'sub-card';
-    let template = `${indent}{{#${relation.fieldName}}}\n`;
-    template += `${indent}<div class="${cardClass} relation manyToOne ${relation.fieldName}">\n`;
+    // Nouveau format : <div data-field="..." data-relation="..."> AVANT {{#...}}
+    let template = `${indent}<div data-field="${relation.fieldName}" class="relation manyToOne" data-relation="${relation.targetTable}">\n`;
+    template += `${indent}{{#${relation.fieldName}}}\n`;
     template += `${indent}  <h4>${relation.label}</h4>\n`;
 
-    // Afficher les fields de la table cible
+    // Afficher les fields de la table cible (déjà avec conditions via generateFieldHTML)
     for (const [fieldName, fieldDef] of Object.entries(targetTableDef.fields)) {
       const fieldHTML = this.generateFieldHTML(fieldName, fieldDef);
       if (fieldHTML) {
@@ -134,8 +135,8 @@ class TemplateGenerator {
       }
     }
 
-    template += `${indent}</div>\n`;
     template += `${indent}{{/${relation.fieldName}}}\n`;
+    template += `${indent}</div>\n`;
 
     return template;
   }

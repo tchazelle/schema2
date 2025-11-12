@@ -1,88 +1,125 @@
 <div class="cards rows" data-table="MusicAlbum">
 {{#items}}
   <div class="row" data-id="{{id}}">
-        <div class="field-label id">id:</div>
+    {{#id}}
+        <div class="field-label id" data-field="id">id:</div>
         <div class="field-value id">{{id}}</div>
-    
-        <div class="field-label name">name:</div>
+    {{/id}}
+
+    {{#name}}
+        <div class="field-label name" data-field="name">name:</div>
         <div class="field-value name">{{name}}</div>
-    
-        <div class="field-label description">description:</div>
+    {{/name}}
+
+    {{#description}}
+        <div class="field-label description" data-field="description">description:</div>
         <div class="field-value description">{{description}}</div>
-    
-        <div class="field-label datePublished">datePublished:</div>
+    {{/description}}
+
+    {{#datePublished}}
+        <div class="field-label datePublished" data-field="datePublished">datePublished:</div>
         <div class="field-value datePublished">{{datePublished}}</div>
-    
-        <div class="field-label genre">genre:</div>
+    {{/datePublished}}
+
+    {{#genre}}
+        <div class="field-label genre" data-field="genre">genre:</div>
         <div class="field-value genre">{{genre}}</div>
-    
-        <div class="field-label url">url:</div>
+    {{/genre}}
+
+    {{#url}}
+        <div class="field-label url" data-field="url">url:</div>
         <a class='field-value url url' href='{{url}}' target='_blank'>🔗 {{url}}</a>
-    
-        <div class="field-label image">image:</div>
+    {{/url}}
+
+    {{#image}}
+        <div class="field-label image" data-field="image">image:</div>
         <img class='field-value image image' src='{{image}}' alt='{{image}}' />
-    
-        <div class="field-label duration">duration:</div>
+    {{/image}}
+
+    {{#duration}}
+        <div class="field-label duration" data-field="duration">duration:</div>
         <div class="field-value duration">{{duration}}</div>
-    
+    {{/duration}}
 
+
+    <div data-field="byArtist" class="relation manyToOne" data-relation="Organization">
     {{#byArtist}}
-    <div class="sub-card relation manyToOne byArtist">
       <h4>byArtist</h4>
-          <div class="field-label id">id:</div>
+      {{#id}}
+          <div class="field-label id" data-field="id">id:</div>
           <div class="field-value id">{{id}}</div>
-      
-          <div class="field-label name">name:</div>
-          <div class="field-value name">{{name}}</div>
-      
-          <div class="field-label description">description:</div>
-          <div class="field-value description">{{description}}</div>
-      
-    </div>
-    {{/byArtist}}
+      {{/id}}
 
-    {{#recordLabel}}
-    <div class="sub-card relation manyToOne recordLabel">
-      <h4>recordLabel</h4>
-          <div class="field-label id">id:</div>
-          <div class="field-value id">{{id}}</div>
-      
-          <div class="field-label name">name:</div>
+      {{#name}}
+          <div class="field-label name" data-field="name">name:</div>
           <div class="field-value name">{{name}}</div>
-      
-          <div class="field-label description">description:</div>
+      {{/name}}
+
+      {{#description}}
+          <div class="field-label description" data-field="description">description:</div>
           <div class="field-value description">{{description}}</div>
-      
+      {{/description}}
+    {{/byArtist}}
     </div>
+
+    <div data-field="recordLabel" class="relation manyToOne" data-relation="Organization">
+    {{#recordLabel}}
+      <h4>recordLabel</h4>
+      {{#id}}
+          <div class="field-label id" data-field="id">id:</div>
+          <div class="field-value id">{{id}}</div>
+      {{/id}}
+
+      {{#name}}
+          <div class="field-label name" data-field="name">name:</div>
+          <div class="field-value name">{{name}}</div>
+      {{/name}}
+
+      {{#description}}
+          <div class="field-label description" data-field="description">description:</div>
+          <div class="field-value description">{{description}}</div>
+      {{/description}}
     {{/recordLabel}}
+    </div>
 
     {{#track}}
     <div class="sub-card relation oneToMany track">
       <h4>track</h4>
       <div class="row" data-id="{{id}}">
-            <div class="field-label id">id:</div>
+        {{#id}}
+            <div class="field-label id" data-field="id">id:</div>
             <div class="field-value id">{{id}}</div>
-        
+        {{/id}}
+
+        <div data-field="idMusicRecording" class="relation manyToOne" data-relation="MusicRecording">
         {{#idMusicRecording}}
-        <div class="sub-sub-card relation manyToOne idMusicRecording">
           <h4>Enregistrement</h4>
-              <div class="field-label id">id:</div>
+          {{#id}}
+              <div class="field-label id" data-field="id">id:</div>
               <div class="field-value id">{{id}}</div>
-          
-              <div class="field-label name">name:</div>
+          {{/id}}
+
+          {{#name}}
+              <div class="field-label name" data-field="name">name:</div>
               <div class="field-value name">{{name}}</div>
-          
-              <div class="field-label description">description:</div>
+          {{/name}}
+
+          {{#description}}
+              <div class="field-label description" data-field="description">description:</div>
               <div class="field-value description">{{description}}</div>
-          
-              <div class="field-label duration">duration:</div>
+          {{/description}}
+
+          {{#duration}}
+              <div class="field-label duration" data-field="duration">duration:</div>
               <div class="field-value duration">{{duration}}</div>
-          
-        </div>
+          {{/duration}}
         {{/idMusicRecording}}
-            <div class="field-label position">position:</div>
+        </div>
+
+        {{#position}}
+            <div class="field-label position" data-field="position">position:</div>
             <div class="field-value position">{{position}}</div>
-        
+        {{/position}}
       </div>
     </div>
     {{/track}}
