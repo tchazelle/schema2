@@ -61,8 +61,8 @@ module.exports = {
   },
 
   menu: {
-    table: "Pages",
-    tableContent: "Section",
+    page: "Page", // chercher les pages dans cette table
+    section: "Section", // chercher les sections de page  // mais implicite puisque lien Strong
     style: "hamburger",
     position: "top right",
     animate: "slidein",

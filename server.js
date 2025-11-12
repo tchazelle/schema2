@@ -1,7 +1,9 @@
 const express = require('express');
+const mustache = require('mustache');
 const cookieParser = require('cookie-parser');
 const path = require('path');
 require('dotenv').config();
+
 
 // Import des utilitaires
 const { authMiddleware } = require('./utils/auth');
@@ -10,9 +12,8 @@ const schema = require('./schema.js');
 const { syncDatabase } = require('./utils/dbSync');
 
 // Import des routes
-const indexRouter = require('./routes/index');
+
 const authRouter = require('./routes/auth');
-const debugRouter = require('./routes/debug');
 const crudRouter = require('./routes/crud');
 const apiRouter = require('./routes/api');
 const pagesRouter = require('./routes/pages');
@@ -33,9 +34,8 @@ app.use(authMiddleware);
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Routes
-app.use('/', indexRouter);
+
 app.use('/_user', authRouter);
-app.use('/_debug', debugRouter);
 app.use('/_crud', crudRouter);
 app.use('/_api', apiRouter);
 // Route /:page doit être en dernier car c'est un catch-all
