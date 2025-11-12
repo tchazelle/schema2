@@ -595,14 +595,14 @@ function generateTemplateFromSchema(tableName, templateMode = 'full') {
     // Générer le template complet avec toutes les relations
     const fullTemplate = generator.generateTemplate(tableName, 'section');
 
-    // Extraire juste la partie "rows" (sans le conteneur cards rows)
-    // Le template généré est : <div class="cards rows">{{#items}}...{{/items}}</div>
-    // On veut juste la partie {{#items}}...{{/items}} mais avec {{#.}}...{{/.}}
+    // Extraire juste la partie "rows" (sans le conteneur)
+    // Le template généré est : <div class="rows">{{#rows}}...{{/rows}}</div>
+    // On veut juste la partie {{#rows}}...{{/rows}} mais avec {{#.}}...{{/.}}
 
     // Parser le template pour extraire le contenu des rows
-    const match = fullTemplate.match(/{{#items}}([\s\S]*?){{\/items}}/);
+    const match = fullTemplate.match(/{{#rows}}([\s\S]*?){{\/rows}}/);
     if (match && match[1]) {
-      // Remplacer {{#items}} par {{#.}} pour correspondre à l'ancien format
+      // Remplacer {{#rows}} par {{#.}} pour correspondre à l'ancien format
       let template = `{{#.}}${match[1]}{{/.}}`;
 
       // Si mode compact, retirer les relations 1:n

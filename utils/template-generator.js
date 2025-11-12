@@ -210,9 +210,9 @@ class TemplateGenerator {
     }
 
     // Container principal pour les rows
-    template += `<div class="cards rows" data-table="${tableName}">\n`;
-    template += `{{#items}}\n`;
-    template += `  <div class="row" data-id="{{id}}">\n`;
+    template += `<div class="rows" data-table="${tableName}">\n`;
+    template += `{{#rows}}\n`;
+    template += `  <article class="row" data-id="{{id}}">\n`;
 
     // Afficher tous les fields normaux
     for (const [fieldName, fieldDef] of Object.entries(tableDef.fields)) {
@@ -237,8 +237,8 @@ class TemplateGenerator {
       template += '\n' + this.generateOneToManyTemplate(relation);
     }
 
-    template += `  </div>\n`;
-    template += `{{/items}}\n`;
+    template += `  </article>\n`;
+    template += `{{/rows}}\n`;
     template += `</div>\n`;
 
     if (context === 'page') {
