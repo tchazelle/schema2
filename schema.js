@@ -71,17 +71,17 @@ module.exports = {
   },
 
   renderer: {
-    image: "<img class='field image {{key}}' src='{{value}}' alt='{{value}}' />",
-    email: "<a class='field email {{key}}' href='mailto:{{value}}'> 📧 {{value}}</a>",
-    telephone: "<a class='field telephone {{key}}' href='tel:{{value}}'> 📞 {{value}}</a>",
-    url: "<a class='field url {{key}}' href='{{value}}' target='_blank'>🔗 {{value}}</a>",
-    date: "<time class='field date {{key}}' datetime='{{value}}'>{{value}}</time>",
-    datetime: "<time class='field datetime {{key}}' datetime='{{value}}'>{{value}}</time>",
-    time: "<time class='field time {{key}}'>{{value}}</time>",
-    boolean: "<span class='field boolean {{key}} {{#value}}true{{/value}}{{^value}}false{{/value}}'>{{#value}}✓{{/value}}{{^value}}✗{{/value}}</span>",
-    number: "<span class='field number {{key}}'>{{value}}</span>",
-    currency: "<span class='field currency {{key}}'>{{value}} €</span>",
-    percentage: "<span class='field percentage {{key}}'>{{value}}%</span>",
+    image: "<img class='field-label image {{key}}' src='{{value}}' alt='{{value}}' />",
+    email: "<a class='field-label email {{key}}' href='mailto:{{value}}'> 📧 {{value}}</a>",
+    telephone: "<a class='field-label telephone {{key}}' href='tel:{{value}}'> 📞 {{value}}</a>",
+    url: "<a class='field-label url {{key}}' href='{{value}}' target='_blank'>🔗 {{value}}</a>",
+    date: "<time class='field-label date {{key}}' datetime='{{value}}'>{{value}}</time>",
+    datetime: "<time class='field-label datetime {{key}}' datetime='{{value}}'>{{value}}</time>",
+    time: "<time class='field-label time {{key}}'>{{value}}</time>",
+    boolean: "<span class='field-label boolean {{key}} {{#value}}true{{/value}}{{^value}}false{{/value}}'>{{#value}}✓{{/value}}{{^value}}✗{{/value}}</span>",
+    number: "<span class='field-label number {{key}}'>{{value}}</span>",
+    currency: "<span class='field-label currency {{key}}'>{{value}} €</span>",
+    percentage: "<span class='field-label percentage {{key}}'>{{value}}%</span>",
     filePreview: "#filePreview"
   },
 

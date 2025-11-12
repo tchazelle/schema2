@@ -134,9 +134,7 @@ function generateSectionTemplate(sectionData, sectionSlug) {
     {{#description}}<p class="section-description">{{description}}</p>{{/description}}
 
     {{#rows}}
-      <div class="section-data">
-        ${generateDataTemplate(sectionData, tableName)}
-      </div>
+      ${generateDataTemplate(sectionData, tableName)}
     {{/rows}}
   </section>`;
 
@@ -150,26 +148,33 @@ function generateSectionTemplate(sectionData, sectionSlug) {
  * @returns {string} - Template Mustache pour les données
  */
 function generateDataTemplate(sectionData, tableName) {
+  let innerTemplate;
+
   // Si on a des exemples de données, analyser leur structure
   if (sectionData.rows && sectionData.rows.length > 0) {
     // Collecter tous les champs et relations de TOUTES les rows
     const { fields, relations1n, relationsN1 } = collectAllFieldsAndRelations(sectionData.rows, tableName);
-    return generateRowTemplateFromCollection(fields, relations1n, relationsN1, tableName);
+    innerTemplate = generateRowTemplateFromCollection(fields, relations1n, relationsN1, tableName);
   }
-
   // Sinon, utiliser le schéma si disponible
-  if (tableName && schema.tables[tableName]) {
-    return generateTemplateFromSchema(tableName);
+  else if (tableName && schema.tables[tableName]) {
+    innerTemplate = generateTemplateFromSchema(tableName);
   }
-
   // Template minimal par défaut
-  return `{{#.}}
-      <div class="row" data-id="{{id}}" data-table="${tableName || 'unknown'}">
-        {{#name}}<div class="field name">{{name}}</div>{{/name}}
-        {{#title}}<div class="field title">{{title}}</div>{{/title}}
-        {{#description}}<div class="field description">{{description}}</div>{{/description}}
+  else {
+    innerTemplate = `{{#.}}
+      <div class="card row" data-id="{{id}}">
+        {{#name}}<div class="field-label name">{{name}}</div>{{/name}}
+        {{#title}}<div class="field-label title">{{title}}</div>{{/title}}
+        {{#description}}<div class="field-label description">{{description}}</div>{{/description}}
       </div>
     {{/.}}`;
+  }
+
+  // Envelopper dans le conteneur cards rows
+  return `<div class="cards rows" data-table="${tableName || 'unknown'}">
+    ${innerTemplate}
+  </div>`;
 }
 
 /**
@@ -182,7 +187,7 @@ function generateDataTemplate(sectionData, tableName) {
  */
 function generateRowTemplateFromCollection(fields, relations1n, relationsN1, tableName) {
   let template = `{{#.}}
-    <div class="row" data-id="{{id}}" data-table="${tableName || 'item'}">`;
+    <div class="card row" data-id="{{id}}">`;
 
   // Générer les champs simples
   for (const fieldName of fields) {
@@ -202,7 +207,7 @@ function generateRowTemplateFromCollection(fields, relations1n, relationsN1, tab
     if (renderer) {
       template += `\n      {{#${fieldName}}}${renderer}{{/${fieldName}}}`;
     } else {
-      template += `\n      {{#${fieldName}}}<div class="field ${fieldName}">{{${fieldName}}}</div>{{/${fieldName}}}`;
+      template += `\n      {{#${fieldName}}}<div class="field-label ${fieldName}">{{${fieldName}}}</div>{{/${fieldName}}}`;
     }
   }
 
@@ -249,7 +254,7 @@ function generateFieldTemplate(fieldName, value, tableName = null) {
     return `\n      {{#${fieldName}}}${renderer}{{/${fieldName}}}`;
   }
 
-  return `\n      {{#${fieldName}}}<div class="field ${fieldName}">{{${fieldName}}}</div>{{/${fieldName}}}`;
+  return `\n      {{#${fieldName}}}<div class="field-label ${fieldName}">{{${fieldName}}}</div>{{/${fieldName}}}`;
 }
 
 /**
@@ -270,7 +275,7 @@ function generateRelationTemplate(relationName, relationData, relationType) {
     const { fields, relations1n, relationsN1 } = collectAllFieldsAndRelations(relationData, tableClass);
 
     return `\n      {{#${relationName}}}
-        <div class="relation oneToMany ${relationName}">
+        <div class="sub-card relation oneToMany ${relationName}">
           ${generateRowTemplateFromCollection(fields, relations1n, relationsN1, tableClass)}
         </div>
       {{/${relationName}}}`;
@@ -279,9 +284,9 @@ function generateRelationTemplate(relationName, relationData, relationType) {
     const tableClass = relationData._table || relationName;
 
     return `\n      {{#${relationName}}}
-        <div class="relation manyToOne ${relationName}">
-          <div class="row" data-id="{{id}}" data-table="${tableClass}">
-            {{#name}}<span class="field name">{{name}}</span>{{/name}}
+        <div class="sub-card relation manyToOne ${relationName}">
+          <div class="card row" data-id="{{id}}">
+            {{#name}}<span class="field-label name">{{name}}</span>{{/name}}
           </div>
         </div>
       {{/${relationName}}}`;
@@ -296,11 +301,11 @@ function generateRelationTemplate(relationName, relationData, relationType) {
 function generateTemplateFromSchema(tableName) {
   const tableConfig = schema.tables[tableName];
   if (!tableConfig) {
-    return '{{#.}}<div class="row">{{.}}</div>{{/.}}';
+    return '{{#.}}<div class="card row" data-id="{{id}}">{{.}}</div>{{/.}}';
   }
 
   let template = `{{#.}}
-    <div class="row" data-id="{{id}}" data-table="${tableName}">`;
+    <div class="card row" data-id="{{id}}">`;
 
   // Parcourir les champs du schéma
   for (const fieldName in tableConfig.fields) {
@@ -334,9 +339,9 @@ function generateTemplateFromSchema(tableName) {
 
       if (isN1) {
         template += `\n      {{#${fieldName}}}
-        <div class="relation manyToOne ${fieldName}">
-          <div class="row" data-id="{{id}}" data-table="${relatedTable}">
-            {{#name}}<span class="field name">{{name}}</span>{{/name}}
+        <div class="sub-card relation manyToOne ${fieldName}">
+          <div class="card row" data-id="{{id}}">
+            {{#name}}<span class="field-label name">{{name}}</span>{{/name}}
           </div>
         </div>
       {{/${fieldName}}}`;
@@ -349,7 +354,7 @@ function generateTemplateFromSchema(tableName) {
       if (renderer) {
         template += `\n      {{#${fieldName}}}${renderer}{{/${fieldName}}}`;
       } else {
-        template += `\n      {{#${fieldName}}}<div class="field ${fieldName}">{{${fieldName}}}</div>{{/${fieldName}}}`;
+        template += `\n      {{#${fieldName}}}<div class="field-label ${fieldName}">{{${fieldName}}}</div>{{/${fieldName}}}`;
       }
     }
   }
@@ -363,10 +368,10 @@ function generateTemplateFromSchema(tableName) {
       if (otherFieldConfig.relation === tableName && otherFieldConfig.arrayName) {
         const relationName = otherFieldConfig.arrayName;
         template += `\n      {{#${relationName}}}
-        <div class="relation oneToMany ${relationName}">
+        <div class="sub-card relation oneToMany ${relationName}">
           {{#.}}
-            <div class="row" data-id="{{id}}" data-table="${otherTableName}">
-              {{#name}}<span class="field name">{{name}}</span>{{/name}}
+            <div class="card row" data-id="{{id}}">
+              {{#name}}<span class="field-label name">{{name}}</span>{{/name}}
             </div>
           {{/.}}
         </div>
