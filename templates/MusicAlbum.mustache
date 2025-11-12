@@ -1,0 +1,91 @@
+<div class="cards rows" data-table="MusicAlbum">
+{{#items}}
+  <div class="row" data-id="{{id}}">
+        <div class="field-label id">id:</div>
+        <div class="field-value id">{{id}}</div>
+    
+        <div class="field-label name">name:</div>
+        <div class="field-value name">{{name}}</div>
+    
+        <div class="field-label description">description:</div>
+        <div class="field-value description">{{description}}</div>
+    
+        <div class="field-label datePublished">datePublished:</div>
+        <div class="field-value datePublished">{{datePublished}}</div>
+    
+        <div class="field-label genre">genre:</div>
+        <div class="field-value genre">{{genre}}</div>
+    
+        <div class="field-label url">url:</div>
+        <a class='field-value url url' href='{{url}}' target='_blank'>🔗 {{url}}</a>
+    
+        <div class="field-label image">image:</div>
+        <img class='field-value image image' src='{{image}}' alt='{{image}}' />
+    
+        <div class="field-label duration">duration:</div>
+        <div class="field-value duration">{{duration}}</div>
+    
+
+    {{#byArtist}}
+    <div class="sub-card relation manyToOne byArtist">
+      <h4>byArtist</h4>
+          <div class="field-label id">id:</div>
+          <div class="field-value id">{{id}}</div>
+      
+          <div class="field-label name">name:</div>
+          <div class="field-value name">{{name}}</div>
+      
+          <div class="field-label description">description:</div>
+          <div class="field-value description">{{description}}</div>
+      
+    </div>
+    {{/byArtist}}
+
+    {{#recordLabel}}
+    <div class="sub-card relation manyToOne recordLabel">
+      <h4>recordLabel</h4>
+          <div class="field-label id">id:</div>
+          <div class="field-value id">{{id}}</div>
+      
+          <div class="field-label name">name:</div>
+          <div class="field-value name">{{name}}</div>
+      
+          <div class="field-label description">description:</div>
+          <div class="field-value description">{{description}}</div>
+      
+    </div>
+    {{/recordLabel}}
+
+    {{#track}}
+    <div class="sub-card relation oneToMany track">
+      <h4>track</h4>
+      <div class="row" data-id="{{id}}">
+            <div class="field-label id">id:</div>
+            <div class="field-value id">{{id}}</div>
+        
+        {{#idMusicRecording}}
+        <div class="sub-sub-card relation manyToOne idMusicRecording">
+          <h4>Enregistrement</h4>
+              <div class="field-label id">id:</div>
+              <div class="field-value id">{{id}}</div>
+          
+              <div class="field-label name">name:</div>
+              <div class="field-value name">{{name}}</div>
+          
+              <div class="field-label description">description:</div>
+              <div class="field-value description">{{description}}</div>
+          
+              <div class="field-label duration">duration:</div>
+              <div class="field-value duration">{{duration}}</div>
+          
+        </div>
+        {{/idMusicRecording}}
+            <div class="field-label position">position:</div>
+            <div class="field-value position">{{position}}</div>
+        
+      </div>
+    </div>
+    {{/track}}
+  </div>
+{{/items}}
+</div>
