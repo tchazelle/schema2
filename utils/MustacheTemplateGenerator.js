@@ -11,7 +11,8 @@ class MustacheTemplateGenerator {
     this.options = {
       useDisplayFields: options.useDisplayFields ?? true,
       rowsVarName: options.rowsVarName || 'rows',
-      maxDepth: options.maxDepth ?? 2
+      maxDepth: options.maxDepth ?? 2,
+      hiddenId: options.hiddenId ?? true
     };
   }
 
@@ -37,12 +38,13 @@ class MustacheTemplateGenerator {
     let out = '';
 
     for (const [fieldName, fieldDef] of Object.entries(fields)) {
+      if (this.options.hiddenId && fieldName === 'id') continue;
       if (fieldDef.relation) {
         const relTable = fieldDef.relation;
         out += `${indent}<div class="row" data-relation="${fieldName}" data-type="manyToOne">\n`;
         out += `${indent}  <label class="label">${fieldName}</label>\n`;
         out += `${indent}  {{#${fieldName}}}\n`;
-        out += `${indent}  <div class="sub-row manyToOne" data-field-table="${relTable}">\n`;
+        out += `${indent}  <div class="sub-row manyToOne" data-field-table="${relTable}" data-id="{{id}}">\n`;
         out += this._renderTableFields(relTable, depth + 1, indent + '    ');
         out += `${indent}  </div>\n`;
         out += `${indent}  {{/${fieldName}}}\n`;
@@ -68,6 +70,7 @@ class MustacheTemplateGenerator {
     let out = '';
     const list = this._getFieldList(tableName);
     for (const f of list) {
+      if (this.options.hiddenId && f === 'id') continue;
       const type = fields[f]?.type || 'varchar';
       out += `${indent}<div class="row" data-field="${f}" data-type="${type}">\n`;
       out += `${indent}  <label class="label">${f}</label>\n`;
