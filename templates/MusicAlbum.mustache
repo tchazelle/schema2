@@ -1,174 +1,38 @@
-<div class="cards rows" data-table="MusicAlbum">
-{{#items}}
-  <div class="row" data-id="{{id}}">
-    {{#id}}
+<div class="rows" data-table="MusicAlbum">
+{{#rows}}
+  <article class="row" data-id="{{id}}">
     <div data-field="id">
       <div class="label">id</div>
       <div class="value">{{id}}</div>
     </div>
-    {{/id}}
-
-    {{#name}}
     <div data-field="name">
       <div class="label">name</div>
       <div class="value">{{name}}</div>
     </div>
-    {{/name}}
-
-    {{#description}}
     <div data-field="description">
       <div class="label">description</div>
       <div class="value">{{description}}</div>
     </div>
-    {{/description}}
-
-    {{#datePublished}}
     <div data-field="datePublished">
       <div class="label">datePublished</div>
       <div class="value">{{datePublished}}</div>
     </div>
-    {{/datePublished}}
-
-    {{#genre}}
     <div data-field="genre">
       <div class="label">genre</div>
       <div class="value">{{genre}}</div>
     </div>
-    {{/genre}}
-
-    {{#url}}
     <div data-field="url">
       <div class="label">url</div>
       <div class="value">{{url}}</div>
     </div>
-    {{/url}}
-
-    {{#image}}
     <div data-field="image">
       <div class="label">image</div>
       <div class="value">{{image}}</div>
     </div>
-    {{/image}}
-
-    {{#duration}}
     <div data-field="duration">
       <div class="label">duration</div>
       <div class="value">{{duration}}</div>
     </div>
-    {{/duration}}
-
-
-    <div data-field="byArtist">
-      <div class="label">byArtist</div>
-      <div data-field="byArtist" class="relation manyToOne" data-relation="Organization">
-      {{#byArtist}}
-        {{#id}}
-        <div data-field="id">
-          <div class="label">id</div>
-          <div class="value">{{id}}</div>
-        </div>
-        {{/id}}
-
-        {{#name}}
-        <div data-field="name">
-          <div class="label">name</div>
-          <div class="value">{{name}}</div>
-        </div>
-        {{/name}}
-
-        {{#description}}
-        <div data-field="description">
-          <div class="label">description</div>
-          <div class="value">{{description}}</div>
-        </div>
-        {{/description}}
-      {{/byArtist}}
-      </div>
-    </div>
-
-    <div data-field="recordLabel">
-      <div class="label">recordLabel</div>
-      <div data-field="recordLabel" class="relation manyToOne" data-relation="Organization">
-      {{#recordLabel}}
-        {{#id}}
-        <div data-field="id">
-          <div class="label">id</div>
-          <div class="value">{{id}}</div>
-        </div>
-        {{/id}}
-
-        {{#name}}
-        <div data-field="name">
-          <div class="label">name</div>
-          <div class="value">{{name}}</div>
-        </div>
-        {{/name}}
-
-        {{#description}}
-        <div data-field="description">
-          <div class="label">description</div>
-          <div class="value">{{description}}</div>
-        </div>
-        {{/description}}
-      {{/recordLabel}}
-      </div>
-    </div>
-
-    {{#track}}
-    <div class="sub-card relation oneToMany track">
-      <h4>track</h4>
-      <div class="row" data-id="{{id}}">
-        {{#id}}
-        <div data-field="id">
-          <div class="label">id</div>
-          <div class="value">{{id}}</div>
-        </div>
-        {{/id}}
-
-        <div data-field="idMusicRecording">
-          <div class="label">idMusicRecording</div>
-          <div data-field="idMusicRecording" class="relation manyToOne" data-relation="MusicRecording">
-          {{#idMusicRecording}}
-            {{#id}}
-            <div data-field="id">
-              <div class="label">id</div>
-              <div class="value">{{id}}</div>
-            </div>
-            {{/id}}
-
-            {{#name}}
-            <div data-field="name">
-              <div class="label">name</div>
-              <div class="value">{{name}}</div>
-            </div>
-            {{/name}}
-
-            {{#description}}
-            <div data-field="description">
-              <div class="label">description</div>
-              <div class="value">{{description}}</div>
-            </div>
-            {{/description}}
-
-            {{#duration}}
-            <div data-field="duration">
-              <div class="label">duration</div>
-              <div class="value">{{duration}}</div>
-            </div>
-            {{/duration}}
-          {{/idMusicRecording}}
-          </div>
-        </div>
-
-        {{#position}}
-        <div data-field="position">
-          <div class="label">position</div>
-          <div class="value">{{position}}</div>
-        </div>
-        {{/position}}
-      </div>
-    </div>
-    {{/track}}
-  </div>
-{{/items}}
+  </article>
+{{/rows}}
 </div>
