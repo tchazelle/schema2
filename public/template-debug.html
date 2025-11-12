@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Générateur de Template Mustache - Debug</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f5;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      color: #333;
+      margin-bottom: 30px;
+      text-align: center;
+    }
+
+    .controls {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+
+    .form-group {
+      margin-bottom: 15px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      color: #555;
+      font-weight: 500;
+    }
+
+    select {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+      background: white;
+      cursor: pointer;
+    }
+
+    select:focus {
+      outline: none;
+      border-color: #007bff;
+    }
+
+    .output-section {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    @media (max-width: 768px) {
+      .output-section {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .output-box {
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      overflow: hidden;
+    }
+
+    .output-header {
+      background: #007bff;
+      color: white;
+      padding: 15px 20px;
+      font-weight: 600;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .output-content {
+      padding: 20px;
+      max-height: 600px;
+      overflow-y: auto;
+    }
+
+    pre {
+      margin: 0;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+      font-size: 13px;
+      line-height: 1.5;
+      color: #333;
+    }
+
+    .copy-btn {
+      background: rgba(255,255,255,0.2);
+      border: 1px solid rgba(255,255,255,0.3);
+      color: white;
+      padding: 6px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      transition: background 0.2s;
+    }
+
+    .copy-btn:hover {
+      background: rgba(255,255,255,0.3);
+    }
+
+    .copy-btn:active {
+      background: rgba(255,255,255,0.4);
+    }
+
+    .info-box {
+      background: #e7f3ff;
+      border-left: 4px solid #007bff;
+      padding: 15px;
+      margin-bottom: 20px;
+      border-radius: 4px;
+    }
+
+    .info-box h3 {
+      color: #007bff;
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+
+    .info-box p {
+      color: #555;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #999;
+    }
+
+    .error {
+      background: #fee;
+      border-left: 4px solid #d00;
+      padding: 15px;
+      margin: 20px 0;
+      border-radius: 4px;
+      color: #d00;
+    }
+
+    /* Syntax highlighting pour le HTML */
+    .html-preview {
+      background: #f8f9fa;
+      border: 1px solid #e0e0e0;
+      border-radius: 4px;
+      padding: 15px;
+      font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .html-tag { color: #22863a; }
+    .html-attr { color: #6f42c1; }
+    .html-value { color: #032f62; }
+    .html-mustache { color: #d73a49; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎨 Générateur de Template Mustache</h1>
+
+    <div class="info-box">
+      <h3>📋 Instructions</h3>
+      <p>
+        Cet outil génère automatiquement un template Mustache simpliste pour afficher des fiches d'une table.
+        Sélectionnez une table dans la liste ci-dessous pour voir le template généré.
+        Le template suit la structure : <code>&lt;div class="rows"&gt;</code> → <code>&lt;article class="row"&gt;</code> → <code>&lt;div data-field&gt;</code>.
+      </p>
+    </div>
+
+    <div class="controls">
+      <div class="form-group">
+        <label for="tableSelect">Sélectionner une table :</label>
+        <select id="tableSelect" onchange="loadTemplate()">
+          <option value="">-- Choisissez une table --</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="output-section">
+      <div class="output-box">
+        <div class="output-header">
+          <span>Template Mustache généré</span>
+          <button class="copy-btn" onclick="copyTemplate()">📋 Copier</button>
+        </div>
+        <div class="output-content">
+          <pre id="templateOutput" class="loading">Sélectionnez une table pour voir le template...</pre>
+        </div>
+      </div>
+
+      <div class="output-box">
+        <div class="output-header">
+          <span>Aperçu formaté</span>
+        </div>
+        <div class="output-content">
+          <div id="htmlPreview" class="html-preview loading">
+            Sélectionnez une table pour voir l'aperçu...
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let tables = [];
+    let currentTemplate = '';
+
+    // Charger la liste des tables au démarrage
+    async function loadTables() {
+      try {
+        const response = await fetch('/_api/template-generator/tables');
+        if (!response.ok) throw new Error('Erreur lors du chargement des tables');
+
+        tables = await response.json();
+
+        const select = document.getElementById('tableSelect');
+        tables.forEach(table => {
+          const option = document.createElement('option');
+          option.value = table;
+          option.textContent = table;
+          select.appendChild(option);
+        });
+      } catch (error) {
+        console.error('Erreur:', error);
+        document.getElementById('templateOutput').innerHTML =
+          '<div class="error">Erreur lors du chargement des tables: ' + error.message + '</div>';
+      }
+    }
+
+    // Charger le template pour une table
+    async function loadTemplate() {
+      const tableName = document.getElementById('tableSelect').value;
+
+      if (!tableName) {
+        document.getElementById('templateOutput').innerHTML =
+          '<div class="loading">Sélectionnez une table pour voir le template...</div>';
+        document.getElementById('htmlPreview').innerHTML =
+          '<div class="loading">Sélectionnez une table pour voir l\'aperçu...</div>';
+        return;
+      }
+
+      try {
+        document.getElementById('templateOutput').innerHTML =
+          '<div class="loading">Génération du template...</div>';
+        document.getElementById('htmlPreview').innerHTML =
+          '<div class="loading">Génération de l\'aperçu...</div>';
+
+        const response = await fetch(`/_api/template-generator/${tableName}`);
+        if (!response.ok) throw new Error('Erreur lors de la génération du template');
+
+        const data = await response.json();
+        currentTemplate = data.template;
+
+        // Afficher le template brut
+        document.getElementById('templateOutput').textContent = currentTemplate;
+
+        // Afficher l'aperçu formaté avec coloration syntaxique
+        document.getElementById('htmlPreview').innerHTML = highlightHTML(currentTemplate);
+
+      } catch (error) {
+        console.error('Erreur:', error);
+        document.getElementById('templateOutput').innerHTML =
+          '<div class="error">Erreur: ' + error.message + '</div>';
+        document.getElementById('htmlPreview').innerHTML =
+          '<div class="error">Erreur: ' + error.message + '</div>';
+      }
+    }
+
+    // Copier le template dans le presse-papier
+    async function copyTemplate() {
+      if (!currentTemplate) {
+        alert('Aucun template à copier');
+        return;
+      }
+
+      try {
+        await navigator.clipboard.writeText(currentTemplate);
+
+        // Feedback visuel
+        const btn = document.querySelector('.copy-btn');
+        const originalText = btn.textContent;
+        btn.textContent = '✓ Copié !';
+        btn.style.background = 'rgba(40, 167, 69, 0.8)';
+
+        setTimeout(() => {
+          btn.textContent = originalText;
+          btn.style.background = '';
+        }, 2000);
+      } catch (error) {
+        alert('Erreur lors de la copie: ' + error.message);
+      }
+    }
+
+    // Coloration syntaxique simple pour HTML
+    function highlightHTML(html) {
+      return html
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/(&lt;\/?[a-z]+)/gi, '<span class="html-tag">$1</span>')
+        .replace(/([a-z-]+)=/gi, '<span class="html-attr">$1</span>=')
+        .replace(/="([^"]*)"/g, '=<span class="html-value">"$1"</span>')
+        .replace(/(\{\{[^}]+\}\})/g, '<span class="html-mustache">$1</span>');
+    }
+
+    // Charger les tables au démarrage
+    loadTables();
+  </script>
+</body>
+</html>

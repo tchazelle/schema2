@@ -429,6 +429,7 @@ function generateHomeHTML(user, pages, accessibleTables, allRoles, isAuthenticat
         <li><a href="/_debug/">Index Debug</a></li>
         <li><a href="/_debug/user">Fiche utilisateur</a></li>
         <li><a href="/_debug/user/grant">Autorisations</a></li>
+        <li><a href="/template-debug.html">Générateur de Templates</a></li>
       </ul>
     </div>
     ` : ''}
