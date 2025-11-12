@@ -21,6 +21,9 @@ function collectAllFieldsAndRelations(dataArray, tableName) {
     return { fields, relations1n, relationsN1 };
   }
 
+  // Récupérer la définition de la table depuis le schéma
+  const tableConfig = tableName && schema.tables[tableName] ? schema.tables[tableName] : null;
+
   // Parcourir TOUTES les rows pour collecter tous les champs et relations
   for (const row of dataArray) {
     // 1. Parcourir les propriétés directes de la row
@@ -32,6 +35,26 @@ function collectAllFieldsAndRelations(dataArray, tableName) {
 
       const value = row[key];
 
+      // PRIORITÉ 1: Consulter le schéma pour savoir si c'est une relation
+      if (tableConfig && tableConfig.fields && tableConfig.fields[key]) {
+        const fieldConfig = tableConfig.fields[key];
+
+        // Si c'est un champ de relation dans le schéma
+        if (fieldConfig.relation) {
+          // Relation n:1
+          if (!relationsN1.has(key)) {
+            // Si l'objet est déjà chargé dans les données, l'utiliser
+            const sampleData = (value && typeof value === 'object' && value._table) ? value : null;
+            relationsN1.set(key, {
+              tableName: fieldConfig.relation,
+              sampleData: sampleData
+            });
+          }
+          continue; // Ne pas ajouter aux fields
+        }
+      }
+
+      // PRIORITÉ 2: Détecter les relations dans les données
       // Si c'est un tableau (relation 1:n)
       if (Array.isArray(value)) {
         if (!relations1n.has(key)) {
@@ -45,7 +68,7 @@ function collectAllFieldsAndRelations(dataArray, tableName) {
           relationsN1.set(key, { tableName: value._table, sampleData: value });
         }
       }
-      // Si c'est une valeur simple
+      // Si c'est une valeur simple (et pas une relation selon le schéma)
       else {
         fields.add(key);
       }
@@ -70,6 +93,24 @@ function collectAllFieldsAndRelations(dataArray, tableName) {
             relationsN1.set(relKey, { tableName: relTableName, sampleData: relValue });
           }
         }
+      }
+    }
+  }
+
+  // 3. Ajouter les relations n:1 du schéma qui n'ont pas été trouvées dans les données
+  if (tableConfig && tableConfig.fields) {
+    for (const fieldName in tableConfig.fields) {
+      const fieldConfig = tableConfig.fields[fieldName];
+
+      // Si c'est une relation n:1 dans le schéma et qu'elle n'a pas été détectée
+      if (fieldConfig.relation && !relationsN1.has(fieldName) && !relations1n.has(fieldName)) {
+        relationsN1.set(fieldName, {
+          tableName: fieldConfig.relation,
+          sampleData: null // Pas de données d'exemple
+        });
+
+        // Retirer des fields si elle y était
+        fields.delete(fieldName);
       }
     }
   }
@@ -247,12 +288,12 @@ function generateRowTemplateFromCollection(fields, relations1n, relationsN1, tab
 
   // Générer les relations n:1
   for (const [relationName, relationInfo] of relationsN1) {
-    template += generateRelationTemplate(relationName, relationInfo.sampleData, 'n:1');
+    template += generateRelationTemplate(relationName, relationInfo.sampleData, 'n:1', relationInfo.tableName);
   }
 
   // Générer les relations 1:n
   for (const [relationName, relationInfo] of relations1n) {
-    template += generateRelationTemplate(relationName, relationInfo.sampleData, '1:n');
+    template += generateRelationTemplate(relationName, relationInfo.sampleData, '1:n', relationInfo.tableName);
   }
 
   template += `
@@ -353,19 +394,20 @@ function detectJunctionTable(tableName, relationsN1) {
 /**
  * Génère un template pour une relation
  * @param {string} relationName - Nom de la relation
- * @param {*} relationData - Données de la relation
+ * @param {*} relationData - Données de la relation (peut être null si détecté depuis le schéma)
  * @param {string} relationType - Type de relation ('1:n' ou 'n:1')
+ * @param {string} targetTableName - Nom de la table cible (optionnel, utilisé si relationData est null)
  * @returns {string} - Template Mustache
  */
-function generateRelationTemplate(relationName, relationData, relationType) {
+function generateRelationTemplate(relationName, relationData, relationType, targetTableName = null) {
   if (relationType === '1:n') {
     // Relation 1:n (tableau)
     const tableClass = Array.isArray(relationData) && relationData.length > 0
       ? relationData[0]._table || relationName
-      : relationName;
+      : (targetTableName || relationName);
 
     // Collecter tous les champs et relations de toutes les rows de cette relation
-    const { fields, relations1n, relationsN1 } = collectAllFieldsAndRelations(relationData, tableClass);
+    const { fields, relations1n, relationsN1 } = collectAllFieldsAndRelations(relationData || [], tableClass);
 
     // Vérifier si c'est une table de liaison
     const junctionInfo = detectJunctionTable(tableClass, relationsN1);
@@ -383,7 +425,7 @@ function generateRelationTemplate(relationName, relationData, relationType) {
       {{/${relationName}}}`;
   } else {
     // Relation n:1 (objet)
-    const tableClass = relationData._table || relationName;
+    const tableClass = (relationData && relationData._table) || targetTableName || relationName;
 
     // Générer le template avec tous les champs de la table cible
     let template = `\n      {{#${relationName}}}
