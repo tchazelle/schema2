@@ -88,7 +88,7 @@ module.exports = {
   // Tables de l'application
   tables: {
     Page: {
-      _granted:{
+      granted:{
         public:["read"]
       },
       // ... defaultConfigTable
@@ -104,6 +104,9 @@ module.exports = {
       }
     },
     Section: {
+      granted:{
+        public:["read"]
+      },
       // ... defaultConfigTable
       fields: {
         id: { type: "integer", isPrimary: true, autoIncrement: true },
