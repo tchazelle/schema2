@@ -4,9 +4,9 @@ const router = express.Router();
 const pool = require('../config/database');
 const { getAccessibleTables, getUserAllRoles, hasPermission } = require('../utils/permissions');
 const schema = require('../schema.js');
-const { getTableData } = require('../utils/apiTables');
+const { getTableData } = require('../services/tableDataService');
 const { mustacheAuto } = require('../utils/mustacheAuto');
-const EntityService = require('../utils/services/entityService');
+const EntityService = require('../services/entityService');
 
 
 function generateLoginHTML() { 
@@ -560,7 +560,7 @@ router.get('/:slug?', async (req, res) => {
     const accessibleTables = fullUser ? getAccessibleTables(fullUser) : [];
     
     // chargement des pages
-    const pagesFormTablePage = await getTableData({ user, tableName: schema.menu.page, useProxy:1 })
+    const pagesFormTablePage = await getTableData(user, schema.menu.page, {})
     const pages = pagesFormTablePage.rows
 
     // page sélectionnée
@@ -581,15 +581,14 @@ router.get('/:slug?', async (req, res) => {
       const newSections = Object.fromEntries(targetPage.sections.map(section =>{
       const {id, slug, name,description} = section 
       let tableDataOptions = Object.fromEntries(
-        Object.entries(translateTableDataOptions).filter(([newKey,oldKey])=>section[oldKey]).map(([newKey,oldKey])=>[newKey,section[oldKey]]) 
+        Object.entries(translateTableDataOptions).filter(([newKey,oldKey])=>section[oldKey]).map(([newKey,oldKey])=>[newKey,section[oldKey]])
       )
-      tableDataOptions = {user, ...tableDataOptions, useProxy:1}
-        return [section.slug, {id, slug, name, description, tableDataOptions}]
+        return [section.slug, {id, slug, name, description, tableDataOptions, sectionUser: user}]
       }))
 
-      // chargement des rows 
+      // chargement des rows
       const data = await Promise.all(
-        Object.values(newSections).map(section => getTableData(section.tableDataOptions))
+        Object.values(newSections).map(section => getTableData(section.sectionUser, section.tableDataOptions.tableName, section.tableDataOptions))
       )
 
       // report des rows dans les sections

@@ -29,8 +29,8 @@ class MustacheTemplateGenerator {
 
   _renderTableContent(tableName, depth, indent) {
     if (depth > this.options.maxDepth) return '';
-    const table = this.tables[tableName];
-    const fields = table.fields || {};
+    const tableConfig = this.tables[tableName];
+    const fields = tableConfig.fields || {};
     let out = '';
 
     for (const [fieldName, fieldDef] of Object.entries(fields)) {
@@ -61,8 +61,8 @@ class MustacheTemplateGenerator {
   }
 
   _renderTableFields(tableName, depth, indent) {
-    const table = this.tables[tableName];
-    const fields = table.fields || {};
+    const tableConfig = this.tables[tableName];
+    const fields = tableConfig.fields || {};
     let out = '';
     const list = this._getFieldList(tableName);
     for (const f of list) {
@@ -101,30 +101,30 @@ class MustacheTemplateGenerator {
   }
 
   _getFieldList(tableName) {
-    const t = this.tables[tableName];
-    if (!t) return [];
-    const fields = Object.keys(t.fields || {});
+    const tableConfig = this.tables[tableName];
+    if (!tableConfig) return [];
+    const fields = Object.keys(tableConfig.fields || {});
     if (!this.options.useDisplayFields) return fields;
     const disp = this._getDisplayFields(tableName);
     return disp.length ? disp : fields;
   }
 
   _getDisplayFields(tableName) {
-    const t = this.tables[tableName];
-    if (!t) return [];
-    if (Array.isArray(t.displayField)) return t.displayField;
-    if (Array.isArray(t.displayFields)) return t.displayFields;
-    if (typeof t.displayField === 'string') return [t.displayField];
-    if (typeof t.displayFields === 'string') return [t.displayFields];
+    const tableConfig = this.tables[tableName];
+    if (!tableConfig) return [];
+    if (Array.isArray(tableConfig.displayField)) return tableConfig.displayField;
+    if (Array.isArray(tableConfig.displayFields)) return tableConfig.displayFields;
+    if (typeof tableConfig.displayField === 'string') return [tableConfig.displayField];
+    if (typeof tableConfig.displayFields === 'string') return [tableConfig.displayFields];
     return [];
   }
 
   _pluralize(name) { return name.endsWith('s') ? name : name.toLowerCase() + 's'; }
 }
 
-function mustacheAuto(table, options = {}) {
+function mustacheAuto(tableName, options = {}) {
   const generator = new MustacheTemplateGenerator(schema, options);
-  return generator.generateTemplate(table);
+  return generator.generateTemplate(tableName);
 }
 
 module.exports = {

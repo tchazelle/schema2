@@ -1,11 +1,7 @@
-const express = require('express');
-const router = express.Router();
 const pool = require('../config/database');
 const { hasPermission } = require('../utils/permissions');
-const { dataProxy } = require('../utils/dataProxy');
-const schema = require('../schema.js');
-const SchemaService = require('./services/schemaService');
-const EntityService = require('./services/entityService');
+const SchemaService = require('./schemaService');
+const EntityService = require('./entityService');
 
 /**
  * Charge les relations d'une row de manière récursive
@@ -118,7 +114,6 @@ async function loadRelationsForRow(user, tableName, row, options = {}) {
                     // Ajouter le champ _table pour marquer la provenance
                     filteredSubRelatedRow._table = subRelConfig.relatedTable;
 
-
                     // Appliquer le mode compact si demandé
                     if (compact) {
                       filteredSubRelatedRow = EntityService.compactRelation(filteredSubRelatedRow, subRelConfig.relatedTable);
@@ -149,27 +144,35 @@ async function loadRelationsForRow(user, tableName, row, options = {}) {
   return relations;
 }
 
-// [#TC] buildFilteredSchema() déplacée dans utils/services/schemaService.js
+/**
+ * Récupère les données d'une table avec relations et filtres
+ * @param {Object} user - L'utilisateur connecté
+ * @param {string} tableName - Nom de la table
+ * @param {Object} options - Options de chargement
+ * @param {number} [options.id] - ID spécifique à récupérer
+ * @param {number} [options.limit] - Nombre maximum de résultats
+ * @param {number} [options.offset] - Décalage pour la pagination
+ * @param {string} [options.orderBy] - Champ de tri
+ * @param {string} [options.order] - Direction du tri (ASC/DESC)
+ * @param {string} [options.customWhere] - Clause WHERE personnalisée
+ * @param {string} [options.relation] - Relations à charger ('all' ou liste CSV)
+ * @param {string} [options.includeSchema] - Inclure le schéma ('1' pour oui)
+ * @param {string} [options.compact] - Mode compact pour relations ('1' pour oui)
+ * @returns {Object} - Résultat avec rows, pagination et éventuellement schema
+ */
+async function getTableData(user, tableName, options = {}) {
+  const {
+    id,
+    limit,
+    offset,
+    orderBy,
+    order,
+    customWhere,
+    relation,
+    includeSchema,
+    compact
+  } = options;
 
-// ==========================================================
-// [#TC] ré-écrite par moi d'après le chemin _api/:table/:id?
-// ==========================================================
-async function getTableData({
-  user, 
-  tableName, 
-  id, 
-  limit, 
-  offset, 
-  orderBy, 
-  order, 
-  customWhere, 
-  relation, 
-  includeSchema, 
-  compact, 
-  useProxy
-}) {
-  //console.log("tableName", tableName, useProxy)
-  
   // Si l'utilisateur n'est pas connecté, utiliser un user par défaut avec rôle public
   const effectiveUser = user || { roles: 'public' };
 
@@ -182,7 +185,6 @@ async function getTableData({
   }
 
   // Vérifier si l'utilisateur a accès à la table
-  // [#TC] module permissions
   if (!hasPermission(effectiveUser, table, 'read')) {
     return {status:403, error: 'Accès refusé à cette table'};
   }
@@ -218,7 +220,7 @@ async function getTableData({
         [id]
       );
   }
-  
+
 
   // Filtrer les rows selon granted et les champs selon les permissions
   const accessibleRows = rows.filter(row => EntityService.canAccessEntity(effectiveUser, table, row));
@@ -281,16 +283,16 @@ async function getTableData({
       offset: offset ? parseInt(offset) : 0
     }
   };
+
   // Ajouter le schéma si demandé
   if (includeSchema === '1') {
     response.schema = SchemaService.buildFilteredSchema(effectiveUser, table);
   }
-  if(useProxy) {
-    const responseProxyfied = JSON.parse(JSON.stringify(response)) // [#TC] POURQUOI ? je l'ignore mais sinon problème de Date ?!
-    return JSON.parse(JSON.stringify(dataProxy(responseProxyfied))); // [#TC] résolution du proxy car sinon complexité de modif
-  } else return response
-} 
-// ==========================================================
 
+  return response;
+}
 
-module.exports = {getTableData};
+module.exports = {
+  getTableData,
+  loadRelationsForRow
+};
