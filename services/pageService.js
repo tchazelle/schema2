@@ -27,7 +27,9 @@ class PageService {
       customWhere: 'sqlWhere',
       relation: 'apiRelations',
       compact: 'apiCompact',
-      includeSchema: 'apiSchema'
+      includeSchema: 'apiSchema',
+      noSystemFields: "apiNoSystemFields",
+      nodId: "apiNoId",
     };
     // tarnsforme les section en object pour getTableData
     const newSections = sections.map(section => {
