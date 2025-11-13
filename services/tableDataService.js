@@ -174,8 +174,7 @@ async function getTableData(user, tableName, options = {}) {
     customWhere,
     relation,
     includeSchema,
-    compact,
-    useProxy
+    compact
   } = options;
   
   
@@ -254,6 +253,19 @@ async function getTableData(user, tableName, options = {}) {
   const filteredRows = [];
   for (const row of accessibleRows) {
     const filteredRow = EntityService.filterEntityFields(user, table, row);
+
+    // Retirer les champs système si demandé (ownerId, granted, createdAt, updatedAt)
+    if (noSystemFields === '1') {
+      delete filteredRow.ownerId;
+      delete filteredRow.granted;
+      delete filteredRow.createdAt;
+      delete filteredRow.updatedAt;
+    }
+
+    // Retirer l'id si demandé
+    if (noId === '1') {
+      delete filteredRow.id;
+    }
 
     // Charger les relations pour cette row
     if (requestedRelations.length > 0) {

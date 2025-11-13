@@ -123,6 +123,8 @@ module.exports = {
         apiRelations: { type: "text" }, // Liste des relations à inclure (ex: "byArtist,recordLabel") (ancien: relations)
         apiCompact: { type: "integer", default: 0 }, // Format réduit pour les liens n:1 (0 ou 1)
         apiSchema: { type: "integer", default: 0 }, // Inclure le schéma dans la réponse (0 ou 1)
+        apiNoSystemFields: { type: "integer", default: 0 }, // Retirer les champs système (ownerId, granted, createdAt, updatedAt) (0 ou 1)
+        apiNoId: { type: "integer", default: 0 }, // Retirer le champ id (0 ou 1)
         reqQuery: { type: "text" }, // JSON des req.query par défaut pour mustacher le query
         apiData: { type: "text" }, // JSON optionnel utilisé en substitution du résultat si sqlTable/sqlQuery vides
         presentationType: { type: "enum", values: ["cards", "list", "table", "grid"], default: "cards" }, // Type de présentation

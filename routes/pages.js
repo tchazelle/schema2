@@ -13,15 +13,129 @@ router.get('/:slug?', async (req, res, next) => {
   try {
     const user = req.user
     const slug = req.params.slug || 'index';
-    html = await PageService.pageRender(user, slug, req.query)
-    
-    if(typeof html == "object") {
-      const err = new Error("Page introuvable");
-      err.status = 404; // on ajoute une propriété HTTP personnalisée
-      return next(err); // on passe l’erreur au middleware suivant
+    // Récupérer les tables accessibles
+    const pages = await pagesLoad(user)
+    // user.allRoles est déjà défini par userEnrichMiddleware
+    //const accessibleTables = fullUser ? getAccessibleTables(fullUser) : [];
+
+    debugPage = JSON.stringify(user,null,2)
+
+    res.send(`<pre>${debugPage}</pre>`+userMenuHTML(user)+pageMenuHTML(pages))
+    return 
+  
+  
+    const isAuthenticated = !!user;
+
+    // Récupérer les informations complètes de l'utilisateur si connecté
+    // [#TC] Est-ce sécurisé ? N'importe qui peut ajouter un cookie avec user.id = 1 ou c'est impossible ?
+    let fullUser = null;
+    if (isAuthenticated) {
+      const [users] = await pool.query(
+        'SELECT * FROM Person WHERE id = ?', // [#TC] IMPRECISION n'utilise pas les infos schema.user
+        [user.id]
+      );
+      if (users.length > 0) {
+        fullUser = users[0];
+      }
     }
-    
-    res.send(html)
+
+    // Récupérer tous les rôles de l'utilisateur
+    const allRoles = fullUser ? getUserAllRoles(fullUser) : ['public'];
+
+  
+
+    // Page sélectionnée
+    const targetPage = pages.find(page => page.slug == slug);
+
+    if (!targetPage) {
+      return res.status(404).send('<h1>Page non trouvée</h1>');
+    }
+
+    // Conversion des champs table Section pour getTableData
+    const translateTableDataOptions = {
+      tableName: 'sqlTable',
+      limit: 'sqlLimit',
+      orderBy: 'sqlOrderBy',
+      customWhere: 'sqlWhere',
+      relation: 'apiRelations',
+      compact: 'apiCompact',
+      includeSchema: 'apiSchema',
+      noSystemFields: 'apiNoSystemFields',
+      noId: 'apiNoId'
+    };
+
+    // Construction des sections
+    if (targetPage.sections) {
+      const newSections = Object.fromEntries(
+        targetPage.sections.map(section => {
+          const { id, slug, name, description } = section;
+          let tableDataOptions = Object.fromEntries(
+            Object.entries(translateTableDataOptions)
+              .filter(([newKey, oldKey]) => section[oldKey])
+              .map(([newKey, oldKey]) => [newKey, section[oldKey]])
+          );
+          return [section.slug, { id, slug, name, description, tableDataOptions, sectionUser: user }];
+        })
+      );
+
+      // Chargement des rows
+      const data = await Promise.all(
+        Object.values(newSections).map(section => getTableData(section.sectionUser, section.tableDataOptions.tableName, section.tableDataOptions))
+      );
+
+      // Report des rows dans les sections
+      const newSectionsWithRows = Object.fromEntries(
+        Object.entries(newSections).map(([sectionSlug, section], i) => {
+          const sectionWithRows = Object.assign(section, data[i]);
+          return [sectionSlug, sectionWithRows];
+        })
+      );
+      targetPage.sections = newSectionsWithRows;
+    }
+
+    // [#TC] Templates automatiques des sections : ATTENTION intégrer les templates de la bdd si non nuls
+    const templateSections = targetPage.sections
+      ? Object.entries(targetPage.sections)
+          .map(([sectionSlug, section]) => {
+            const sectionMustache = `{{#${sectionSlug}}}<section class="section ${sectionSlug}"><h3 class="name">{{name}}</h3><p class="description"></p>${mustacheAuto(
+              section.tableDataOptions.tableName
+            )} </section>{{/${sectionSlug}}}`;
+            return sectionMustache;
+          })
+          .join('\n')
+      : '';
+
+    const templatePage = mustacheAuto('Page'); // [#TC] approximatif, c'est en attendant
+
+    const style = `
+    .rows { border: solid 1px purple; margin: 3px; padding :0.5rem}
+    .row { border: solid 1px grey; margin: 3px; padding :0.5rem }
+    .sub-row { border: dotted 1px grey; margin: 3px; padding :0.5rem }
+    .oneToMany { border: dotted 6px grey; margin: 3px; padding :0.5rem }
+
+    [data-relation=track] {  border: dotted 2px blue; color: red }
+    .label {font-size:0.8rem; color: grey }
+    `;
+
+    let templatePageWithNewSections = templatePage.replace(
+      /{{#sections}}[\s\S]*?{{\/sections}}/g,
+      `<style>${style}</style>{{#sections}}\n${templateSections}\n{{/sections}}`
+    );
+
+    const content = mustache.render(templatePageWithNewSections, { rows: targetPage });
+
+    // Utilisation du service de templates pour générer le HTML complet
+    const html = TemplateService.generateHomeHTML({
+      user: fullUser,
+      pages: pages,
+      pageName: slug,
+      content: content,
+      accessibleTables: accessibleTables,
+      allRoles: allRoles,
+      isAuthenticated: isAuthenticated
+    });
+
+    res.send(html);
   } catch (error) {
     console.error("Erreur lors du chargement de la page d'accueil:", error);
     res.status(500).send('<h1>Erreur serveur</h1>');
