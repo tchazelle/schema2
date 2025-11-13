@@ -4,7 +4,7 @@
  */
 
 const pool = require('../config/database');
-const { hasPermission } = require('../permissions');
+const { hasPermission } = require('./permissionService');
 const EntityService = require('./entityService');
 
 class PageService {
