@@ -100,7 +100,9 @@ router.get('/:slug?', async (req, res) => {
       customWhere: 'sqlWhere',
       relation: 'apiRelations',
       compact: 'apiCompact',
-      includeSchema: 'apiSchema'
+      includeSchema: 'apiSchema',
+      noSystemFields: 'apiNoSystemFields',
+      noId: 'apiNoId'
     };
 
     // Construction des sections
