@@ -122,7 +122,7 @@ router.get('/:slug?', async (req, res) => {
     const content = mustache.render(templatePageWithNewSections, { rows: targetPage });
 
     // Utilisation du service de templates pour générer le HTML complet
-    const html = TemplateService.generateHomeHTML({
+    const html = TemplateService.htmlSitePage({
       user: fullUser,
       pages: pages,
       pageName: slug,

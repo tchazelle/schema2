@@ -1,5 +1,5 @@
 function dataProxy(data) {
-  const isObject = val => val && typeof val === 'object';
+  const isObject = val => val && typeof val === 'object' && !(val instanceof Date);
 
   // Proxyfie tout en profondeur AVANT d'appliquer les handlers
   function deepWrap(value) {

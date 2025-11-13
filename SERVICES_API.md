@@ -124,9 +124,9 @@ PageService.loadSectionData(section, user) → Object            // Charge donn�
 **Génération de templates HTML pour le rendu**
 
 ```javascript
-TemplateService.generateLoginHTML() → string                   // Génère formulaire de connexion
-TemplateService.generateHumanizeScript() → string              // Script pour humaniser dates/durées
-TemplateService.generateHomeHTML(options) → string             // Génère page d'accueil
+TemplateService.htmlLogin() → string                   // Génère formulaire de connexion
+TemplateService.scriptHumanize() → string              // Script pour humaniser dates/durées
+TemplateService.htmlSitePage(options) → string             // Génère page d'accueil
   // options: { user, accessibleTables, schema, ... }
 ```
 

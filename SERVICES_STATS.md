@@ -74,9 +74,9 @@ Tableau complet des fonctions/méthodes par service avec nombre de lignes et d'a
 | tableDataService | loadRelationsForRow | 134 | 2 | function |
 | **Total tableDataService** | **2 fonctions** | **273** | **9** | |
 | | | | | |
-| templateService | generateHomeHTML | ~100 | 0 | static |
-| templateService | generateHumanizeScript | ~70 | 0 | static |
-| templateService | generateLoginHTML | ~15 | 0 | static |
+| templateService | htmlSitePage | ~100 | 0 | static |
+| templateService | scriptHumanize | ~70 | 0 | static |
+| templateService | htmlLogin | ~15 | 0 | static |
 | **Total templateService** | **3 méthodes** | **~185** | **0** | |
 
 ---

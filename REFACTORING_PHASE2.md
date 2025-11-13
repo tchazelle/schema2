@@ -28,14 +28,14 @@ Service pour la gestion des pages et sections :
 Service pour la génération de templates HTML :
 
 **Fonctions principales :**
-- `generateLoginHTML()` - Formulaire de connexion
-- `generateHomeHTML(options)` - Page complète avec header, menu, sidebar
-- `generateHumanizeScript()` - Script client pour humaniser les dates/durées
+- `htmlLogin()` - Formulaire de connexion
+- `htmlSitePage(options)` - Page complète avec header, menu, sidebar
+- `scriptHumanize()` - Script client pour humaniser les dates/durées
 
 **Extraction depuis routes/pages.js :**
-- Ligne 12-27 : `generateLoginHTML()` → TemplateService
-- Ligne 30-524 : `generateHomeHTML()` → TemplateService (500+ lignes !)
-- Ligne 714-768 : `humanize()` → TemplateService.generateHumanizeScript()
+- Ligne 12-27 : `htmlLogin()` → TemplateService
+- Ligne 30-524 : `htmlSitePage()` → TemplateService (500+ lignes !)
+- Ligne 714-768 : `humanize()` → TemplateService.scriptHumanize()
 
 **Bénéfices :**
 - ✅ 500+ lignes de HTML extraites des routes

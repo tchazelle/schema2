@@ -190,7 +190,8 @@ class SchemaService {
    */
   static getDisplayFields(tableName) {
     const tableConfig = this.getTableConfig(tableName);
-    return tableConfig ? tableConfig.displayFields : null;
+    const displayFields = tableConfig.displayFields ? tableConfig.displayFields : (tableConfig.fields.name ? ["name"] : null);
+    return displayFields
   }
 
   /**

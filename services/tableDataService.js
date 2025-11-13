@@ -3,6 +3,7 @@ const { hasPermission } = require('./permissionService');
 const SchemaService = require('./schemaService');
 const EntityService = require('./entityService');
 const RepositoryService = require('./repositoryService');
+const {dataProxy} = require('../utils/dataProxy');
 
 /**
  * Charge les relations d'une row de manière récursive
@@ -16,11 +17,13 @@ const RepositoryService = require('./repositoryService');
  * @returns {Object} - Objet des relations chargées
  */
 async function loadRelationsForRow(user, tableName, row, options = {}) {
+  
   const {
     requestedRelations = [],
     loadN1InRelations = false,
     compact = false
   } = options;
+  
   const { relationsN1, relations1N } = SchemaService.getTableRelations(user, tableName);
   const relations = {};
 
@@ -171,8 +174,11 @@ async function getTableData(user, tableName, options = {}) {
     customWhere,
     relation,
     includeSchema,
-    compact
+    compact,
+    useProxy
   } = options;
+  
+  
 
   // user est déjà enrichi par userEnrichMiddleware (toujours défini, même pour visiteurs publics)
 
@@ -251,11 +257,12 @@ async function getTableData(user, tableName, options = {}) {
 
     // Charger les relations pour cette row
     if (requestedRelations.length > 0) {
-      const useCompact = compact === '1';
+      const useCompact = compact;
+      
       const relations = await loadRelationsForRow(user, table, row, {
         requestedRelations,
         loadN1InRelations: true,
-        compact: useCompact
+        compact
       });
 
       // Ajouter les relations au résultat (utilise _relations pour éviter conflit avec champ DB)
@@ -288,7 +295,11 @@ async function getTableData(user, tableName, options = {}) {
   if (includeSchema === '1') {
     response.schema = SchemaService.buildFilteredSchema(user, table);
   }
+  if(useProxy) {
+    const response2  = dataProxy(response)
+    return JSON.parse(JSON.stringify(response2))
 
+  }
   return response;
 }
 

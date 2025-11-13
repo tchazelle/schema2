@@ -166,7 +166,6 @@ class EntityService {
    */
   static compactRelation(relatedEntity, relatedTable) {
     const displayFields = SchemaService.getDisplayFields(relatedTable);
-
     if (!displayFields || displayFields.length === 0) {
       return relatedEntity;
     }
