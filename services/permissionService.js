@@ -63,13 +63,21 @@ function getUserAllRoles(user) {
   }
 
   const userRoles = parseUserRoles(user.roles);
-  const allRoles = new Set(['public']); // Tout le monde hérite de public
+  const allRoles = new Set(); // Ne pas ajouter 'public' au début pour préserver l'ordre hiérarchique
 
   // Pour chaque rôle de l'utilisateur, obtenir ses héritages
   for (const role of userRoles) {
     const inherited = getInheritedRoles(role);
     inherited.forEach(r => allRoles.add(r));
   }
+
+  // Si aucun rôle n'a été trouvé, retourner public
+  if (allRoles.size === 0) {
+    return ['public'];
+  }
+
+  // Ajouter 'public' à la fin si ce n'est pas déjà présent (normalement déjà ajouté par l'héritage)
+  allRoles.add('public');
 
   return Array.from(allRoles);
 }
