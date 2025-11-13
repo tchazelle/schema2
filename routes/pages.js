@@ -11,9 +11,11 @@ const TemplateService = require('../services/templateService');
 
 router.get('/:slug?', async (req, res, next) => {
   try {
+  
     const user = req.user
     const slug = req.params.slug || 'index';
-    const result = await PageService.pageRender(user, slug, {debug:0})
+      console.log("$$$$$$$$$$$$$ PAGE", slug)
+    const result = await PageService.pageRender(user, slug, req.query ? req.query : {}) // ?debug=1
     if (typeof result == "object" && result.error) {
       const err = new Error(result.error);
       err.status = 404; // on ajoute une propriété HTTP personnalisée
@@ -21,10 +23,9 @@ router.get('/:slug?', async (req, res, next) => {
     }
     res.send(result)
   } catch (error) {
-    console.error("Erreur lors du chargement de la page "+req.params.slug, error);
+    console.error("Erreur lors du chargement de la page " + req.params.slug, error);
     res.status(500).send('<h1>Erreur serveur</h1>');
   }
 });
-
 
 module.exports = router;

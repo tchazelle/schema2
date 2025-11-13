@@ -29,7 +29,7 @@ class PageService {
       compact: 'apiCompact',
       includeSchema: 'apiSchema',
       noSystemFields: "apiNoSystemFields",
-      nodId: "apiNoId",
+      noId: "apiNoId",
     };
     // tarnsforme les section en object pour getTableData
     const newSections = sections.map(section => {
@@ -39,11 +39,14 @@ class PageService {
           .map(([newKey, oldKey]) => [newKey, section[oldKey]])
       );
       tableDataOptions.useProxy = 1;
+      // DEBUG : ici on a bien les options noId et noSystemFields
       return ({ tableName: tableDataOptions.tableName, tableDataOptions });
     })
+    //console.log("SECTIONS ------------------", newSections)
     // prépare les query
     const promises = newSections.map(section => {
       const {tableName, tableDataOptions} = section
+      console.log("promise", tableName, tableDataOptions )
       return getTableData(user, tableName, tableDataOptions)
     })
     return Promise.all(promises);

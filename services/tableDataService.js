@@ -21,7 +21,9 @@ async function loadRelationsForRow(user, tableName, row, options = {}) {
   const {
     requestedRelations = [],
     loadN1InRelations = false,
-    compact = false
+    compact = false,
+    noId = false,
+    noSystemFields = false,
   } = options;
   
   const { relationsN1, relations1N } = SchemaService.getTableRelations(user, tableName);
@@ -50,6 +52,17 @@ async function loadRelationsForRow(user, tableName, row, options = {}) {
             // Appliquer le mode compact si demandé
             if (compact) {
               filteredRelatedRow = EntityService.compactRelation(filteredRelatedRow, relConfig.relatedTable);
+            }
+            
+            if (noId) {
+              delete filteredRelatedRow.id
+              delete filteredRelatedRow._table
+            }
+            if (noSystemFields) {
+              delete filteredRelatedRow.ownerId;
+              delete filteredRelatedRow.granted;
+              delete filteredRelatedRow.createdAt;
+              delete filteredRelatedRow.updatedAt;
             }
 
             relations[fieldName] = filteredRelatedRow;
@@ -122,6 +135,16 @@ async function loadRelationsForRow(user, tableName, row, options = {}) {
                     if (compact) {
                       filteredSubRelatedRow = EntityService.compactRelation(filteredSubRelatedRow, subRelConfig.relatedTable);
                     }
+                    if (noId) {
+                      delete filteredSubRelatedRow.id
+                      delete filteredSubRelatedRow._table
+                    }
+                    if (noSystemFields) {
+                      delete filteredSubRelatedRow.ownerId;
+                      delete filteredSubRelatedRow.granted;
+                      delete filteredSubRelatedRow.createdAt;
+                      delete filteredSubRelatedRow.updatedAt;
+                    }
 
                     subRelations[subFieldName] = filteredSubRelatedRow;
                   }
@@ -134,7 +157,17 @@ async function loadRelationsForRow(user, tableName, row, options = {}) {
               filteredRelRow._relations = subRelations;
             }
           }
-
+          if (noId) {
+            delete filteredRelRow.id
+            delete filteredRelRow._table
+          }
+          if (noSystemFields) {
+            delete filteredRelRow.ownerId;
+            delete filteredRelRow.granted;
+            delete filteredRelRow.createdAt;
+            delete filteredRelRow.updatedAt;
+          }
+          //console.log("=============", noId, "==========", filteredRelRow)
           filteredRelatedRows.push(filteredRelRow);
         }
       }
@@ -179,7 +212,7 @@ async function getTableData(user, tableName, options = {}) {
     noSystemFields,
     noId
   } = options;
-  
+  console.log("*********", tableName, noSystemFields, noId)
   
 
   // user est déjà enrichi par userEnrichMiddleware (toujours défini, même pour visiteurs publics)
@@ -256,7 +289,7 @@ async function getTableData(user, tableName, options = {}) {
   const filteredRows = [];
   for (const row of accessibleRows) {
     const filteredRow = EntityService.filterEntityFields(user, table, row);
-
+    
     // Retirer les champs système si demandé (ownerId, granted, createdAt, updatedAt)
     if (noSystemFields) {
       delete filteredRow.ownerId;
@@ -264,20 +297,22 @@ async function getTableData(user, tableName, options = {}) {
       delete filteredRow.createdAt;
       delete filteredRow.updatedAt;
     }
-
+    
     // Retirer l'id si demandé
     if (noId) {
       delete filteredRow.id;
+      delete filteredRow._table;
     }
 
     // Charger les relations pour cette row
     if (requestedRelations.length > 0) {
-      const useCompact = compact;
-      
+      //console.log("AVANT DE LANCER loadRelationsForRow", noSystemFields )
       const relations = await loadRelationsForRow(user, table, row, {
         requestedRelations,
         loadN1InRelations: true,
-        compact
+        compact,
+        noSystemFields,
+        noId
       });
 
       // Ajouter les relations au résultat (utilise _relations pour éviter conflit avec champ DB)
