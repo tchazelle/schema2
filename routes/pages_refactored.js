@@ -150,11 +150,10 @@ router.get('/:slug?', async (req, res) => {
 router.get('/:page', async (req, res) => {
   try {
     const { page: pageSlug } = req.params;
-    const user = req.user;
-    const effectiveUser = user || { roles: 'public' };
+    const user = req.user; // Déjà enrichi par userEnrichMiddleware
 
     // Utilisation du PageService pour charger la page et ses sections
-    const pageData = await PageService.getPageWithSections(pageSlug, effectiveUser);
+    const pageData = await PageService.getPageWithSections(pageSlug, user);
 
     if (!pageData) {
       return res.status(404).json({
