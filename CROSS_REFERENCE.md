@@ -39,10 +39,10 @@ schema2/
 | Fichier | Lignes | Objets Principaux | Références |
 |---------|--------|-------------------|------------|
 | **`routes/auth.js`** | 87 | • `POST /login`<br>• `POST /logout`<br>• `GET /me` | → `utils/auth.js`<br>→ `utils/permissions.js`<br>→ `config/database.js` |
-| **`routes/crud.js`** | 500+ | • `GET /crud/:table`<br>• `POST /crud/:table`<br>• `PUT /crud/:table/:id`<br>• `DELETE /crud/:table/:id` | → `schema.js`<br>→ `utils/permissions.js`<br>→ `utils/services/schemaService.js` |
+| **`routes/crud.js`** | 500+ | • `GET /crud/:table`<br>• `POST /crud/:table`<br>• `PUT /crud/:table/:id`<br>• `DELETE /crud/:table/:id` | → `schema.js`<br>→ `utils/permissions.js`<br>→ `services/schemaService.js` |
 | **`routes/api.js`** | 500+ | • `GET /api/:table`<br>• `POST /api/:table`<br>• `PUT /api/:table/:id`<br>• `DELETE /api/:table/:id` | → `schema.js`<br>→ `utils/apiTables.js`<br>→ `utils/permissions.js` |
 | **`routes/pages.js`** | 917 | • `GET /` (home)<br>• `GET /:slug` (pages dynamiques) | → `schema.js`<br>→ `utils/mustacheAuto.js`<br>→ `config/database.js`<br>⚠️ **Legacy - À refactorer** |
-| **`routes/pages_refactored.js`** | 185 | • `GET /` (home)<br>• `GET /:slug` (pages dynamiques) | → `utils/services/pageService.js`<br>→ `utils/services/templateService.js`<br>✅ **Version refactorisée (-80% lignes)** |
+| **`routes/pages_refactored.js`** | 185 | • `GET /` (home)<br>• `GET /:slug` (pages dynamiques) | → `services/pageService.js`<br>→ `services/templateService.js`<br>✅ **Version refactorisée (-80% lignes)** |
 
 ### 2.3 Utilitaires Core
 
@@ -52,7 +52,7 @@ schema2/
 | **`utils/permissions.js`** | 168 | • `getUserAllRoles(user)`: 20-35<br>• `hasPermission(user, table, action)`: 50-90<br>• `getAccessibleTables(user)`: 120-145<br>• `checkEntityAccess(user, table, entityId)`: 147-168 | ← Tous les routes<br>← Services<br>→ `schema.js`<br>→ `constants/permissions.js` |
 | **`utils/dbSync.js`** | 200+ | • `syncDatabase(pool)`: 10-200<br>• `createTable(pool, tableName, schema)`: 50-100<br>• `alterTable(pool, tableName, changes)`: 102-150 | ← `server.js` (au démarrage)<br>→ `schema.js`<br>→ `config/database.js` |
 | **`utils/dataProxy.js`** | 200+ | • `applyProxy(data, proxyConfig)`: 10-50<br>• `transformData(row, fields)`: 52-100<br>• `filterByPermission(data, user)`: 102-150 | ← `routes/api.js`<br>← `routes/crud.js`<br>→ `schema.js` |
-| **`utils/buildUrl.js`** | ~50 | • `buildUrl(base, params)`: 10-30<br>• `buildApiUrl(table, id, query)`: 32-50 | ← `routes/*`<br>← `utils/services/*` |
+| **`utils/buildUrl.js`** | ~50 | • `buildUrl(base, params)`: 10-30<br>• `buildApiUrl(table, id, query)`: 32-50 | ← `routes/*`<br>← `services/*` |
 | **`utils/mustacheAuto.js`** | ~150 | • `renderTemplate(template, data, partials)`: 10-50<br>• `loadTemplate(path)`: 52-80<br>• `processTemplateData(data)`: 82-150 | ← `routes/pages.js` (legacy)<br>→ `mustache` |
 | **`utils/apiTables.js`** | ~200 | • `getTableData(pool, table, filters)`: 10-70<br>• `insertRow(pool, table, data)`: 72-120<br>• `updateRow(pool, table, id, data)`: 122-170<br>• `deleteRow(pool, table, id)`: 172-200 | ← `routes/api.js`<br>→ `config/database.js`<br>→ `schema.js` |
 
@@ -60,10 +60,10 @@ schema2/
 
 | Fichier | Lignes | Fonctions Principales | Références |
 |---------|--------|----------------------|------------|
-| **`utils/services/pageService.js`** | ~200 | • `loadPageData(slug, user)`: 10-80<br>• `loadSectionsByPageId(pageId, user)`: 82-140<br>• `filterSectionsByPermission(sections, user)`: 142-180<br>• `enrichSectionsWithData(sections)`: 182-200 | ← `routes/pages_refactored.js`<br>→ `config/database.js`<br>→ `utils/permissions.js`<br>→ `schemaService.js` |
-| **`utils/services/entityService.js`** | ~250 | • `checkEntityAccess(user, table, entityId)`: 10-60<br>• `filterEntitiesByAccess(entities, user, table)`: 62-120<br>• `getEntityWithPermissions(table, id, user)`: 122-180<br>• `validateEntityData(table, data)`: 182-250 | ← `routes/crud.js`<br>← `routes/api.js`<br>← `pageService.js`<br>→ `config/database.js`<br>→ `utils/permissions.js` |
-| **`utils/services/schemaService.js`** | ~400 | • `getTableSchema(tableName)`: 10-40<br>• `getTableFields(tableName)`: 42-80<br>• `getFieldDefinition(table, field)`: 82-110<br>• `getRelatedTables(tableName)`: 112-160<br>• `buildQueryFromSchema(table, filters)`: 162-250<br>• `validateFieldValue(field, value)`: 252-300<br>• `getAllTablesForUser(user)`: 302-350<br>• `getTableActions(table, user)`: 352-400 | ← Tous les services<br>← Tous les routes<br>→ `schema.js`<br>→ `utils/permissions.js` |
-| **`utils/services/templateService.js`** | ~680 | • `generateLoginForm()`: 10-80<br>• `generateHomePage(user, pages)`: 82-180<br>• `generateNavigationMenu(user)`: 182-250<br>• `generateUserMenu(user)`: 252-300<br>• `generateCRUDForm(table, data, action)`: 302-450<br>• `generateTableView(table, rows, user)`: 452-550<br>• `generatePageScripts()`: 552-620<br>• `generateCommonStyles()`: 622-680 | ← `routes/pages_refactored.js`<br>← `routes/crud.js`<br>→ `schema.js`<br>→ `public/css/*` (inline) |
+| **`services/pageService.js`** | ~200 | • `loadPageData(slug, user)`: 10-80<br>• `loadSectionsByPageId(pageId, user)`: 82-140<br>• `filterSectionsByPermission(sections, user)`: 142-180<br>• `enrichSectionsWithData(sections)`: 182-200 | ← `routes/pages_refactored.js`<br>→ `config/database.js`<br>→ `utils/permissions.js`<br>→ `schemaService.js` |
+| **`services/entityService.js`** | ~250 | • `checkEntityAccess(user, table, entityId)`: 10-60<br>• `filterEntitiesByAccess(entities, user, table)`: 62-120<br>• `getEntityWithPermissions(table, id, user)`: 122-180<br>• `validateEntityData(table, data)`: 182-250 | ← `routes/crud.js`<br>← `routes/api.js`<br>← `pageService.js`<br>→ `config/database.js`<br>→ `utils/permissions.js` |
+| **`services/schemaService.js`** | ~400 | • `getTableSchema(tableName)`: 10-40<br>• `getTableFields(tableName)`: 42-80<br>• `getFieldDefinition(table, field)`: 82-110<br>• `getRelatedTables(tableName)`: 112-160<br>• `buildQueryFromSchema(table, filters)`: 162-250<br>• `validateFieldValue(field, value)`: 252-300<br>• `getAllTablesForUser(user)`: 302-350<br>• `getTableActions(table, user)`: 352-400 | ← Tous les services<br>← Tous les routes<br>→ `schema.js`<br>→ `utils/permissions.js` |
+| **`services/templateService.js`** | ~680 | • `generateLoginForm()`: 10-80<br>• `generateHomePage(user, pages)`: 82-180<br>• `generateNavigationMenu(user)`: 182-250<br>• `generateUserMenu(user)`: 252-300<br>• `generateCRUDForm(table, data, action)`: 302-450<br>• `generateTableView(table, rows, user)`: 452-550<br>• `generatePageScripts()`: 552-620<br>• `generateCommonStyles()`: 622-680 | ← `routes/pages_refactored.js`<br>← `routes/crud.js`<br>→ `schema.js`<br>→ `public/css/*` (inline) |
 
 ### 2.5 Constantes
 
@@ -109,7 +109,7 @@ authMiddleware (utils/auth.js:44-99)
     ↓
 Route Handler (routes/*.js)
     ↓
-Service Layer (utils/services/*.js)
+Service Layer (services/*.js)
     ├─→ schemaService.js - Validation schéma
     ├─→ entityService.js - Contrôle d'accès
     ├─→ pageService.js - Chargement données
@@ -244,7 +244,7 @@ utils/buildUrl.js
 ### 5.3 Modules Niveau 2 (Dépendent du Niveau 1)
 
 ```
-utils/services/schemaService.js
+services/schemaService.js
     → schema.js
     → utils/permissions.js
 
@@ -261,12 +261,12 @@ utils/apiTables.js
 ### 5.4 Modules Niveau 3 (Dépendent du Niveau 2)
 
 ```
-utils/services/entityService.js
+services/entityService.js
     → config/database.js
     → utils/permissions.js
-    → utils/services/schemaService.js
+    → services/schemaService.js
 
-utils/services/templateService.js
+services/templateService.js
     → schema.js
     → public/css/* (inline)
 
@@ -278,11 +278,11 @@ utils/dataProxy.js
 ### 5.5 Modules Niveau 4 (Dépendent du Niveau 3)
 
 ```
-utils/services/pageService.js
+services/pageService.js
     → config/database.js
     → utils/permissions.js
-    → utils/services/schemaService.js
-    → utils/services/entityService.js
+    → services/schemaService.js
+    → services/entityService.js
 ```
 
 ### 5.6 Routes (Niveau le plus élevé)
@@ -302,13 +302,13 @@ routes/api.js
 routes/crud.js
     → schema.js
     → utils/permissions.js
-    → utils/services/schemaService.js
-    → utils/services/entityService.js
-    → utils/services/templateService.js
+    → services/schemaService.js
+    → services/entityService.js
+    → services/templateService.js
 
 routes/pages_refactored.js (✅ Version refactorisée)
-    → utils/services/pageService.js
-    → utils/services/templateService.js
+    → services/pageService.js
+    → services/templateService.js
     → utils/permissions.js
 
 routes/pages.js (⚠️ Legacy)
@@ -417,7 +417,7 @@ async function checkEntityAccess(user, tableName, entityId) {
 
 ### 6.2 Services Layer
 
-#### `utils/services/pageService.js`
+#### `services/pageService.js`
 
 ```javascript
 // Ligne 10-80: Chargement données page
@@ -464,7 +464,7 @@ function filterSectionsByPermission(sections, user) {
 }
 ```
 
-#### `utils/services/schemaService.js`
+#### `services/schemaService.js`
 
 ```javascript
 // Ligne 10-40: Récupération schéma table
@@ -505,7 +505,7 @@ function getAllTablesForUser(user) {
 }
 ```
 
-#### `utils/services/templateService.js`
+#### `services/templateService.js`
 
 ```javascript
 // Ligne 10-80: Génération formulaire login
@@ -918,7 +918,7 @@ User → GET /:slug (routes/pages_refactored.js:82)
 | Ajouter table | `schema.js` (lignes 100-340) |
 | Modifier permissions | `schema.js` (granted), `utils/permissions.js` |
 | Créer endpoint | `routes/*.js` |
-| Modifier UI | `utils/services/templateService.js`, `public/css/*` |
+| Modifier UI | `services/templateService.js`, `public/css/*` |
 | Debug auth | `utils/auth.js`, `routes/auth.js` |
 | Comprendre RBAC | `utils/permissions.js`, `constants/permissions.js` |
 
@@ -926,7 +926,7 @@ User → GET /:slug (routes/pages_refactored.js:82)
 
 ```
 1. Définir schéma → schema.js
-2. Créer service → utils/services/myFeatureService.js
+2. Créer service → services/myFeatureService.js
 3. Créer route → routes/myFeature.js
 4. Ajouter tests → tests/myFeature.test.js
 5. Documenter → CROSS_REFERENCE.md (ce fichier)
