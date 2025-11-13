@@ -9,15 +9,62 @@ const { mustacheAuto } = require('../utils/mustacheAuto');
 const PageService = require('../services/pageService');
 const TemplateService = require('../services/templateService');
 
-/**
- * GET /
- * Page d'accueil avec menu du site et menu utilisateur
- */
+
+function pageMenuHTML(pages) { return `
+  <div class="sidebar-section">
+    <ul>
+      ${pages.length > 0 ? pages.map(page => `
+        <li><a href="/${page.slug}">${page.name}</a></li>
+      `).join('') : '<li style="color: #999; padding: 8px 12px;">Aucune page disponible</li>'}
+    </ul>
+  </div>`
+}
+
+function userMenuHTML(user) {
+  return `<!-- Menu utilisateur -->
+    <div class="user-menu">
+      <button class="user-button" onclick="toggleUserMenu()">
+        <span class="user-icon">${user.givenName.charAt(0).toUpperCase()}</span>
+        <span>${user.givenName}</span>
+      </button>
+
+      <div class="user-dropdown" id="userDropdown">
+        ${!!user ? `
+          <div class="user-info">
+            ${user.email}<br>
+            <strong>Rôles:</strong> ${allRoles.join(', ')}
+          </div>
+          <a href="/_debug/user">Mon profil</a>
+          <a href="/_debug/user/grant">Mes autorisations</a>
+          <div class="divider"></div>
+          <button onclick="logout()">Déconnexion</button>
+        ` : `
+          <a href="#" onclick="showLoginForm(); return false;">Connexion</a>
+        `}
+      </div>
+  `
+}
+
+async function pagesLoad(user) {
+  const pagesFromTablePage = await getTableData(user, schema.menu.page, {useProxy:1});
+  return pagesFromTablePage.rows;
+}
+
 router.get('/:slug?', async (req, res) => {
   try {
+    const user = req.user
     const slug = req.params.slug || 'index';
-    console.log('PAGE ' + slug);
-    const user = req.user;
+    // Récupérer les tables accessibles
+    const pages = await pagesLoad(user)
+    user.allRoles = user ? getUserAllRoles(user) : ['public'];
+    //const accessibleTables = fullUser ? getAccessibleTables(fullUser) : [];
+
+    debugPage = JSON.stringify(user,null,2)
+
+    res.send(`<pre>${debugPage}</pre>`+userMenuHTML(user)+pageMenuHTML(pages))
+    return 
+  
+  
     const isAuthenticated = !!user;
 
     // Récupérer les informations complètes de l'utilisateur si connecté
@@ -36,12 +83,7 @@ router.get('/:slug?', async (req, res) => {
     // Récupérer tous les rôles de l'utilisateur
     const allRoles = fullUser ? getUserAllRoles(fullUser) : ['public'];
 
-    // Récupérer les tables accessibles
-    const accessibleTables = fullUser ? getAccessibleTables(fullUser) : [];
-
-    // Chargement des pages
-    const pagesFromTablePage = await getTableData(user, schema.menu.page, {});
-    const pages = pagesFromTablePage.rows;
+  
 
     // Page sélectionnée
     const targetPage = pages.find(page => page.slug == slug);
