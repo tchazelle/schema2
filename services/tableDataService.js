@@ -174,8 +174,7 @@ async function getTableData(user, tableName, options = {}) {
     compact
   } = options;
 
-  // Si l'utilisateur n'est pas connecté, utiliser un user par défaut avec rôle public
-  const effectiveUser = user || { roles: 'public' };
+  // user est déjà enrichi par userEnrichMiddleware (toujours défini, même pour visiteurs publics)
 
   // Normaliser le nom de la table (case-insensitive)
   const table = SchemaService.getTableName(tableName);
@@ -186,12 +185,12 @@ async function getTableData(user, tableName, options = {}) {
   }
 
   // Vérifier si l'utilisateur a accès à la table
-  if (!hasPermission(effectiveUser, table, 'read')) {
+  if (!hasPermission(user, table, 'read')) {
     return {status:403, error: 'Accès refusé à cette table'};
   }
 
   // Construire la requête SQL
-  const { where, params } = EntityService.buildWhereClause(effectiveUser, customWhere);
+  const { where, params } = EntityService.buildWhereClause(user, customWhere);
   let rows = []
   if(!id) {
     let query = `SELECT * FROM ${table} WHERE ${where}`;
@@ -224,10 +223,10 @@ async function getTableData(user, tableName, options = {}) {
 
 
   // Filtrer les rows selon granted et les champs selon les permissions
-  const accessibleRows = rows.filter(row => EntityService.canAccessEntity(effectiveUser, table, row));
+  const accessibleRows = rows.filter(row => EntityService.canAccessEntity(user, table, row));
 
   // Charger les relations si demandées
-  const { relationsN1, relations1N } = SchemaService.getTableRelations(effectiveUser, table);
+  const { relationsN1, relations1N } = SchemaService.getTableRelations(user, table);
 
   // Déterminer quelles relations charger
   let requestedRelations = [];
@@ -248,12 +247,12 @@ async function getTableData(user, tableName, options = {}) {
   // Filtrer les rows et charger les relations
   const filteredRows = [];
   for (const row of accessibleRows) {
-    const filteredRow = EntityService.filterEntityFields(effectiveUser, table, row);
+    const filteredRow = EntityService.filterEntityFields(user, table, row);
 
     // Charger les relations pour cette row
     if (requestedRelations.length > 0) {
       const useCompact = compact === '1';
-      const relations = await loadRelationsForRow(effectiveUser, table, row, {
+      const relations = await loadRelationsForRow(user, table, row, {
         requestedRelations,
         loadN1InRelations: true,
         compact: useCompact
@@ -287,7 +286,7 @@ async function getTableData(user, tableName, options = {}) {
 
   // Ajouter le schéma si demandé
   if (includeSchema === '1') {
-    response.schema = SchemaService.buildFilteredSchema(effectiveUser, table);
+    response.schema = SchemaService.buildFilteredSchema(user, table);
   }
 
   return response;

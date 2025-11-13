@@ -15,10 +15,7 @@ const EntityService = require('../services/entityService');
 router.get('/:table/view', async (req, res) => {
   try {
     const { table: tableParam } = req.params;
-    const user = req.user;
-
-    // Si l'utilisateur n'est pas connecté, utiliser un user par défaut avec rôle public
-    const effectiveUser = user || { roles: 'public' };
+    const user = req.user; // Déjà enrichi par userEnrichMiddleware
 
     // Normaliser le nom de la table (case-insensitive)
     const table = SchemaService.getTableName(tableParam);
@@ -146,10 +143,7 @@ router.get('/:table/view', async (req, res) => {
 router.get('/:table', async (req, res) => {
   try {
     const { table: tableParam } = req.params;
-    const user = req.user;
-
-    // Si l'utilisateur n'est pas connecté, utiliser un user par défaut avec rôle public
-    const effectiveUser = user || { roles: 'public' };
+    const user = req.user; // Déjà enrichi par userEnrichMiddleware
 
     // Normaliser le nom de la table (case-insensitive)
     const table = SchemaService.getTableName(tableParam);
@@ -162,7 +156,7 @@ router.get('/:table', async (req, res) => {
     }
 
     // Récupérer la structure de la table
-    const structure = SchemaService.getTableStructure(effectiveUser, table);
+    const structure = SchemaService.getTableStructure(user, table);
 
     if (!structure) {
       return res.status(403).json({
@@ -191,10 +185,7 @@ router.get('/:table', async (req, res) => {
 router.get('/:table/:id', async (req, res) => {
   try {
     const { table: tableParam, id } = req.params;
-    const user = req.user;
-
-    // Si l'utilisateur n'est pas connecté, utiliser un user par défaut avec rôle public
-    const effectiveUser = user || { roles: 'public' };
+    const user = req.user; // Déjà enrichi par userEnrichMiddleware
 
     // Normaliser le nom de la table (case-insensitive)
     const table = SchemaService.getTableName(tableParam);
@@ -207,7 +198,7 @@ router.get('/:table/:id', async (req, res) => {
     }
 
     // Vérifier si l'utilisateur a accès à la table
-    if (!hasPermission(effectiveUser, table, 'read')) {
+    if (!hasPermission(user, table, 'read')) {
       return res.status(403).json({
         error: 'Accès refusé à cette table'
       });
@@ -240,7 +231,7 @@ router.get('/:table/:id', async (req, res) => {
       // Si granted = published @role, vérifier le rôle
       else if (row.granted.startsWith('published @')) {
         const requiredRole = row.granted.replace('published @', '');
-        const userRoles = getUserAllRoles(effectiveUser);
+        const userRoles = getUserAllRoles(user);
         if (!userRoles.includes(requiredRole)) {
           return res.status(403).json({
             error: `Accès refusé : nécessite le rôle ${requiredRole}`
@@ -251,7 +242,7 @@ router.get('/:table/:id', async (req, res) => {
     }
 
     // Filtrer les champs selon les permissions
-    const structure = SchemaService.getTableStructure(effectiveUser, table);
+    const structure = SchemaService.getTableStructure(user, table);
     const filteredRow = {};
 
     for (const fieldName in structure.fields) {

@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const schema = require('../schema.js');
+const { getUserAllRoles, parseUserRoles } = require('./permissionService');
 require('dotenv').config();
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-key-change-in-production';
@@ -87,6 +88,79 @@ function clearAuthCookie(res) {
   res.clearCookie('auth_token');
 }
 
+/**
+ * Enrichit les données utilisateur avec des informations supplémentaires
+ * @param {Object|null} user - L'utilisateur à enrichir (ou null)
+ * @returns {Object} - L'utilisateur enrichi avec toutes les informations nécessaires
+ */
+function userEnrich(user) {
+  // Si pas d'utilisateur, créer un utilisateur public par défaut
+  if (!user) {
+    return {
+      id: null,
+      email: null,
+      roles: 'public',
+      allRoles: ['public'],
+      givenName: null,
+      familyName: null,
+      fullName: 'Visiteur',
+      abbreviation: 'V',
+      isAuthenticated: false,
+      effectiveRole: 'public'
+    };
+  }
+
+  // Obtenir tous les rôles (avec héritage)
+  const allRoles = getUserAllRoles(user);
+
+  // Créer l'abréviation (première lettre du prénom + première lettre du nom)
+  const abbreviation = (
+    (user.givenName ? user.givenName[0].toUpperCase() : '') +
+    (user.familyName ? user.familyName[0].toUpperCase() : '')
+  ) || 'U'; // 'U' pour User par défaut
+
+  // Créer le nom complet
+  const fullName = [user.givenName, user.familyName]
+    .filter(Boolean)
+    .join(' ') || user.email || 'Utilisateur';
+
+  // Obtenir le rôle principal (le plus élevé dans la hiérarchie)
+  const userRolesList = parseUserRoles(user.roles);
+  const primaryRole = userRolesList.length > 0 ? userRolesList[0] : 'public';
+
+  // Retourner l'utilisateur enrichi
+  return {
+    // Données originales
+    id: user.id,
+    email: user.email,
+    roles: user.roles, // Format original "@admin @dev"
+    givenName: user.givenName,
+    familyName: user.familyName,
+
+    // Données enrichies
+    allRoles: allRoles, // Array de tous les rôles avec héritage
+    fullName: fullName, // "Jean Dupont"
+    abbreviation: abbreviation, // "JD"
+    isAuthenticated: true,
+    primaryRole: primaryRole, // Le premier rôle de l'utilisateur
+    effectiveRole: primaryRole, // Alias pour compatibilité avec l'ancien code
+
+    // Métadonnées utiles
+    roleCount: allRoles.length,
+    hasAdminAccess: allRoles.includes('admin') || allRoles.includes('dir') || allRoles.includes('dev')
+  };
+}
+
+/**
+ * Middleware pour enrichir req.user avec des informations supplémentaires
+ * Doit être utilisé après authMiddleware
+ */
+function userEnrichMiddleware(req, res, next) {
+  // Enrichir l'utilisateur (qu'il soit authentifié ou non)
+  req.user = userEnrich(req.user);
+  next();
+}
+
 module.exports = {
   generateToken,
   verifyToken,
@@ -94,5 +168,7 @@ module.exports = {
   requireAuth,
   setAuthCookie,
   clearAuthCookie,
+  userEnrich,
+  userEnrichMiddleware,
   COOKIE_MAX_AGE
 };
