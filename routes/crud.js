@@ -6,174 +6,7 @@ const schema = require('../schema.js');
 const SchemaService = require('../utils/services/schemaService');
 const EntityService = require('../utils/services/entityService');
 
-/**
- * Récupère la structure d'une table avec les champs accessibles selon les permissions de l'utilisateur
- * Inclut également les relations si l'utilisateur y a accès
- * @param {Object} user - L'utilisateur connecté
- * @param {string} tableName - Nom de la table
- * @returns {Object|null} - Structure de la table ou null si non accessible
- */
-function getTableStructure(user, tableName) {
-  // Vérifier si la table existe
-  const tableConfig = schema.tables[tableName];
-  if (!tableConfig) {
-    return null;
-  }
-
-  // Vérifier si l'utilisateur a le droit de lecture sur la table
-  if (!hasPermission(user, tableName, 'read')) {
-    return null;
-  }
-
-  const userRoles = getUserAllRoles(user);
-  const structure = {
-    tableName: tableName,
-    displayField: tableConfig.displayField || schema.defaultConfigTable.displayField,
-    searchFields: tableConfig.searchFields || schema.defaultConfigTable.searchFields,
-    pageSize: tableConfig.pageSize || schema.defaultConfigTable.pageSize,
-    dateFormat: tableConfig.dateFormat || schema.defaultConfigTable.dateFormat,
-    cardWidth: tableConfig.cardWidth || schema.defaultConfigTable.cardWidth,
-    hasAttachmentsTab: tableConfig.hasAttachmentsTab !== undefined
-      ? tableConfig.hasAttachmentsTab
-      : schema.defaultConfigTable.hasAttachmentsTab,
-    fields: {},
-    relations: {},
-    permissions: {
-      read: hasPermission(user, tableName, 'read'),
-      create: hasPermission(user, tableName, 'create'),
-      update: hasPermission(user, tableName, 'update'),
-      delete: hasPermission(user, tableName, 'delete'),
-      publish: hasPermission(user, tableName, 'publish')
-    }
-  };
-
-  // Parcourir les champs de la table
-  for (const fieldName in tableConfig.fields) {
-    const fieldConfig = tableConfig.fields[fieldName];
-
-    // Vérifier les permissions spécifiques au champ (si définies)
-    let fieldAccessible = true;
-    if (fieldConfig.grant) {
-      fieldAccessible = false;
-      for (const role of userRoles) {
-        if (fieldConfig.grant[role] && fieldConfig.grant[role].includes('read')) {
-          fieldAccessible = true;
-          break;
-        }
-      }
-    }
-
-    if (!fieldAccessible) {
-      continue; // Ignorer ce champ
-    }
-
-    // Ajouter le champ à la structure
-    const field = {
-      type: fieldConfig.type,
-      isPrimary: fieldConfig.isPrimary || false,
-      autoIncrement: fieldConfig.autoIncrement || false,
-      default: fieldConfig.default,
-      renderer: fieldConfig.renderer,
-      values: fieldConfig.values, // Pour les enums
-      as: fieldConfig.as, // Pour les champs calculés SQL
-      calculate: fieldConfig.calculate ? 'function' : undefined, // Indiquer qu'il y a une fonction de calcul
-      stat: fieldConfig.stat
-    };
-
-    // Si c'est une relation
-    if (fieldConfig.relation) {
-      const relatedTable = fieldConfig.relation;
-
-      // Vérifier si l'utilisateur a accès à la table liée
-      if (hasPermission(user, relatedTable, 'read')) {
-        field.relation = relatedTable;
-        field.foreignKey = fieldConfig.foreignKey;
-        field.arrayName = fieldConfig.arrayName;
-        field.arraySchemaorgProperty = fieldConfig.arraySchemaorgProperty;
-        field.relationshipStrength = fieldConfig.relationshipStrength;
-        field.defaultSort = fieldConfig.defaultSort;
-        field.label = fieldConfig.label;
-
-        // Ajouter aux relations
-        structure.relations[fieldName] = {
-          type: 'many-to-one',
-          relatedTable: relatedTable,
-          foreignKey: fieldConfig.foreignKey,
-          arrayName: fieldConfig.arrayName,
-          relationshipStrength: fieldConfig.relationshipStrength,
-          defaultSort: fieldConfig.defaultSort,
-          accessible: true
-        };
-      } else {
-        // L'utilisateur n'a pas accès à la table liée
-        field.relation = relatedTable;
-        field.accessible = false;
-        structure.relations[fieldName] = {
-          type: 'many-to-one',
-          relatedTable: relatedTable,
-          accessible: false
-        };
-      }
-    }
-
-    structure.fields[fieldName] = field;
-  }
-
-  // Ajouter les commonFields si pas déjà présents
-  for (const fieldName in schema.commonFields) {
-    if (!structure.fields[fieldName]) {
-      const fieldConfig = schema.commonFields[fieldName];
-      structure.fields[fieldName] = {
-        type: fieldConfig.type,
-        default: fieldConfig.default,
-        common: true
-      };
-    }
-  }
-
-  // Ajouter les relations 1:n (relations inverses)
-  // Parcourir toutes les tables du schéma pour trouver les relations qui pointent vers cette table
-  for (const otherTableName in schema.tables) {
-    const otherTableConfig = schema.tables[otherTableName];
-
-    // Parcourir les champs de cette autre table
-    for (const otherFieldName in otherTableConfig.fields) {
-      const otherFieldConfig = otherTableConfig.fields[otherFieldName];
-
-      // Si ce champ a une relation vers notre table
-      if (otherFieldConfig.relation === tableName) {
-        // Vérifier si l'utilisateur a accès à l'autre table
-        if (hasPermission(user, otherTableName, 'read')) {
-          // Créer le nom de la relation inverse selon la doctrine :
-          // - si arrayName existe, utiliser sa valeur
-          // - sinon, utiliser la valeur de "relation" (le nom de la table cible)
-          const inverseRelationName = otherFieldConfig.arrayName || otherFieldConfig.relation;
-
-          // Ajouter cette relation 1:n
-          structure.relations[inverseRelationName] = {
-            type: 'one-to-many',
-            relatedTable: otherTableName,
-            relatedField: otherFieldName,
-            foreignKey: otherFieldConfig.foreignKey,
-            relationshipStrength: otherFieldConfig.relationshipStrength,
-            defaultSort: otherFieldConfig.defaultSort,
-            accessible: true
-          };
-        } else {
-          // L'utilisateur n'a pas accès à la table liée
-          const inverseRelationName = otherFieldConfig.arrayName || otherFieldConfig.relation;
-          structure.relations[inverseRelationName] = {
-            type: 'one-to-many',
-            relatedTable: otherTableName,
-            accessible: false
-          };
-        }
-      }
-    }
-  }
-
-  return structure;
-}
+// getTableStructure() a été déplacée dans SchemaService.getTableStructure()
 
 /**
  * GET /_crud/:table/view
@@ -205,70 +38,10 @@ router.get('/:table/view', async (req, res) => {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CRUD - ${table}</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: #f5f5f5;
-      padding: 20px;
-    }
-    .container { max-width: 1200px; margin: 0 auto; }
-    h1 { color: #333; margin-bottom: 10px; font-size: 28px; }
-    .subtitle { color: #666; margin-bottom: 20px; font-size: 14px; }
-    .nav {
-      margin-bottom: 20px;
-      padding: 15px;
-      background: white;
-      border-radius: 8px;
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    .nav a {
-      padding: 8px 16px;
-      background: #007bff;
-      color: white;
-      text-decoration: none;
-      border-radius: 4px;
-      font-size: 14px;
-      transition: background 0.2s;
-    }
-    .nav a:hover { background: #0056b3; }
-    .section {
-      background: white;
-      border-radius: 8px;
-      padding: 20px;
-      margin-bottom: 20px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    .section h2 {
-      color: #333;
-      font-size: 20px;
-      margin-bottom: 15px;
-      padding-bottom: 10px;
-      border-bottom: 2px solid #007bff;
-    }
-    .json-display {
-      background: #1e1e1e;
-      color: #d4d4d4;
-      padding: 20px;
-      border-radius: 4px;
-      overflow-x: auto;
-      font-family: 'Consolas', 'Monaco', monospace;
-      font-size: 13px;
-      line-height: 1.6;
-    }
-    .json-key { color: #9cdcfe; }
-    .json-string { color: #ce9178; }
-    .json-number { color: #b5cea8; }
-    .json-boolean { color: #569cd6; }
-    .json-null { color: #569cd6; }
-    @media (max-width: 768px) {
-      body { padding: 10px; }
-      h1 { font-size: 22px; }
-    }
-  </style>
+  <link rel="stylesheet" href="/css/common.css">
+  <link rel="stylesheet" href="/css/navigation.css">
+  <link rel="stylesheet" href="/css/json-viewer.css">
+  <link rel="stylesheet" href="/css/crud.css">
 </head>
 <body>
   <div class="container">
@@ -389,7 +162,7 @@ router.get('/:table', async (req, res) => {
     }
 
     // Récupérer la structure de la table
-    const structure = getTableStructure(effectiveUser, table);
+    const structure = SchemaService.getTableStructure(effectiveUser, table);
 
     if (!structure) {
       return res.status(403).json({
@@ -478,7 +251,7 @@ router.get('/:table/:id', async (req, res) => {
     }
 
     // Filtrer les champs selon les permissions
-    const structure = getTableStructure(effectiveUser, table);
+    const structure = SchemaService.getTableStructure(effectiveUser, table);
     const filteredRow = {};
 
     for (const fieldName in structure.fields) {

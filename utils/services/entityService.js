@@ -5,6 +5,7 @@
 
 const { hasPermission, getUserAllRoles } = require('../permissions');
 const SchemaService = require('./schemaService');
+const { GRANTED_VALUES, isPublishedRole, extractRoleFromGranted } = require('../../constants/permissions');
 
 class EntityService {
   /**
@@ -15,11 +16,11 @@ class EntityService {
    * - canAccessSection() dans routes/pages.js:808
    *
    * @param {Object} user - L'utilisateur
-   * @param {Object} entity - L'entité avec son champ granted (et éventuellement ownerId)
    * @param {string} tableName - Nom de la table de l'entité
+   * @param {Object} entity - L'entité avec son champ granted (et éventuellement ownerId)
    * @returns {boolean} - true si accessible
    */
-  static canAccessEntity(user, entity, tableName) {
+  static canAccessEntity(user, tableName, entity) {
     // Si pas de granted, l'entité est publique
     if (!entity.granted) {
       return true;
@@ -28,7 +29,7 @@ class EntityService {
     const userRoles = getUserAllRoles(user);
 
     // Si granted = 'draft', seul le propriétaire peut lire
-    if (entity.granted === 'draft') {
+    if (entity.granted === GRANTED_VALUES.DRAFT) {
       if (!user || entity.ownerId !== user.id) {
         return false;
       }
@@ -36,7 +37,7 @@ class EntityService {
     }
 
     // Si granted = 'shared', vérifier les permissions de la table
-    if (entity.granted === 'shared') {
+    if (entity.granted === GRANTED_VALUES.SHARED) {
       if (!hasPermission(user, tableName, 'read')) {
         return false;
       }
@@ -44,8 +45,8 @@ class EntityService {
     }
 
     // Si granted = 'published @role', vérifier le rôle
-    if (entity.granted.startsWith('published @')) {
-      const requiredRole = entity.granted.replace('published @', '');
+    if (isPublishedRole(entity.granted)) {
+      const requiredRole = extractRoleFromGranted(entity.granted);
       if (!userRoles.includes(requiredRole)) {
         return false;
       }
@@ -128,23 +129,23 @@ class EntityService {
     // 1. Draft accessible uniquement par le propriétaire
     if (user) {
       grantedConditions.push('(granted = ? AND ownerId = ?)');
-      params.push('draft', user.id);
+      params.push(GRANTED_VALUES.DRAFT, user.id);
     }
 
     // 2. Shared accessible selon les permissions de la table (déjà vérifié)
     grantedConditions.push('granted = ?');
-    params.push('shared');
+    params.push(GRANTED_VALUES.SHARED);
 
     // 3. Published @role accessible selon les rôles
     for (const role of userRoles) {
       grantedConditions.push('granted = ?');
-      params.push(`published @${role}`);
+      params.push(`${GRANTED_VALUES.PUBLISHED_PREFIX}${role}`);
     }
 
     // 4. Rows sans granted (NULL ou vide)
     grantedConditions.push('granted IS NULL');
     grantedConditions.push('granted = ?');
-    params.push('');
+    params.push(GRANTED_VALUES.EMPTY);
 
     if (grantedConditions.length > 0) {
       conditions.push(`(${grantedConditions.join(' OR ')})`);
@@ -205,7 +206,7 @@ class EntityService {
     // Pour update et delete, vérifier si l'utilisateur est propriétaire
     // si l'entité est en draft
     if (entity && (action === 'update' || action === 'delete')) {
-      if (entity.granted === 'draft' && entity.ownerId !== user?.id) {
+      if (entity.granted === GRANTED_VALUES.DRAFT && entity.ownerId !== user?.id) {
         return false;
       }
     }
@@ -224,7 +225,7 @@ class EntityService {
    */
   static filterAccessibleEntities(user, tableName, entities) {
     return entities.filter(entity =>
-      this.canAccessEntity(user, entity, tableName)
+      this.canAccessEntity(user, tableName, entity)
     );
   }
 }
