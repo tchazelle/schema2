@@ -262,7 +262,7 @@ module.exports = {
       cardWidth: "600px",
       publishableTo: ["public", "member", "premium"],
       granted: {
-        "member": ["read"],
+        "public": ["read"],
         "admin": ["read", "create", "update", "delete", "publish"]
       },
       fields: {

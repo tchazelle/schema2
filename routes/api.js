@@ -23,8 +23,8 @@ router.get('/:tableName', async (req, res) => {
   try {
     const { tableName } = req.params;
     const user = req.user;
-    const { limit, offset, orderBy, order, where: customWhere, relation, includeSchema, compact} = req.query;
-    const response = await getTableData(user, tableName, {id:null, limit, offset, orderBy, order, customWhere, relation, includeSchema, compact})
+    const { limit, offset, orderBy, order, where: customWhere, relation, includeSchema, compact, useProxy, noSystemFields, noId} = req.query;
+    const response = await getTableData(user, tableName, {id:null, limit, offset, orderBy, order, customWhere, relation, includeSchema, compact, useProxy, noSystemFields, noId})
     res.json(response);
 
   } catch (error) {

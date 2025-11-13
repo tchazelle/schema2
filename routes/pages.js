@@ -14,7 +14,6 @@ router.get('/:slug?', async (req, res, next) => {
   
     const user = req.user
     const slug = req.params.slug || 'index';
-      console.log("$$$$$$$$$$$$$ PAGE", slug)
     const result = await PageService.pageRender(user, slug, req.query ? req.query : {}) // ?debug=1
     if (typeof result == "object" && result.error) {
       const err = new Error(result.error);

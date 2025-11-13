@@ -3,6 +3,7 @@
  */
 
 .login-form {
+  display:none;
   max-width: 400px;
   margin: 40px auto;
   background: white;
@@ -10,6 +11,16 @@
   border-radius: 8px;
   border: 1px solid #e0e0e0;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  
+  min-width:40rem;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -90%);
+  z-index:1001;
+}
+.login-form.open {
+  display: block;
 }
 
 .login-form h2 {

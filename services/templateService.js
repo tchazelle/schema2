@@ -9,14 +9,15 @@ const mustache = require('mustache');
 class TemplateService {
 
   static htmlSection(section) {
+    console.log("section", section.presentationType)
     return `<section data-section="${section.slug}">
     ${section.mustache 
       ? mustache.render(section.mustache, section) 
       :`${section.css ? `<style>${section.css}</style>` :""}
         <h2>${section.name}</h2>
         <p>${section.description}</p>
-        <main class="rows" data-table="${section.tableName}">
-        ${section.rows.map(TemplateService.htmlRow).join("\n")}
+        <main class="rows ${section.presentationType}" data-table="${section.tableName}">
+        ${section.rows ? section.rows.map(TemplateService.htmlRow).join("\n") : "pas de réponse"}
         </main>
       `}
     </section>`
@@ -238,7 +239,9 @@ class TemplateService {
       // Fermer le dropdown
       document.getElementById('userDropdown').classList.remove('open');
       // Scroller vers le formulaire
-      document.querySelector('.login-form')?.scrollIntoView({ behavior: 'smooth' });
+      document.querySelector('.login-form')?.classList.add('open');
+      document.getElementById('overlay').classList.add('open');
+    
     }
   </script>`;
   }
@@ -336,13 +339,12 @@ class TemplateService {
   ${this.htmlCssFiles()}
 </head>
 <body>
+  
   ${this.htmlHeader(user, pages, accessibleTables)}
+  ${this.htmlLogin()}
   <main class="container">
     ${main}
   </main>
-  <aside>
-    ${this.htmlLogin()}
-  </aside>
   ${this.scriptHumanize()}
 </body>
 </html>

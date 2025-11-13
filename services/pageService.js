@@ -30,6 +30,7 @@ class PageService {
       includeSchema: 'apiSchema',
       noSystemFields: "apiNoSystemFields",
       noId: "apiNoId",
+      presentationType: "presentationType"
     };
     // tarnsforme les section en object pour getTableData
     const newSections = sections.map(section => {
@@ -42,11 +43,9 @@ class PageService {
       // DEBUG : ici on a bien les options noId et noSystemFields
       return ({ tableName: tableDataOptions.tableName, tableDataOptions });
     })
-    //console.log("SECTIONS ------------------", newSections)
-    // prépare les query
+      // prépare les query
     const promises = newSections.map(section => {
       const {tableName, tableDataOptions} = section
-      console.log("promise", tableName, tableDataOptions )
       return getTableData(user, tableName, tableDataOptions)
     })
     return Promise.all(promises);
@@ -54,7 +53,7 @@ class PageService {
 
   static async pageRender(user, slug, options) {
     const pages = await PageService.pagesLoad(user)
-    console.log("pages", pages)
+    if(!pages.length) return TemplateService.htmlSitePage({user, pages:[], main: "<h2>Aucune page disponible</h2>"})
     const page = pages.find(page => page.slug == slug);
     if (!page) return {error: "Page non trouvée"}; // [#TC] ici il faudrait déclencher une error 404
     page.user = user // [#TC] options ? 
@@ -72,13 +71,13 @@ class PageService {
       data = await PageService.buildSectionsAsTableData(user, page.sections)
       // Report des rows dans les sections
       const newSectionsWithRows = page.sections.map((section, i) => {
-        const { id, slug, name, description, mustache } = section;
+        const { id, slug, name, description, mustache, presentationType } = section;
         const rows = data[i].rows
         const permissions = {
           canEdit: user && EntityService.canPerformAction(user, 'Section', 'update', section),
           canDelete: user && EntityService.canPerformAction(user, 'Section', 'delete', section)
         }
-        return { id, slug, name, description , rows, mustache, permissions};
+        return { id, slug, name, description , rows, mustache, permissions, presentationType};
       })
       page.sections = Object.fromEntries(newSectionsWithRows.map(s => [s.slug, s])); // transforme en objects [transformer en option]
       htmlSections += newSectionsWithRows.map(section => TemplateService.htmlSection(section))

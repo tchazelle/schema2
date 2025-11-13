@@ -167,7 +167,6 @@ async function loadRelationsForRow(user, tableName, row, options = {}) {
             delete filteredRelRow.createdAt;
             delete filteredRelRow.updatedAt;
           }
-          //console.log("=============", noId, "==========", filteredRelRow)
           filteredRelatedRows.push(filteredRelRow);
         }
       }
@@ -212,7 +211,7 @@ async function getTableData(user, tableName, options = {}) {
     noSystemFields,
     noId
   } = options;
-  console.log("*********", tableName, noSystemFields, noId)
+  
   
 
   // user est déjà enrichi par userEnrichMiddleware (toujours défini, même pour visiteurs publics)
@@ -306,7 +305,7 @@ async function getTableData(user, tableName, options = {}) {
 
     // Charger les relations pour cette row
     if (requestedRelations.length > 0) {
-      //console.log("AVANT DE LANCER loadRelationsForRow", noSystemFields )
+      
       const relations = await loadRelationsForRow(user, table, row, {
         requestedRelations,
         loadN1InRelations: true,
