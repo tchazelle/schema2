@@ -3,7 +3,7 @@
  * Extrait les fonctions de génération HTML de routes/pages.js
  */
 
-const schema = require('../../schema.js');
+const schema = require('../schema.js');
 
 class TemplateService {
   /**
