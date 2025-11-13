@@ -1,243 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../config/database');
-const { hasPermission, getUserAllRoles } = require('../utils/permissions');
+const { hasPermission } = require('../utils/permissions');
 const { dataProxy } = require('../utils/dataProxy');
 const schema = require('../schema.js');
-
-/**
- * Trouve le nom exact d'une table dans le schéma, indépendamment de la casse
- * @param {string} tableName - Nom de la table (peut être en minuscules, majuscules, etc.)
- * @returns {string|null} - Nom exact de la table ou null si non trouvée
- */
-function getTableName(tableName) {
-  // Vérifier si le nom exact existe
-  if (schema.tables[tableName]) {
-    return tableName;
-  }
-
-  // Chercher en ignorant la casse
-  const tableNameLower = tableName.toLowerCase();
-  for (const key in schema.tables) {
-    if (key.toLowerCase() === tableNameLower) {
-      return key;
-    }
-  }
-
-  return null;
-}
-
-/**
- * Construit la clause WHERE pour filtrer selon granted et les conditions utilisateur
- * @param {Object} user - L'utilisateur
- * @param {string} baseWhere - Clause WHERE de base (optionnelle)
- * @returns {Object} - { where: string, params: Array }
- */
-function buildWhereClause(user, baseWhere = null) {
-  // [#TC] module permissions
-  const userRoles = getUserAllRoles(user);
-  const conditions = [];
-  const params = [];
-
-  // Ajouter la clause WHERE de base si fournie
-  if (baseWhere) {
-    conditions.push(`(${baseWhere})`);
-  }
-
-  // Conditions pour granted
-  const grantedConditions = [];
-
-  // 1. Draft accessible uniquement par le propriétaire
-  if (user) {
-    grantedConditions.push('(granted = ? AND ownerId = ?)');
-    params.push('draft', user.id);
-  }
-
-  // 2. Shared accessible selon les permissions de la table (déjà vérifié)
-  grantedConditions.push('granted = ?');
-  params.push('shared');
-
-  // 3. Published @role accessible selon les rôles
-  for (const role of userRoles) {
-    grantedConditions.push('granted = ?');
-    params.push(`published @${role}`);
-  }
-
-  // 4. Rows sans granted (NULL ou vide)
-  grantedConditions.push('granted IS NULL');
-  grantedConditions.push('granted = ?');
-  params.push('');
-
-  if (grantedConditions.length > 0) {
-    conditions.push(`(${grantedConditions.join(' OR ')})`);
-  }
-
-  const where = conditions.length > 0 ? conditions.join(' AND ') : '1=1';
-
-  return { where, params };
-}
-
-/**
- * Vérifie si un utilisateur peut accéder à une row selon son granted
- * @param {Object} user - L'utilisateur
- * @param {Object} row - La row avec son champ granted
- * @param {string} tableName - Nom de la table
- * @returns {boolean} - true si accessible
- */
-function canAccessRow(user, row, tableName) {
-  const userRoles = getUserAllRoles(user);
-
-  if (!row.granted) {
-    return true; // Pas de restriction
-  }
-
-  // Si granted = draft, seul le propriétaire peut lire
-  if (row.granted === 'draft') {
-    if (!user || row.ownerId !== user.id) {
-      return false;
-    }
-  }
-  // Si granted = shared, vérifier les permissions de la table
-  else if (row.granted === 'shared') {
-    if (!hasPermission(user, tableName, 'read')) {
-      return false;
-    }
-  }
-  // Si granted = published @role, vérifier le rôle
-  else if (row.granted.startsWith('published @')) {
-    const requiredRole = row.granted.replace('published @', '');
-    if (!userRoles.includes(requiredRole)) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
-/**
- * Filtre les champs d'une row selon les permissions de l'utilisateur
- * @param {Object} user - L'utilisateur
- * @param {string} tableName - Nom de la table
- * @param {Object} row - La row à filtrer
- * @returns {Object} - Row filtrée
- */
-function filterRowFields(user, tableName, row) {
-  const userRoles = getUserAllRoles(user);
-  const tableConfig = schema.tables[tableName];
-  const filteredRow = {};
-
-  for (const fieldName in row) {
-    const fieldConfig = tableConfig.fields[fieldName];
-
-    // Si le champ n'est pas dans la config, il vient probablement de commonFields
-    if (!fieldConfig) {
-      filteredRow[fieldName] = row[fieldName];
-      continue;
-    }
-
-    // Vérifier les permissions spécifiques au champ
-    let fieldAccessible = true;
-    if (fieldConfig.grant) {
-      fieldAccessible = false;
-      for (const role of userRoles) {
-        if (fieldConfig.grant[role] && fieldConfig.grant[role].includes('read')) {
-          fieldAccessible = true;
-          break;
-        }
-      }
-    }
-
-    if (fieldAccessible) {
-      filteredRow[fieldName] = row[fieldName];
-    }
-  }
-  
-  return filteredRow;
-}
-
-/**
- * Charge la structure d'une table pour obtenir les relations
- */
-function getTableRelations(user, tableName) {
-  const tableConfig = schema.tables[tableName];
-  if (!tableConfig) {
-    return { relationsN1: {}, relations1N: {} };
-  }
-
-  const relationsN1 = {};
-  const relations1N = {};
-
-  // Relations n:1 (many-to-one) : champs avec relation dans la table actuelle
-  for (const fieldName in tableConfig.fields) {
-    const fieldConfig = tableConfig.fields[fieldName];
-    if (fieldConfig.relation && hasPermission(user, fieldConfig.relation, 'read')) {
-      relationsN1[fieldName] = {
-        relatedTable: fieldConfig.relation,
-        foreignKey: fieldConfig.foreignKey,
-        arrayName: fieldConfig.arrayName,
-        relationshipStrength: fieldConfig.relationshipStrength
-      };
-    }
-  }
-
-  // Relations 1:n (one-to-many) : chercher les tables qui ont une relation vers cette table
-  for (const otherTableName in schema.tables) {
-    const otherTableConfig = schema.tables[otherTableName];
-
-    for (const otherFieldName in otherTableConfig.fields) {
-      const otherFieldConfig = otherTableConfig.fields[otherFieldName];
-
-      if (otherFieldConfig.relation === tableName && hasPermission(user, otherTableName, 'read')) {
-        // Nom de la relation selon la doctrine
-        const relationName = otherFieldConfig.arrayName || otherFieldConfig.relation;
-
-        relations1N[relationName] = {
-          relatedTable: otherTableName,
-          relatedField: otherFieldName,
-          foreignKey: otherFieldConfig.foreignKey,
-          relationshipStrength: otherFieldConfig.relationshipStrength,
-          defaultSort: otherFieldConfig.defaultSort
-        };
-      }
-    }
-  }
-
-  return { relationsN1, relations1N };
-}
-
-/**
- * Réduit une relation n:1 à sa version compacte selon les displayFields du schéma
- * @param {Object} relatedRow - La row de la relation
- * @param {string} relatedTable - Nom de la table de la relation
- * @returns {Object} - Version compacte de la relation
- */
-function compactRelation(relatedRow, relatedTable) {
-  const tableConfig = schema.tables[relatedTable];
-  if (!tableConfig) {
-    return relatedRow; // Si pas de config, retourner la row complète
-  }
-
-  // Déterminer les displayFields
-  let displayFields = tableConfig.displayField || 'name';
-  if (!Array.isArray(displayFields)) {
-    displayFields = [displayFields];
-  }
-
-  // Construire l'objet compact
-  const compact = {
-    _table: relatedRow._table,
-    id: relatedRow.id
-  };
-
-  // Ajouter les displayFields
-  for (const field of displayFields) {
-    if (relatedRow[field] !== undefined) {
-      compact[field] = relatedRow[field];
-    }
-  }
-
-  return compact;
-}
+const SchemaService = require('./services/schemaService');
+const EntityService = require('./services/entityService');
 
 /**
  * Charge les relations d'une row de manière récursive
@@ -250,7 +18,7 @@ function compactRelation(relatedRow, relatedTable) {
  * @returns {Object} - Objet des relations chargées
  */
 async function loadRelationsForRow(user, tableName, row, requestedRelations, loadN1InRelations = false, compact = false) {
-  const { relationsN1, relations1N } = getTableRelations(user, tableName);
+  const { relationsN1, relations1N } = SchemaService.getTableRelations(user, tableName);
   const relations = {};
 
   // Charger les relations n:1 (many-to-one)
@@ -268,14 +36,14 @@ async function loadRelationsForRow(user, tableName, row, requestedRelations, loa
 
         if (relatedRows.length > 0) {
           const relatedRow = relatedRows[0];
-          if (canAccessRow(user, relatedRow, relConfig.relatedTable)) {
-            let filteredRelatedRow = filterRowFields(user, relConfig.relatedTable, relatedRow);
+          if (EntityService.canAccessEntity(user, relatedRow, relConfig.relatedTable)) {
+            let filteredRelatedRow = EntityService.filterEntityFields(user, relConfig.relatedTable, relatedRow);
             // Ajouter le champ _table pour marquer la provenance
             filteredRelatedRow._table = relConfig.relatedTable;
 
             // Appliquer le mode compact si demandé
             if (compact) {
-              filteredRelatedRow = compactRelation(filteredRelatedRow, relConfig.relatedTable);
+              filteredRelatedRow = EntityService.compactRelation(filteredRelatedRow, relConfig.relatedTable);
             }
 
             relations[fieldName] = filteredRelatedRow;
@@ -309,14 +77,14 @@ async function loadRelationsForRow(user, tableName, row, requestedRelations, loa
       const filteredRelatedRows = [];
 
       for (const relRow of relatedRows) {
-        if (canAccessRow(user, relRow, relConfig.relatedTable)) {
-          const filteredRelRow = filterRowFields(user, relConfig.relatedTable, relRow);
+        if (EntityService.canAccessEntity(user, relRow, relConfig.relatedTable)) {
+          const filteredRelRow = EntityService.filterEntityFields(user, relConfig.relatedTable, relRow);
           // Ajouter le champ _table pour marquer la provenance
           filteredRelRow._table = relConfig.relatedTable;
 
           // Si loadN1InRelations est true, charger automatiquement les relations N:1 de cette row
           if (loadN1InRelations) {
-            const { relationsN1: subRelationsN1 } = getTableRelations(user, relConfig.relatedTable);
+            const { relationsN1: subRelationsN1 } = SchemaService.getTableRelations(user, relConfig.relatedTable);
             const subRelations = {};
 
             for (const subFieldName in subRelationsN1) {
@@ -339,15 +107,15 @@ async function loadRelationsForRow(user, tableName, row, requestedRelations, loa
 
                 if (subRelatedRows.length > 0) {
                   const subRelatedRow = subRelatedRows[0];
-                  if (canAccessRow(user, subRelatedRow, subRelConfig.relatedTable)) {
-                    let filteredSubRelatedRow = filterRowFields(user, subRelConfig.relatedTable, subRelatedRow);
+                  if (EntityService.canAccessEntity(user, subRelatedRow, subRelConfig.relatedTable)) {
+                    let filteredSubRelatedRow = EntityService.filterEntityFields(user, subRelConfig.relatedTable, subRelatedRow);
                     // Ajouter le champ _table pour marquer la provenance
                     filteredSubRelatedRow._table = subRelConfig.relatedTable;
 
-                  
+
                     // Appliquer le mode compact si demandé
                     if (compact) {
-                      filteredSubRelatedRow = compactRelation(filteredSubRelatedRow, subRelConfig.relatedTable);
+                      filteredSubRelatedRow = EntityService.compactRelation(filteredSubRelatedRow, subRelConfig.relatedTable);
                     }
 
                     subRelations[subFieldName] = filteredSubRelatedRow;
@@ -375,75 +143,7 @@ async function loadRelationsForRow(user, tableName, row, requestedRelations, loa
   return relations;
 }
 
-//[#TC] cette fonction devrait se trouver dans util/schema
-/**
- * Construit le schéma filtré selon les permissions de l'utilisateur
- * @param {Object} user - L'utilisateur
- * @param {string} tableName - Nom de la table
- * @returns {Object} - Schéma filtré
- */
-function buildFilteredSchema(user, tableName) {
-  const tableConfig = schema.tables[tableName];
-  if (!tableConfig) {
-    return null;
-  }
-
-  const userRoles = getUserAllRoles(user);
-  const filteredSchema = {
-    table: tableName,
-    fields: {},
-    relations: {
-      n1: {},
-      "1n": {}
-    }
-  };
-
-  // Filtrer les champs selon les permissions
-  for (const fieldName in tableConfig.fields) {
-    const fieldConfig = tableConfig.fields[fieldName];
-
-    // Vérifier les permissions spécifiques au champ
-    let fieldAccessible = true;
-    if (fieldConfig.grant) {
-      fieldAccessible = false;
-      for (const role of userRoles) {
-        if (fieldConfig.grant[role] && fieldConfig.grant[role].includes('read')) {
-          fieldAccessible = true;
-          break;
-        }
-      }
-    }
-
-    if (fieldAccessible) {
-      // Déterminer si le champ est calculé (non physique)
-      const isComputed = (
-        // Champ calculé via fonction JavaScript
-        (fieldConfig.calculate && typeof fieldConfig.calculate === 'function') ||
-        // Champ calculé via MySQL (propriété 'as')
-        fieldConfig.as
-      );
-
-      filteredSchema.fields[fieldName] = {
-        type: fieldConfig.type,
-        ...(isComputed && { computed: true }),
-        ...(fieldConfig.relation && { relation: fieldConfig.relation }),
-        ...(fieldConfig.foreignKey && { foreignKey: fieldConfig.foreignKey }),
-        ...(fieldConfig.arrayName && { arrayName: fieldConfig.arrayName }),
-        ...(fieldConfig.relationshipStrength && { relationshipStrength: fieldConfig.relationshipStrength }),
-        ...(fieldConfig.defaultSort && { defaultSort: fieldConfig.defaultSort })
-      };
-    }
-  }
-
-  // Ajouter les relations N:1 et 1:N
-  const { relationsN1, relations1N } = getTableRelations(user, tableName);
-  filteredSchema.relations.n1 = relationsN1;
-  filteredSchema.relations["1n"] = relations1N;
-
-  return filteredSchema;
-}
-
-
+// [#TC] buildFilteredSchema() déplacée dans utils/services/schemaService.js
 
 // [#TC] pas utilisée mais sera utile pour le fields JSON en mariaDB
 /**
@@ -490,8 +190,8 @@ async function getTableData({
   const effectiveUser = user || { roles: 'public' };
 
   // Normaliser le nom de la table (case-insensitive)
-  const table = getTableName(tableName);
-  
+  const table = SchemaService.getTableName(tableName);
+
   // Vérifier si la table existe dans le schéma
   if (!table) {
     return { status:404, error: 'Table non trouvée' };
@@ -504,7 +204,7 @@ async function getTableData({
   }
 
   // Construire la requête SQL
-  const { where, params } = buildWhereClause(effectiveUser, customWhere);
+  const { where, params } = EntityService.buildWhereClause(effectiveUser, customWhere);
   let rows = []
   if(!id) {
     let query = `SELECT * FROM ${table} WHERE ${where}`;
@@ -537,10 +237,10 @@ async function getTableData({
   
 
   // Filtrer les rows selon granted et les champs selon les permissions
-  const accessibleRows = rows.filter(row => canAccessRow(effectiveUser, row, table));
+  const accessibleRows = rows.filter(row => EntityService.canAccessEntity(effectiveUser, row, table));
 
   // Charger les relations si demandées
-  const { relationsN1, relations1N } = getTableRelations(effectiveUser, table);
+  const { relationsN1, relations1N } = SchemaService.getTableRelations(effectiveUser, table);
 
   // Déterminer quelles relations charger
   let requestedRelations = [];
@@ -561,7 +261,7 @@ async function getTableData({
   // Filtrer les rows et charger les relations
   const filteredRows = [];
   for (const row of accessibleRows) {
-    const filteredRow = filterRowFields(effectiveUser, table, row);
+    const filteredRow = EntityService.filterEntityFields(effectiveUser, table, row);
 
     // Charger les relations pour cette row
     if (requestedRelations.length > 0) {
@@ -595,7 +295,7 @@ async function getTableData({
   };
   // Ajouter le schéma si demandé
   if (includeSchema === '1') {
-    response.schema = buildFilteredSchema(effectiveUser, table);
+    response.schema = SchemaService.buildFilteredSchema(effectiveUser, table);
   }
   if(useProxy) {
     const responseProxyfied = JSON.parse(JSON.stringify(response)) // [#TC] POURQUOI ? je l'ignore mais sinon problème de Date ?!

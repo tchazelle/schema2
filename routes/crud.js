@@ -3,28 +3,8 @@ const router = express.Router();
 const pool = require('../config/database');
 const { hasPermission, getUserAllRoles } = require('../utils/permissions');
 const schema = require('../schema.js');
-
-/**
- * Trouve le nom exact d'une table dans le schéma, indépendamment de la casse
- * @param {string} tableName - Nom de la table (peut être en minuscules, majuscules, etc.)
- * @returns {string|null} - Nom exact de la table ou null si non trouvée
- */
-function getTableName(tableName) {
-  // Vérifier si le nom exact existe
-  if (schema.tables[tableName]) {
-    return tableName;
-  }
-
-  // Chercher en ignorant la casse
-  const tableNameLower = tableName.toLowerCase();
-  for (const key in schema.tables) {
-    if (key.toLowerCase() === tableNameLower) {
-      return key;
-    }
-  }
-
-  return null;
-}
+const SchemaService = require('../utils/services/schemaService');
+const EntityService = require('../utils/services/entityService');
 
 /**
  * Récupère la structure d'une table avec les champs accessibles selon les permissions de l'utilisateur
@@ -208,7 +188,7 @@ router.get('/:table/view', async (req, res) => {
     const effectiveUser = user || { roles: 'public' };
 
     // Normaliser le nom de la table (case-insensitive)
-    const table = getTableName(tableParam);
+    const table = SchemaService.getTableName(tableParam);
 
     // Vérifier si la table existe
     if (!table) {
@@ -399,7 +379,7 @@ router.get('/:table', async (req, res) => {
     const effectiveUser = user || { roles: 'public' };
 
     // Normaliser le nom de la table (case-insensitive)
-    const table = getTableName(tableParam);
+    const table = SchemaService.getTableName(tableParam);
 
     if (!table) {
       return res.status(404).json({
@@ -444,7 +424,7 @@ router.get('/:table/:id', async (req, res) => {
     const effectiveUser = user || { roles: 'public' };
 
     // Normaliser le nom de la table (case-insensitive)
-    const table = getTableName(tableParam);
+    const table = SchemaService.getTableName(tableParam);
 
     // Vérifier si la table existe dans le schéma
     if (!table) {

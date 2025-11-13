@@ -2,10 +2,11 @@ const express = require('express');
 const mustache = require('mustache');
 const router = express.Router();
 const pool = require('../config/database');
-const { getAccessibleTables, getUserAllRoles } = require('../utils/permissions');
+const { getAccessibleTables, getUserAllRoles, hasPermission } = require('../utils/permissions');
 const schema = require('../schema.js');
 const { getTableData } = require('../utils/apiTables');
 const { mustacheAuto } = require('../utils/mustacheAuto');
+const EntityService = require('../utils/services/entityService');
 
 
 function generateLoginHTML() { 
@@ -767,69 +768,8 @@ function humanize ()  {
   </script>`
 }
 
-/**
- * Vérifie si un utilisateur peut accéder à une page selon son granted
- * @param {Object} user - L'utilisateur
- * @param {Object} page - La page avec son champ granted
- * @returns {boolean} - true si accessible
- */
-function canAccessPage(user, page) {
-  const userRoles = getUserAllRoles(user);
-
-  // Si granted = draft, seul le propriétaire peut lire
-  if (page.granted === 'draft') {
-    if (!user || page.ownerId !== user.id) {
-      return false;
-    }
-  }
-  // Si granted = shared, vérifier les permissions de la table Page
-  else if (page.granted === 'shared') {
-    if (!hasPermission(user, 'Page', 'read')) {
-      return false;
-    }
-  }
-  // Si granted = published @role, vérifier le rôle
-  else if (page.granted && page.granted.startsWith('published @')) {
-    const requiredRole = page.granted.replace('published @', '');
-    if (!userRoles.includes(requiredRole)) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
-/**
- * Vérifie si un utilisateur peut accéder à une section selon son granted
- * @param {Object} user - L'utilisateur
- * @param {Object} section - La section avec son champ granted
- * @returns {boolean} - true si accessible
- */
-function canAccessSection(user, section) {
-  const userRoles = getUserAllRoles(user);
-
-  // Si granted = draft, seul le propriétaire peut lire
-  if (section.granted === 'draft') {
-    if (!user || section.ownerId !== user.id) {
-      return false;
-    }
-  }
-  // Si granted = shared, vérifier les permissions de la table Section
-  else if (section.granted === 'shared') {
-    if (!hasPermission(user, 'Section', 'read')) {
-      return false;
-    }
-  }
-  // Si granted = published @role, vérifier le rôle
-  else if (section.granted && section.granted.startsWith('published @')) {
-    const requiredRole = section.granted.replace('published @', '');
-    if (!userRoles.includes(requiredRole)) {
-      return false;
-    }
-  }
-
-  return true;
-}
+// [#TC] canAccessPage() et canAccessSection() déplacées dans utils/services/entityService.js
+// Remplacées par EntityService.canAccessEntity()
 
 /**
  * GET /:page
@@ -864,7 +804,7 @@ router.get('/:page', async (req, res) => {
     const pageData = pages[0];
 
     // Vérifier si l'utilisateur peut accéder à la page
-    if (!canAccessPage(effectiveUser, pageData)) {
+    if (!EntityService.canAccessEntity(effectiveUser, pageData, 'Page')) {
       return res.status(403).json({
         error: 'Accès refusé à cette page',
         slug: pageSlug
@@ -880,7 +820,7 @@ router.get('/:page', async (req, res) => {
     // Filtrer les sections selon les permissions
     const accessibleSections = [];
     for (const section of sections) {
-      if (canAccessSection(effectiveUser, section)) {
+      if (EntityService.canAccessEntity(effectiveUser, section, 'Section')) {
         // Vérifier si l'utilisateur a accès à la table mentionnée dans la section
         if (section.tableName) {
           if (hasPermission(effectiveUser, section.tableName, 'read')) {
