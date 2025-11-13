@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../config/database');
-const { hasPermission, getUserAllRoles } = require('../utils/permissions');
+const { hasPermission, getUserAllRoles } = require('../services/permissionService');
 const schema = require('../schema.js');
-const SchemaService = require('../utils/services/schemaService');
-const EntityService = require('../utils/services/entityService');
+const SchemaService = require('../services/schemaService');
+const EntityService = require('../services/entityService');
 
 // getTableStructure() a été déplacée dans SchemaService.getTableStructure()
 

@@ -2,12 +2,12 @@ const express = require('express');
 const mustache = require('mustache');
 const router = express.Router();
 const pool = require('../config/database');
-const { getAccessibleTables, getUserAllRoles, hasPermission } = require('../utils/permissions');
+const { getAccessibleTables, getUserAllRoles, hasPermission } = require('../services/permissionService');
 const schema = require('../schema.js');
-const { getTableData } = require('../utils/apiTables');
+const { getTableData } = require('../services/tableDataService');
 const { mustacheAuto } = require('../utils/mustacheAuto');
-const PageService = require('../utils/services/pageService');
-const TemplateService = require('../utils/services/templateService');
+const PageService = require('../services/pageService');
+const TemplateService = require('../services/templateService');
 
 /**
  * GET /
@@ -40,11 +40,7 @@ router.get('/:slug?', async (req, res) => {
     const accessibleTables = fullUser ? getAccessibleTables(fullUser) : [];
 
     // Chargement des pages
-    const pagesFromTablePage = await getTableData({
-      user,
-      tableName: schema.menu.page,
-      useProxy: 1
-    });
+    const pagesFromTablePage = await getTableData(user, schema.menu.page, {});
     const pages = pagesFromTablePage.rows;
 
     // Page sélectionnée
@@ -75,14 +71,13 @@ router.get('/:slug?', async (req, res) => {
               .filter(([newKey, oldKey]) => section[oldKey])
               .map(([newKey, oldKey]) => [newKey, section[oldKey]])
           );
-          tableDataOptions = { user, ...tableDataOptions, useProxy: 1 };
-          return [section.slug, { id, slug, name, description, tableDataOptions }];
+          return [section.slug, { id, slug, name, description, tableDataOptions, sectionUser: user }];
         })
       );
 
       // Chargement des rows
       const data = await Promise.all(
-        Object.values(newSections).map(section => getTableData(section.tableDataOptions))
+        Object.values(newSections).map(section => getTableData(section.sectionUser, section.tableDataOptions.tableName, section.tableDataOptions))
       );
 
       // Report des rows dans les sections

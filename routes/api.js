@@ -3,7 +3,7 @@ const router = express.Router();
 const pool = require('../config/database');
 const schema = require('../schema.js');
 
-const { getTableData } = require('../utils/apiTables');
+const { getTableData } = require('../services/tableDataService');
 
 /**
  * GET /_api/:table
@@ -23,8 +23,8 @@ router.get('/:tableName', async (req, res) => {
   try {
     const { tableName } = req.params;
     const user = req.user;
-    const { limit, offset, orderBy, order, where: customWhere, relation, includeSchema, compact, useProxy} = req.query;
-    const response = await getTableData({user, tableName, id:null, limit, offset, orderBy, order, customWhere, relation, includeSchema, compact, useProxy})
+    const { limit, offset, orderBy, order, where: customWhere, relation, includeSchema, compact} = req.query;
+    const response = await getTableData(user, tableName, {id:null, limit, offset, orderBy, order, customWhere, relation, includeSchema, compact})
     res.json(response);
 
   } catch (error) {
@@ -40,8 +40,8 @@ router.get('/:tableName/:id', async (req, res) => {
   try {
     const { tableName, id } = req.params;
     const user = req.user;
-    const { relation, includeSchema, compact, useProxy } = req.query;
-    const response = await getTableData({user, tableName, id, relation, includeSchema, compact, useProxy})
+    const { relation, includeSchema, compact } = req.query;
+    const response = await getTableData(user, tableName, {id, relation, includeSchema, compact})
     res.json(response);
 
   } catch (error) {

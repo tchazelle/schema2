@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../config/database');
-const { generateToken, setAuthCookie, clearAuthCookie } = require('../utils/auth');
+const { generateToken, setAuthCookie, clearAuthCookie } = require('../services/authService');
 const schema = require('../schema.js');
 
 /**

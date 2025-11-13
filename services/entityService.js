@@ -3,9 +3,9 @@
  * Élimine la duplication entre canAccessRow(), canAccessPage() et canAccessSection()
  */
 
-const { hasPermission, getUserAllRoles } = require('../permissions');
+const { hasPermission, getUserAllRoles } = require('./permissionService');
 const SchemaService = require('./schemaService');
-const { GRANTED_VALUES, isPublishedRole, extractRoleFromGranted } = require('../../constants/permissions');
+const { GRANTED_VALUES, isPublishedRole, extractRoleFromGranted } = require('../constants/permissions');
 
 class EntityService {
   /**

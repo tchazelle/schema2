@@ -3,8 +3,8 @@
  * Élimine la duplication de code entre apiTables.js et crud.js
  */
 
-const schema = require('../../schema.js');
-const { hasPermission, getUserAllRoles } = require('../permissions');
+const schema = require('../schema.js');
+const { hasPermission, getUserAllRoles } = require('./permissionService');
 
 class SchemaService {
   /**
