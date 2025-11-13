@@ -6,7 +6,7 @@ La Phase 2 extrait **toute la logique métier** des routes vers des services dé
 
 ## 🆕 Nouveaux services créés
 
-### 1. **utils/services/pageService.js** (200 lignes)
+### 1. **services/pageService.js** (200 lignes)
 
 Service pour la gestion des pages et sections :
 
@@ -23,7 +23,7 @@ Service pour la gestion des pages et sections :
 - ✅ Parsing automatique des relations JSON
 - ✅ Réutilisable dans toute l'application
 
-### 2. **utils/services/templateService.js** (680 lignes)
+### 2. **services/templateService.js** (680 lignes)
 
 Service pour la génération de templates HTML :
 

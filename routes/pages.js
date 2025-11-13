@@ -767,7 +767,7 @@ function humanize ()  {
   </script>`
 }
 
-// [#TC] canAccessPage() et canAccessSection() déplacées dans utils/services/entityService.js
+// [#TC] canAccessPage() et canAccessSection() déplacées dans services/entityService.js
 // Remplacées par EntityService.canAccessEntity()
 
 /**
