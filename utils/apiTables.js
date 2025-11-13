@@ -12,12 +12,18 @@ const EntityService = require('./services/entityService');
  * @param {Object} user - L'utilisateur
  * @param {string} tableName - Nom de la table
  * @param {Object} row - La row dont on veut charger les relations
- * @param {Array} requestedRelations - Liste des relations à charger
- * @param {boolean} loadN1InRelations - Charger automatiquement les relations N:1 dans les relations 1:N
- * @param {boolean} compact - Réduire les relations n:1 à leur version compacte (displayFields uniquement)
+ * @param {Object} options - Options de chargement
+ * @param {Array} options.requestedRelations - Liste des relations à charger
+ * @param {boolean} [options.loadN1InRelations=false] - Charger automatiquement les relations N:1 dans les relations 1:N
+ * @param {boolean} [options.compact=false] - Réduire les relations n:1 à leur version compacte (displayFields uniquement)
  * @returns {Object} - Objet des relations chargées
  */
-async function loadRelationsForRow(user, tableName, row, requestedRelations, loadN1InRelations = false, compact = false) {
+async function loadRelationsForRow(user, tableName, row, options = {}) {
+  const {
+    requestedRelations = [],
+    loadN1InRelations = false,
+    compact = false
+  } = options;
   const { relationsN1, relations1N } = SchemaService.getTableRelations(user, tableName);
   const relations = {};
 
@@ -36,7 +42,7 @@ async function loadRelationsForRow(user, tableName, row, requestedRelations, loa
 
         if (relatedRows.length > 0) {
           const relatedRow = relatedRows[0];
-          if (EntityService.canAccessEntity(user, relatedRow, relConfig.relatedTable)) {
+          if (EntityService.canAccessEntity(user, relConfig.relatedTable, relatedRow)) {
             let filteredRelatedRow = EntityService.filterEntityFields(user, relConfig.relatedTable, relatedRow);
             // Ajouter le champ _table pour marquer la provenance
             filteredRelatedRow._table = relConfig.relatedTable;
@@ -77,7 +83,7 @@ async function loadRelationsForRow(user, tableName, row, requestedRelations, loa
       const filteredRelatedRows = [];
 
       for (const relRow of relatedRows) {
-        if (EntityService.canAccessEntity(user, relRow, relConfig.relatedTable)) {
+        if (EntityService.canAccessEntity(user, relConfig.relatedTable, relRow)) {
           const filteredRelRow = EntityService.filterEntityFields(user, relConfig.relatedTable, relRow);
           // Ajouter le champ _table pour marquer la provenance
           filteredRelRow._table = relConfig.relatedTable;
@@ -107,7 +113,7 @@ async function loadRelationsForRow(user, tableName, row, requestedRelations, loa
 
                 if (subRelatedRows.length > 0) {
                   const subRelatedRow = subRelatedRows[0];
-                  if (EntityService.canAccessEntity(user, subRelatedRow, subRelConfig.relatedTable)) {
+                  if (EntityService.canAccessEntity(user, subRelConfig.relatedTable, subRelatedRow)) {
                     let filteredSubRelatedRow = EntityService.filterEntityFields(user, subRelConfig.relatedTable, subRelatedRow);
                     // Ajouter le champ _table pour marquer la provenance
                     filteredSubRelatedRow._table = subRelConfig.relatedTable;
@@ -145,28 +151,6 @@ async function loadRelationsForRow(user, tableName, row, requestedRelations, loa
 
 // [#TC] buildFilteredSchema() déplacée dans utils/services/schemaService.js
 
-// [#TC] pas utilisée mais sera utile pour le fields JSON en mariaDB
-/**
- * Parse un JSON de manière sécurisée pour MariaDB/MySQL
- * @param {string} jsonString - String JSON à parser
- * @returns {Object|null} - Objet parsé ou null si erreur
- */
-function safeJsonParse(jsonString) {
-  if (!jsonString) return null;
-
-  try {
-    // Si c'est déjà un objet, le retourner
-    if (typeof jsonString === 'object') {
-      return jsonString;
-    }
-
-    // Parser le JSON
-    return JSON.parse(jsonString);
-  } catch (error) {
-    console.error('Erreur lors du parsing JSON:', error);
-    return null;
-  }
-}
 // ==========================================================
 // [#TC] ré-écrite par moi d'après le chemin _api/:table/:id?
 // ==========================================================
@@ -237,7 +221,7 @@ async function getTableData({
   
 
   // Filtrer les rows selon granted et les champs selon les permissions
-  const accessibleRows = rows.filter(row => EntityService.canAccessEntity(effectiveUser, row, table));
+  const accessibleRows = rows.filter(row => EntityService.canAccessEntity(effectiveUser, table, row));
 
   // Charger les relations si demandées
   const { relationsN1, relations1N } = SchemaService.getTableRelations(effectiveUser, table);
@@ -266,7 +250,11 @@ async function getTableData({
     // Charger les relations pour cette row
     if (requestedRelations.length > 0) {
       const useCompact = compact === '1';
-      const relations = await loadRelationsForRow(effectiveUser, table, row, requestedRelations, true, useCompact);
+      const relations = await loadRelationsForRow(effectiveUser, table, row, {
+        requestedRelations,
+        loadN1InRelations: true,
+        compact: useCompact
+      });
 
       // Ajouter les relations au résultat (utilise _relations pour éviter conflit avec champ DB)
       if (Object.keys(relations).length > 0) {

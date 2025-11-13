@@ -30,7 +30,7 @@ class PageService {
     const page = pages[0];
 
     // Vérifier si l'utilisateur peut accéder à la page
-    if (!EntityService.canAccessEntity(effectiveUser, page, 'Page')) {
+    if (!EntityService.canAccessEntity(effectiveUser, 'Page', page)) {
       return null;
     }
 
@@ -56,7 +56,7 @@ class PageService {
     const accessibleSections = [];
 
     for (const section of sections) {
-      if (EntityService.canAccessEntity(effectiveUser, section, 'Section')) {
+      if (EntityService.canAccessEntity(effectiveUser, 'Section', section)) {
         // Vérifier si l'utilisateur a accès à la table mentionnée dans la section
         if (section.tableName) {
           if (hasPermission(effectiveUser, section.tableName, 'read')) {

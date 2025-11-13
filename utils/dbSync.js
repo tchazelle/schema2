@@ -25,7 +25,7 @@ function getSQLType(fieldDef) {
  * @param {Object} fieldDef - Définition du champ
  * @returns {string} - Définition SQL du champ
  */
-function getFieldDefinition(fieldName, fieldDef) {
+function buildSQLFieldDefinition(fieldName, fieldDef) {
   let sql = `\`${fieldName}\` ${getSQLType(fieldDef)}`;
 
   // Auto increment
@@ -109,7 +109,7 @@ async function createTable(tableName, tableDef) {
         continue;
       }
 
-      fields.push(getFieldDefinition(fieldName, fieldDef));
+      fields.push(buildSQLFieldDefinition(fieldName, fieldDef));
 
       if (fieldDef.isPrimary) {
         primaryKey = fieldName;
@@ -118,7 +118,7 @@ async function createTable(tableName, tableDef) {
 
     // Ajouter les champs communs (commonFields)
     for (const [fieldName, fieldDef] of Object.entries(schema.commonFields)) {
-      fields.push(getFieldDefinition(fieldName, fieldDef));
+      fields.push(buildSQLFieldDefinition(fieldName, fieldDef));
     }
 
     // Ajouter la clé primaire
@@ -150,7 +150,7 @@ async function addField(tableName, fieldName, fieldDef) {
       return;
     }
 
-    const alterSQL = `ALTER TABLE \`${tableName}\` ADD COLUMN ${getFieldDefinition(fieldName, fieldDef)}`;
+    const alterSQL = `ALTER TABLE \`${tableName}\` ADD COLUMN ${buildSQLFieldDefinition(fieldName, fieldDef)}`;
     await pool.query(alterSQL);
     console.log(`  ✓ Champ ${tableName}.${fieldName} ajouté avec succès`);
   } catch (error) {

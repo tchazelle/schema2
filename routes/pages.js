@@ -804,7 +804,7 @@ router.get('/:page', async (req, res) => {
     const pageData = pages[0];
 
     // Vérifier si l'utilisateur peut accéder à la page
-    if (!EntityService.canAccessEntity(effectiveUser, pageData, 'Page')) {
+    if (!EntityService.canAccessEntity(effectiveUser, 'Page', pageData)) {
       return res.status(403).json({
         error: 'Accès refusé à cette page',
         slug: pageSlug
@@ -820,7 +820,7 @@ router.get('/:page', async (req, res) => {
     // Filtrer les sections selon les permissions
     const accessibleSections = [];
     for (const section of sections) {
-      if (EntityService.canAccessEntity(effectiveUser, section, 'Section')) {
+      if (EntityService.canAccessEntity(effectiveUser, 'Section', section)) {
         // Vérifier si l'utilisateur a accès à la table mentionnée dans la section
         if (section.tableName) {
           if (hasPermission(effectiveUser, section.tableName, 'read')) {
