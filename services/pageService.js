@@ -3,7 +3,7 @@
  * Extrait la logique métier de routes/pages.js
  */
 
-const pool = require('../../config/database');
+const pool = require('../config/database');
 const { hasPermission } = require('../permissions');
 const EntityService = require('./entityService');
 
