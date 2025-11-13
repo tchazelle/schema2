@@ -1,0 +1,54 @@
+/**
+ * JSON Viewer styles - Syntax highlighting for JSON display
+ */
+
+.json-display {
+  background: #1e1e1e;
+  color: #d4d4d4;
+  padding: 20px;
+  border-radius: 4px;
+  overflow-x: auto;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+/* JSON syntax highlighting */
+.json-key {
+  color: #9cdcfe;
+}
+
+.json-string {
+  color: #ce9178;
+}
+
+.json-number {
+  color: #b5cea8;
+}
+
+.json-boolean {
+  color: #569cd6;
+}
+
+.json-null {
+  color: #569cd6;
+}
+
+/* Scrollbar styling for JSON viewer */
+.json-display::-webkit-scrollbar {
+  height: 8px;
+  width: 8px;
+}
+
+.json-display::-webkit-scrollbar-track {
+  background: #2d2d2d;
+}
+
+.json-display::-webkit-scrollbar-thumb {
+  background: #555;
+  border-radius: 4px;
+}
+
+.json-display::-webkit-scrollbar-thumb:hover {
+  background: #666;
+}

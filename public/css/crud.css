@@ -1,0 +1,86 @@
+/**
+ * CRUD Interface styles - Table management and CRUD operations
+ */
+
+/* CRUD specific containers */
+.crud-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Field selector container */
+#field-selector-container {
+  min-height: 200px;
+  padding: 10px;
+}
+
+/* Table structure display */
+.table-structure {
+  margin-top: 20px;
+}
+
+.table-structure table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+}
+
+.table-structure th,
+.table-structure td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.table-structure th {
+  background: #f8f9fa;
+  font-weight: 600;
+  color: #495057;
+}
+
+.table-structure tr:hover {
+  background: #f8f9fa;
+}
+
+/* Loading state */
+.loading {
+  text-align: center;
+  padding: 40px;
+  color: #858585;
+}
+
+.loading::before {
+  content: "⏳ ";
+}
+
+/* Error state */
+.error {
+  color: #f48771;
+  text-align: center;
+  padding: 20px;
+}
+
+.error::before {
+  content: "❌ ";
+}
+
+/* Success message */
+.success {
+  color: #4caf50;
+  padding: 12px;
+  background: #e8f5e9;
+  border-radius: 4px;
+  margin-bottom: 15px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .table-structure table {
+    font-size: 14px;
+  }
+
+  .table-structure th,
+  .table-structure td {
+    padding: 8px;
+  }
+}
