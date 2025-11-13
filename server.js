@@ -6,7 +6,7 @@ require('dotenv').config();
 
 
 // Import des utilitaires
-const { authMiddleware } = require('./services/authService');
+const { authMiddleware, userEnrichMiddleware } = require('./services/authService');
 const pool = require('./config/database');
 const schema = require('./schema.js');
 const { syncDatabase } = require('./services/dbSyncService');
@@ -29,6 +29,9 @@ app.use(cookieParser());
 
 // Middleware d'authentification global
 app.use(authMiddleware);
+
+// Middleware d'enrichissement de l'utilisateur
+app.use(userEnrichMiddleware);
 
 // Servir les fichiers statiques
 app.use(express.static(path.join(__dirname, 'public')));
