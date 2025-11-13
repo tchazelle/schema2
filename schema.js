@@ -88,6 +88,9 @@ module.exports = {
   // Tables de l'application
   tables: {
     Page: {
+      _granted:{
+        public:["read"]
+      },
       // ... defaultConfigTable
       fields: {
         id: { type: "integer", isPrimary: true, autoIncrement: true },

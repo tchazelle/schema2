@@ -54,6 +54,7 @@ class PageService {
 
   static async pageRender(user, slug, options) {
     const pages = await PageService.pagesLoad(user)
+    console.log("pages", pages)
     const page = pages.find(page => page.slug == slug);
     if (!page) return {error: "Page non trouvée"}; // [#TC] ici il faudrait déclencher une error 404
     page.user = user // [#TC] options ? 
