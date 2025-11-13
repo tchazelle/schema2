@@ -9,7 +9,7 @@ require('dotenv').config();
 const { authMiddleware } = require('./services/authService');
 const pool = require('./config/database');
 const schema = require('./schema.js');
-const { syncDatabase } = require('./utils/dbSync');
+const { syncDatabase } = require('./services/dbSyncService');
 
 // Import des routes
 

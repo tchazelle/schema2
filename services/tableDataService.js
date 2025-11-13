@@ -2,6 +2,7 @@ const pool = require('../config/database');
 const { hasPermission } = require('./permissionService');
 const SchemaService = require('./schemaService');
 const EntityService = require('./entityService');
+const RepositoryService = require('./repositoryService');
 
 /**
  * Charge les relations d'une row de manière récursive
