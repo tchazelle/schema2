@@ -1,0 +1,648 @@
+/**
+ * CRUD List Component - React without Babel
+ * Uses React.createElement (e) for component creation
+ */
+
+const e = React.createElement;
+
+/**
+ * Field Renderer Component
+ * Renders field values according to their renderer type
+ */
+class FieldRenderer extends React.Component {
+  render() {
+    const { value, field, tableName } = this.props;
+
+    if (value === null || value === undefined) {
+      return e('span', { className: 'field-value empty' }, '-');
+    }
+
+    const renderer = field.renderer || field.type;
+
+    switch (renderer) {
+      case 'telephone':
+        return e('a', {
+          href: `tel:${value}`,
+          className: 'field-value telephone'
+        }, '📞 ', value);
+
+      case 'email':
+        return e('a', {
+          href: `mailto:${value}`,
+          className: 'field-value email'
+        }, '📧 ', value);
+
+      case 'url':
+        return e('a', {
+          href: value,
+          target: '_blank',
+          rel: 'noopener noreferrer',
+          className: 'field-value url'
+        }, '🔗 ', value);
+
+      case 'markdown':
+        // Simple markdown rendering (you could use a library here)
+        return e('div', {
+          className: 'field-value markdown',
+          dangerouslySetInnerHTML: { __html: this.simpleMarkdown(value) }
+        });
+
+      case 'date':
+      case 'datetime':
+        const date = new Date(value);
+        const formatted = date.toLocaleDateString('fr-FR', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          ...(renderer === 'datetime' && {
+            hour: '2-digit',
+            minute: '2-digit'
+          })
+        });
+        return e('time', {
+          dateTime: value,
+          className: 'field-value date'
+        }, formatted);
+
+      case 'boolean':
+        return e('span', {
+          className: `field-value boolean ${value ? 'true' : 'false'}`
+        }, value ? '✓' : '✗');
+
+      default:
+        return e('span', { className: 'field-value text' }, String(value));
+    }
+  }
+
+  simpleMarkdown(text) {
+    // Very basic markdown support
+    return String(text)
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.+?)\*/g, '<em>$1</em>')
+      .replace(/\n/g, '<br>');
+  }
+}
+
+/**
+ * N:1 Relation Renderer
+ * Renders compact N:1 relations with link
+ */
+class RelationRenderer extends React.Component {
+  render() {
+    const { relation, fieldName, relatedTable } = this.props;
+
+    if (!relation) {
+      return e('span', { className: 'relation-value empty' }, '-');
+    }
+
+    // Get display value (compact mode returns only displayFields)
+    const displayValue = this.getDisplayValue(relation);
+
+    return e('div', { className: 'relation-value' },
+      e('a', {
+        href: `/_crud/${relatedTable}/${relation.id}`,
+        className: 'relation-link',
+        onClick: (ev) => {
+          ev.stopPropagation();
+          // Could navigate or open in modal
+        }
+      }, '🔗 ', displayValue)
+    );
+  }
+
+  getDisplayValue(relation) {
+    // If compact, relation might be just the display fields
+    if (typeof relation === 'string') return relation;
+    if (relation.name) return relation.name;
+
+    // Try common display fields
+    const displayFields = ['name', 'givenName', 'familyName', 'title'];
+    for (const field of displayFields) {
+      if (relation[field]) return relation[field];
+    }
+
+    return `#${relation.id || '?'}`;
+  }
+}
+
+/**
+ * Table Header Component
+ * Sortable column headers
+ */
+class TableHeader extends React.Component {
+  render() {
+    const { fields, structure, orderBy, order, onSort, displayMode } = this.props;
+
+    if (displayMode === 'raw') {
+      // Raw mode: simple header
+      return e('thead', null,
+        e('tr', null,
+          fields.map(fieldName =>
+            e('th', { key: fieldName }, fieldName)
+          )
+        )
+      );
+    }
+
+    return e('thead', null,
+      e('tr', null,
+        fields.map(fieldName => {
+          const field = structure.fields[fieldName];
+          const label = field?.label || fieldName;
+          const isSorted = orderBy === fieldName;
+          const sortIcon = isSorted ? (order === 'ASC' ? ' ▲' : ' ▼') : '';
+
+          return e('th', {
+            key: fieldName,
+            className: `sortable ${isSorted ? 'sorted' : ''}`,
+            onClick: () => onSort(fieldName)
+          }, label, sortIcon);
+        })
+      )
+    );
+  }
+}
+
+/**
+ * Table Row Component
+ * Single row with expandable detail
+ */
+class TableRow extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      expanded: false
+    };
+  }
+
+  toggleExpand = () => {
+    this.setState({ expanded: !this.state.expanded });
+  }
+
+  render() {
+    const { row, fields, structure, displayMode, tableName } = this.props;
+    const { expanded } = this.state;
+
+    if (displayMode === 'raw') {
+      // Raw mode: no formatting
+      return e('tr', null,
+        fields.map(fieldName =>
+          e('td', { key: fieldName }, String(row[fieldName] || ''))
+        )
+      );
+    }
+
+    // Normal mode
+    return e(React.Fragment, null,
+      e('tr', {
+        className: `data-row ${expanded ? 'expanded' : ''}`,
+        onClick: this.toggleExpand
+      },
+        fields.map(fieldName => {
+          const field = structure.fields[fieldName];
+          const value = row[fieldName];
+
+          // Check if this is a relation
+          const relationData = row._relations && row._relations[fieldName];
+
+          return e('td', { key: fieldName },
+            relationData
+              ? e(RelationRenderer, {
+                  relation: relationData,
+                  fieldName,
+                  relatedTable: field.relation
+                })
+              : e(FieldRenderer, {
+                  value,
+                  field,
+                  tableName
+                })
+          );
+        })
+      ),
+      expanded && e('tr', { className: 'detail-row' },
+        e('td', { colSpan: fields.length },
+          e(RowDetailView, {
+            row,
+            structure,
+            tableName
+          })
+        )
+      )
+    );
+  }
+}
+
+/**
+ * Row Detail View Component
+ * Expanded view with all fields and 1:N relations
+ */
+class RowDetailView extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      openRelations: new Set()
+    };
+  }
+
+  componentDidMount() {
+    // Auto-open Strong relations
+    const { row, structure } = this.props;
+    if (row._relations) {
+      const strongRelations = new Set();
+      Object.entries(row._relations).forEach(([relName, relData]) => {
+        // Check if it's a 1:N array relation
+        if (Array.isArray(relData) && relData.length > 0) {
+          // Check if Strong (we'd need schema info here)
+          strongRelations.add(relName);
+        }
+      });
+      this.setState({ openRelations: strongRelations });
+    }
+  }
+
+  toggleRelation = (relName) => {
+    this.setState(prev => {
+      const newSet = new Set(prev.openRelations);
+      if (newSet.has(relName)) {
+        newSet.delete(relName);
+      } else {
+        newSet.add(relName);
+      }
+      return { openRelations: newSet };
+    });
+  }
+
+  render() {
+    const { row, structure, tableName } = this.props;
+    const { openRelations } = this.state;
+
+    // Get all visible fields
+    const allFields = Object.keys(structure.fields).filter(f =>
+      !['id', 'ownerId', 'granted', 'createdAt', 'updatedAt'].includes(f)
+    );
+
+    // Separate direct fields and relations
+    const relations1N = {};
+    const relationsN1 = {};
+
+    if (row._relations) {
+      Object.entries(row._relations).forEach(([key, value]) => {
+        if (Array.isArray(value)) {
+          relations1N[key] = value;
+        } else {
+          relationsN1[key] = value;
+        }
+      });
+    }
+
+    return e('div', { className: 'row-detail' },
+      // Fields grid
+      e('div', { className: 'detail-fields' },
+        allFields.map(fieldName => {
+          const field = structure.fields[fieldName];
+          const value = row[fieldName];
+          const label = field?.label || fieldName;
+
+          // Skip if this is a relation field (already shown in relations)
+          if (relationsN1[fieldName]) return null;
+
+          return e('div', { key: fieldName, className: 'detail-field' },
+            e('label', { className: 'detail-label' }, label),
+            e('div', { className: 'detail-value' },
+              e(FieldRenderer, {
+                value,
+                field,
+                tableName
+              })
+            )
+          );
+        })
+      ),
+
+      // N:1 Relations
+      Object.keys(relationsN1).length > 0 && e('div', { className: 'detail-relations-n1' },
+        e('h4', null, 'Relations'),
+        Object.entries(relationsN1).map(([relName, relData]) => {
+          const field = structure.fields[relName];
+          const label = field?.label || relName;
+
+          return e('div', { key: relName, className: 'detail-field' },
+            e('label', { className: 'detail-label' }, label),
+            e('div', { className: 'detail-value' },
+              e(RelationRenderer, {
+                relation: relData,
+                fieldName: relName,
+                relatedTable: field.relation
+              })
+            )
+          );
+        })
+      ),
+
+      // 1:N Relations (sub-lists)
+      Object.keys(relations1N).length > 0 && e('div', { className: 'detail-relations-1n' },
+        e('h4', null, 'Relations liées'),
+        Object.entries(relations1N).map(([relName, relRows]) => {
+          const isOpen = openRelations.has(relName);
+          const relatedTable = relRows[0]?._table || relName;
+
+          return e('div', { key: relName, className: 'relation-section' },
+            e('div', {
+              className: 'relation-header',
+              onClick: () => this.toggleRelation(relName)
+            },
+              e('span', { className: 'relation-toggle' }, isOpen ? '▼' : '▶'),
+              e('strong', null, relName),
+              e('span', { className: 'relation-count' }, ` (${relRows.length})`)
+            ),
+            isOpen && e('div', { className: 'relation-list' },
+              e(SubList, {
+                rows: relRows,
+                tableName: relatedTable,
+                parentTable: tableName
+              })
+            )
+          );
+        })
+      )
+    );
+  }
+}
+
+/**
+ * Sub-List Component
+ * Renders 1:N relations as a compact list
+ */
+class SubList extends React.Component {
+  render() {
+    const { rows, tableName, parentTable } = this.props;
+
+    if (!rows || rows.length === 0) {
+      return e('div', { className: 'sub-list-empty' }, 'Aucune donnée');
+    }
+
+    // Get fields to display (exclude parent relation field)
+    const firstRow = rows[0];
+    const fields = Object.keys(firstRow).filter(f =>
+      !f.startsWith('_') &&
+      !['id', 'ownerId', 'granted', 'createdAt', 'updatedAt'].includes(f) &&
+      !this.isParentField(f, parentTable)
+    );
+
+    return e('table', { className: 'sub-list-table' },
+      e('thead', null,
+        e('tr', null,
+          fields.map(f => e('th', { key: f }, f))
+        )
+      ),
+      e('tbody', null,
+        rows.map((row, idx) =>
+          e('tr', { key: row.id || idx },
+            fields.map(f =>
+              e('td', { key: f }, String(row[f] || ''))
+            )
+          )
+        )
+      )
+    );
+  }
+
+  isParentField(fieldName, parentTable) {
+    // Check if field name suggests it links to parent
+    const lowerField = fieldName.toLowerCase();
+    const lowerParent = parentTable.toLowerCase();
+    return lowerField.includes(lowerParent) || lowerField === `id${parentTable}`;
+  }
+}
+
+/**
+ * Filter Options Component
+ * Display mode selector and field selector
+ */
+class FilterOptions extends React.Component {
+  render() {
+    const { displayMode, showSystemFields, onDisplayModeChange, onSystemFieldsToggle, onFieldSelect } = this.props;
+
+    return e('div', { className: 'filter-options' },
+      e('div', { className: 'display-mode' },
+        e('label', null, 'Mode:'),
+        e('select', {
+          value: displayMode,
+          onChange: (ev) => onDisplayModeChange(ev.target.value)
+        },
+          e('option', { value: 'default' }, 'Par défaut (masquer champs système)'),
+          e('option', { value: 'all' }, 'Tous les champs'),
+          e('option', { value: 'raw' }, 'Raw (données brutes)'),
+          e('option', { value: 'custom' }, 'Sélection personnalisée')
+        )
+      ),
+      displayMode === 'custom' && e('button', {
+        className: 'btn-field-selector',
+        onClick: onFieldSelect
+      }, '🎯 Sélectionner les champs')
+    );
+  }
+}
+
+/**
+ * Main CRUD List Component
+ */
+class CrudList extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      loading: true,
+      error: null,
+      data: null,
+      search: '',
+      orderBy: 'updatedAt',
+      order: 'DESC',
+      displayMode: 'default', // default, all, raw, custom
+      showSystemFields: false,
+      selectedFields: null,
+      page: 0,
+      limit: 100
+    };
+  }
+
+  componentDidMount() {
+    this.loadData();
+    this.loadUserPreferences();
+  }
+
+  loadUserPreferences = () => {
+    // Load from cookie
+    const prefs = this.getCookie(`crud_prefs_${this.props.table}`);
+    if (prefs) {
+      try {
+        const parsed = JSON.parse(prefs);
+        this.setState({
+          displayMode: parsed.displayMode || 'default',
+          selectedFields: parsed.selectedFields || null
+        });
+      } catch (e) {
+        console.error('Failed to parse preferences:', e);
+      }
+    }
+  }
+
+  saveUserPreferences = () => {
+    const { displayMode, selectedFields } = this.state;
+    const prefs = JSON.stringify({ displayMode, selectedFields });
+    this.setCookie(`crud_prefs_${this.props.table}`, prefs, 365);
+  }
+
+  getCookie = (name) => {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+    return null;
+  }
+
+  setCookie = (name, value, days) => {
+    const expires = new Date(Date.now() + days * 864e5).toUTCString();
+    document.cookie = `${name}=${value}; expires=${expires}; path=/`;
+  }
+
+  loadData = async () => {
+    this.setState({ loading: true, error: null });
+
+    const { table } = this.props;
+    const { search, orderBy, order, page, limit, displayMode } = this.state;
+
+    const showSystemFields = displayMode === 'all' || displayMode === 'raw';
+
+    try {
+      const params = new URLSearchParams({
+        limit,
+        offset: page * limit,
+        orderBy,
+        order,
+        search: search || '',
+        showSystemFields: showSystemFields ? '1' : '0'
+      });
+
+      const response = await fetch(`/_crud/${table}/data?${params}`);
+      const data = await response.json();
+
+      if (!data.success) {
+        throw new Error(data.error || 'Erreur lors du chargement des données');
+      }
+
+      this.setState({
+        loading: false,
+        data
+      });
+    } catch (error) {
+      this.setState({
+        loading: false,
+        error: error.message
+      });
+    }
+  }
+
+  handleSort = (fieldName) => {
+    this.setState(prev => {
+      const newOrder = prev.orderBy === fieldName && prev.order === 'ASC' ? 'DESC' : 'ASC';
+      return {
+        orderBy: fieldName,
+        order: newOrder
+      };
+    }, this.loadData);
+  }
+
+  handleSearch = (value) => {
+    this.setState({ search: value, page: 0 }, () => {
+      // Debounce
+      clearTimeout(this.searchTimeout);
+      this.searchTimeout = setTimeout(this.loadData, 300);
+    });
+  }
+
+  handleDisplayModeChange = (mode) => {
+    this.setState({ displayMode: mode }, () => {
+      this.saveUserPreferences();
+      this.loadData();
+    });
+  }
+
+  handleResetPreferences = () => {
+    this.setState({
+      displayMode: 'default',
+      selectedFields: null
+    }, () => {
+      this.saveUserPreferences();
+      this.loadData();
+    });
+  }
+
+  render() {
+    const { table } = this.props;
+    const { loading, error, data, search, orderBy, order, displayMode } = this.state;
+
+    return e('div', { className: 'crud-list-container' },
+      // Header
+      e('div', { className: 'crud-header' },
+        e('h1', { className: 'crud-title' }, '📋 ', table),
+        e('div', { className: 'crud-actions' },
+          e('input', {
+            type: 'text',
+            className: 'search-input',
+            placeholder: 'Rechercher...',
+            value: search,
+            onChange: (ev) => this.handleSearch(ev.target.value)
+          }),
+          e('div', { className: 'menu-dots' },
+            e('button', { className: 'btn-menu' }, '⋮')
+          )
+        )
+      ),
+
+      // Filter options
+      e(FilterOptions, {
+        displayMode,
+        onDisplayModeChange: this.handleDisplayModeChange,
+        onFieldSelect: () => alert('Field selector à implémenter')
+      }),
+
+      // Content
+      loading && e('div', { className: 'loading' }, 'Chargement...'),
+      error && e('div', { className: 'error' }, error),
+
+      data && e('div', { className: 'crud-content' },
+        // Data table
+        e('table', { className: 'crud-table' },
+          e(TableHeader, {
+            fields: data.visibleFields,
+            structure: data.structure,
+            orderBy,
+            order,
+            onSort: this.handleSort,
+            displayMode
+          }),
+          e('tbody', null,
+            data.rows.map((row, idx) =>
+              e(TableRow, {
+                key: row.id || idx,
+                row,
+                fields: data.visibleFields,
+                structure: data.structure,
+                displayMode,
+                tableName: table
+              })
+            )
+          )
+        ),
+
+        // Pagination
+        data.pagination && e('div', { className: 'pagination' },
+          e('span', null, `${data.pagination.count} sur ${data.pagination.total} résultats`)
+        )
+      )
+    );
+  }
+}
+
+// Export for use
+window.CrudList = CrudList;

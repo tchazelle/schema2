@@ -1,0 +1,283 @@
+const pool = require('../config/database');
+const SchemaService = require('./schemaService');
+const EntityService = require('./entityService');
+const TableDataService = require('./tableDataService');
+const PermissionService = require('./permissionService');
+const schema = require('../schema');
+
+/**
+ * CRUD Service - Business logic for CRUD operations
+ */
+class CrudService {
+
+  /**
+   * Get list data for CRUD interface with all necessary metadata
+   * @param {Object} user - Current user
+   * @param {string} tableName - Table name
+   * @param {Object} options - Query options (limit, offset, orderBy, order, search, showSystemFields)
+   * @returns {Object} - Complete data for rendering list
+   */
+  static async getListData(user, tableName, options = {}) {
+    const {
+      limit = 100,
+      offset = 0,
+      orderBy = 'updatedAt',
+      order = 'DESC',
+      search = '',
+      showSystemFields = false,
+      selectedFields = null, // Array of field names to show, null = default
+      compact = true
+    } = options;
+
+    // Normalize table name
+    const table = SchemaService.getTableName(tableName);
+    if (!table) {
+      return { success: false, error: 'Table non trouvée' };
+    }
+
+    // Check permissions
+    if (!PermissionService.hasPermission(user, table, 'read')) {
+      return { success: false, error: 'Accès refusé à cette table' };
+    }
+
+    // Get table schema
+    const tableSchema = SchemaService.getTableSchema(table);
+    const tableConfig = {
+      ...schema.defaultConfigTable,
+      ...tableSchema
+    };
+
+    // Build WHERE clause for search
+    let customWhere = '1=1';
+    const searchParams = [];
+
+    if (search && search.length >= 2) {
+      const searchFields = this.getSearchableFields(user, table);
+      if (searchFields.length > 0) {
+        const searchConditions = searchFields.map(field => {
+          // Remove accents for French text search
+          return `LOWER(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(${field}, 'é', 'e'), 'è', 'e'), 'ê', 'e'), 'à', 'a'), 'ù', 'u')) LIKE ?`;
+        });
+        customWhere += ` AND (${searchConditions.join(' OR ')})`;
+        const searchPattern = `%${this.removeAccents(search.toLowerCase())}%`;
+        searchFields.forEach(() => searchParams.push(searchPattern));
+      }
+    }
+
+    // Get data with relations
+    const result = await TableDataService.getTableData(user, table, {
+      limit,
+      offset,
+      orderBy,
+      order,
+      customWhere,
+      relation: 'default', // Load N:1 and Strong 1:N by default
+      compact,
+      includeSchema: '1'
+    });
+
+    if (!result.success) {
+      return result;
+    }
+
+    // Get visible fields
+    const visibleFields = this.getVisibleFields(
+      user,
+      table,
+      showSystemFields,
+      selectedFields
+    );
+
+    // Get table structure
+    const structure = SchemaService.getTableStructure(user, table);
+
+    // Get user permissions for this table
+    const permissions = {
+      canRead: PermissionService.hasPermission(user, table, 'read'),
+      canCreate: PermissionService.hasPermission(user, table, 'create'),
+      canUpdate: PermissionService.hasPermission(user, table, 'update'),
+      canDelete: PermissionService.hasPermission(user, table, 'delete'),
+      canPublish: PermissionService.hasPermission(user, table, 'publish')
+    };
+
+    return {
+      success: true,
+      table,
+      tableConfig,
+      rows: result.rows,
+      pagination: result.pagination,
+      visibleFields,
+      allFields: Object.keys(structure.fields),
+      structure,
+      permissions,
+      schema: result.schema
+    };
+  }
+
+  /**
+   * Get a single record with full details for expanded view
+   * @param {Object} user - Current user
+   * @param {string} tableName - Table name
+   * @param {number} id - Record ID
+   * @returns {Object} - Complete record data with all relations
+   */
+  static async getRecordDetails(user, tableName, id) {
+    const table = SchemaService.getTableName(tableName);
+    if (!table) {
+      return { success: false, error: 'Table non trouvée' };
+    }
+
+    // Check permissions
+    if (!PermissionService.hasPermission(user, table, 'read')) {
+      return { success: false, error: 'Accès refusé à cette table' };
+    }
+
+    // Get record with all relations
+    const result = await TableDataService.getTableData(user, table, {
+      id,
+      relation: 'all', // Load all relations for detail view
+      compact: true,
+      includeSchema: '1'
+    });
+
+    if (!result.success || result.rows.length === 0) {
+      return { success: false, error: 'Enregistrement non trouvé' };
+    }
+
+    const record = result.rows[0];
+
+    // Get permissions for this specific record
+    const canUpdate = PermissionService.hasPermission(user, table, 'update') &&
+                     EntityService.canAccessEntity(user, table, record);
+    const canDelete = PermissionService.hasPermission(user, table, 'delete') &&
+                     EntityService.canAccessEntity(user, table, record);
+
+    return {
+      success: true,
+      table,
+      record,
+      permissions: {
+        canUpdate,
+        canDelete
+      },
+      schema: result.schema
+    };
+  }
+
+  /**
+   * Get visible fields for a table based on permissions and filters
+   * @param {Object} user - Current user
+   * @param {string} table - Table name
+   * @param {boolean} showSystemFields - Include system fields
+   * @param {Array} selectedFields - Specific fields to show (null = default)
+   * @returns {Array} - Array of field names
+   */
+  static getVisibleFields(user, table, showSystemFields = false, selectedFields = null) {
+    const structure = SchemaService.getTableStructure(user, table);
+    if (!structure) return [];
+
+    let fields = Object.keys(structure.fields);
+
+    // Filter system fields if not requested
+    const systemFields = ['id', 'ownerId', 'granted', 'createdAt', 'updatedAt'];
+    if (!showSystemFields) {
+      fields = fields.filter(f => !systemFields.includes(f));
+    }
+
+    // If specific fields selected, use those
+    if (selectedFields && Array.isArray(selectedFields) && selectedFields.length > 0) {
+      fields = fields.filter(f => selectedFields.includes(f));
+    }
+
+    return fields;
+  }
+
+  /**
+   * Get searchable fields for a table (text fields only)
+   * @param {Object} user - Current user
+   * @param {string} table - Table name
+   * @returns {Array} - Array of searchable field names
+   */
+  static getSearchableFields(user, table) {
+    const structure = SchemaService.getTableStructure(user, table);
+    if (!structure) return [];
+
+    const textTypes = ['varchar', 'text', 'enum'];
+    const fields = [];
+
+    for (const [fieldName, field] of Object.entries(structure.fields)) {
+      // Skip computed fields
+      if (field.as || field.calculate) continue;
+
+      // Include text fields
+      if (textTypes.includes(field.type)) {
+        fields.push(fieldName);
+      }
+    }
+
+    return fields;
+  }
+
+  /**
+   * Remove French accents from text for search
+   * @param {string} text - Text to process
+   * @returns {string} - Text without accents
+   */
+  static removeAccents(text) {
+    return text
+      .replace(/[éèêë]/g, 'e')
+      .replace(/[àâä]/g, 'a')
+      .replace(/[ùûü]/g, 'u')
+      .replace(/[îï]/g, 'i')
+      .replace(/[ôö]/g, 'o')
+      .replace(/[ç]/g, 'c')
+      .replace(/[ñ]/g, 'n');
+  }
+
+  /**
+   * Format field value according to renderer
+   * @param {any} value - Field value
+   * @param {Object} field - Field definition from schema
+   * @param {string} country - Country code for date formatting
+   * @returns {Object} - Formatted value with metadata { value, formatted, renderer }
+   */
+  static formatFieldValue(value, field, country = 'FR') {
+    const renderer = field.renderer || field.type;
+
+    // Handle null/undefined
+    if (value === null || value === undefined) {
+      return { value: null, formatted: '', renderer: 'text' };
+    }
+
+    // Handle dates
+    if (field.type === 'date' || field.type === 'datetime') {
+      const date = new Date(value);
+      const formatted = country === 'FR'
+        ? date.toLocaleDateString('fr-FR')
+        : date.toLocaleDateString();
+      return { value, formatted, renderer: 'date' };
+    }
+
+    // Return with renderer info
+    return {
+      value,
+      formatted: String(value),
+      renderer: renderer || 'text'
+    };
+  }
+
+  /**
+   * Get menu tables for user (tables they can create in)
+   * @param {Object} user - Current user
+   * @returns {Array} - Array of table names
+   */
+  static getMenuTables(user) {
+    const tables = SchemaService.getAllTableNames();
+    return tables.filter(table => {
+      return PermissionService.hasPermission(user, table, 'create') ||
+             PermissionService.hasPermission(user, table, 'update');
+    });
+  }
+}
+
+module.exports = CrudService;
