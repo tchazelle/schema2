@@ -158,9 +158,9 @@ class RelationAutocomplete extends React.Component {
     const { value, currentId, relatedTable } = this.props;
 
     // Case 1: value is an object with label (from _relations)
-    if (value && typeof value === 'object' && value.label) {
+    if (value && typeof value === 'object' && (value.label || value._label)) {
       this.setState({
-        searchText: value.label,
+        searchText: value._label || value.label,
         initialLoading: false
       });
       return;
@@ -170,13 +170,13 @@ class RelationAutocomplete extends React.Component {
     if (currentId && relatedTable) {
       this.setState({ initialLoading: true });
       try {
-        const response = await fetch(`/_api/${relatedTable}/${currentId}?compact=1`);
+        const response = await fetch(`/_api/${relatedTable}/${currentId}`);
         const data = await response.json();
 
         if (data.success && data.rows && data.rows.length > 0) {
           const record = data.rows[0];
-          // Build label from displayFields or fallback to available fields
-          const label = this.buildLabel(record);
+          // Use _label from API (built from displayFields) or fallback to buildLabel
+          const label = record._label || this.buildLabel(record);
           this.setState({
             searchText: label,
             initialLoading: false
