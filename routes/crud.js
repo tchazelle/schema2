@@ -1,11 +1,13 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../config/database');
-const { hasPermission, getUserAllRoles } = require('../services/permissionService');
+const { hasPermission, getUserAllRoles, getAccessibleTables } = require('../services/permissionService');
 const schema = require('../schema.js');
 const SchemaService = require('../services/schemaService');
 const EntityService = require('../services/entityService');
 const CrudService = require('../services/crudService');
+const TemplateService = require('../services/templateService');
+const TableDataService = require('../services/tableDataService');
 
 // getTableStructure() a été déplacée dans SchemaService.getTableStructure()
 
@@ -60,7 +62,7 @@ router.get('/:table/data', async (req, res) => {
 
 /**
  * GET /_crud/:table
- * Serves the new React-based CRUD list interface
+ * Serves the new React-based CRUD list interface with site navigation
  */
 router.get('/:table', async (req, res) => {
   try {
@@ -86,35 +88,38 @@ router.get('/:table', async (req, res) => {
       `);
     }
 
-    // Serve the React-based CRUD interface
-    const html = `
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CRUD - ${table}</title>
-  <link rel="stylesheet" href="/css/common.css">
-  <link rel="stylesheet" href="/css/crud.css">
+    // Get full user information if authenticated
+    let fullUser = null;
+    if (user) {
+      const [users] = await pool.query(
+        'SELECT * FROM Person WHERE id = ?',
+        [user.id]
+      );
+      if (users.length > 0) {
+        fullUser = users[0];
+      }
+    }
 
-  <!-- React from CDN (production) -->
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-</head>
-<body>
-  <div id="root"></div>
+    // Get accessible tables for menu (tables user can create or update)
+    const accessibleTables = fullUser ? CrudService.getMenuTables(fullUser) : [];
 
-  <!-- CRUD List Component -->
-  <script src="/js/crudList.js"></script>
+    // Get pages for menu
+    let pages = [];
+    try {
+      const pagesFromTablePage = await TableDataService.getTableData(user, schema.menu.page, {});
+      pages = pagesFromTablePage.rows || [];
+    } catch (error) {
+      console.error('Error loading pages for menu:', error);
+      // Continue without pages in menu
+    }
 
-  <script>
-    // Mount the React component
-    const root = ReactDOM.createRoot(document.getElementById('root'));
-    root.render(React.createElement(CrudList, { table: '${table}' }));
-  </script>
-</body>
-</html>
-    `;
+    // Serve the React-based CRUD interface with navigation
+    const html = TemplateService.htmlCrudPage({
+      user: fullUser,
+      pages: pages,
+      table: table,
+      accessibleTables: accessibleTables
+    });
 
     res.send(html);
 

@@ -41,7 +41,7 @@ class CrudService {
     }
 
     // Get table schema
-    const tableSchema = SchemaService.getTableSchema(table);
+    const tableSchema = SchemaService.getTableConfig(table);
     const tableConfig = {
       ...schema.defaultConfigTable,
       ...tableSchema
