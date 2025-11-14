@@ -103,6 +103,10 @@ class CrudService {
       canPublish: PermissionService.hasPermission(user, table, 'publish')
     };
 
+    // Get all fields excluding system fields (for field selector)
+    const systemFields = ['id', 'ownerId', 'granted', 'createdAt', 'updatedAt'];
+    const allFieldsForSelector = Object.keys(structure.fields).filter(f => !systemFields.includes(f));
+
     return {
       success: true,
       table,
@@ -110,7 +114,7 @@ class CrudService {
       rows: result.rows,
       pagination: result.pagination,
       visibleFields,
-      allFields: Object.keys(structure.fields),
+      allFields: allFieldsForSelector,
       structure,
       permissions,
       schema: result.schema
@@ -181,15 +185,15 @@ class CrudService {
 
     let fields = Object.keys(structure.fields);
 
-    // Filter system fields if not requested
+    // If specific fields selected, use those first
+    if (selectedFields && Array.isArray(selectedFields) && selectedFields.length > 0) {
+      fields = fields.filter(f => selectedFields.includes(f));
+    }
+
+    // Then filter system fields if not requested (this ensures system fields are always filtered unless explicitly requested)
     const systemFields = ['id', 'ownerId', 'granted', 'createdAt', 'updatedAt'];
     if (!showSystemFields) {
       fields = fields.filter(f => !systemFields.includes(f));
-    }
-
-    // If specific fields selected, use those
-    if (selectedFields && Array.isArray(selectedFields) && selectedFields.length > 0) {
-      fields = fields.filter(f => selectedFields.includes(f));
     }
 
     return fields;
