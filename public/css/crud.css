@@ -299,12 +299,20 @@
   transform: scale(1.2);
 }
 
+/* Relation values container */
+.relation-value {
+  display: inline-block;
+  min-width: fit-content;
+}
+
 .relation-link {
   color: #007bff;
   text-decoration: none;
   display: inline-flex;
   align-items: center;
   gap: 3px;
+  white-space: nowrap; /* Empêcher le texte de se couper sur plusieurs lignes */
+  min-width: fit-content; /* S'assurer que le lien prend au moins la largeur de son contenu */
 }
 
 .relation-link:hover {
