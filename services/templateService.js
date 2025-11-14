@@ -339,12 +339,65 @@ class TemplateService {
   ${this.htmlCssFiles()}
 </head>
 <body>
-  
+
   ${this.htmlHeader(user, pages, accessibleTables)}
   ${this.htmlLogin()}
   <main class="container">
     ${main}
   </main>
+  ${this.scriptHumanize()}
+</body>
+</html>
+    `;
+  }
+
+  /**
+   * Génère une page CRUD avec le même header et menu que les pages du site
+   * @param {Object} options - Options de génération
+   * @param {Object} options.user - L'utilisateur connecté
+   * @param {Array} options.pages - Liste des pages du menu
+   * @param {string} options.table - Nom de la table CRUD
+   * @param {Array} options.accessibleTables - Tables accessibles à l'utilisateur
+   * @returns {string} - HTML complet de la page CRUD
+   */
+  static htmlCrudPage(options) {
+    const {
+      user,
+      pages,
+      table,
+      accessibleTables,
+    } = options;
+
+    return `
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CRUD - ${table} - ${schema.appName}</title>
+  ${this.htmlCssFiles()}
+  <link rel="stylesheet" href="/css/crud.css">
+
+  <!-- React from CDN (production) -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+</head>
+<body>
+
+  ${this.htmlHeader(user, pages, accessibleTables)}
+  ${this.htmlLogin()}
+
+  <div id="root"></div>
+
+  <!-- CRUD List Component -->
+  <script src="/js/crudList.js"></script>
+
+  <script>
+    // Mount the React component
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(React.createElement(CrudList, { table: '${table}' }));
+  </script>
+
   ${this.scriptHumanize()}
 </body>
 </html>

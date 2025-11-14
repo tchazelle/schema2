@@ -8,6 +8,7 @@ const { getTableData } = require('../services/tableDataService');
 const { mustacheAuto } = require('../utils/mustacheAuto');
 const PageService = require('../services/pageService');
 const TemplateService = require('../services/templateService');
+const CrudService = require('../services/crudService');
 
 /**
  * GET /
@@ -36,8 +37,8 @@ router.get('/:slug?', async (req, res) => {
     // Récupérer tous les rôles de l'utilisateur
     const allRoles = fullUser ? getUserAllRoles(fullUser) : ['public'];
 
-    // Récupérer les tables accessibles
-    const accessibleTables = fullUser ? getAccessibleTables(fullUser) : [];
+    // Récupérer les tables accessibles (tables user can create or update)
+    const accessibleTables = fullUser ? CrudService.getMenuTables(fullUser) : [];
 
     // Chargement des pages
     const pagesFromTablePage = await getTableData(user, schema.menu.page, {});
