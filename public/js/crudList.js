@@ -140,17 +140,77 @@ class RelationAutocomplete extends React.Component {
       results: [],
       loading: false,
       showDropdown: false,
-      selectedIndex: -1
+      selectedIndex: -1,
+      initialLoading: true
     };
     this.searchTimeout = null;
     this.dropdownRef = React.createRef();
+    this.inputRef = React.createRef();
   }
 
-  componentDidMount() {
+  async componentDidMount() {
     document.addEventListener('click', this.handleClickOutside);
     // Load initial value if exists
-    if (this.props.value && this.props.value.label) {
-      this.setState({ searchText: this.props.value.label });
+    await this.loadInitialValue();
+  }
+
+  async loadInitialValue() {
+    const { value, currentId, relatedTable } = this.props;
+
+    // Case 1: value is an object with label (from _relations)
+    if (value && typeof value === 'object' && value.label) {
+      this.setState({
+        searchText: value.label,
+        initialLoading: false
+      });
+      return;
+    }
+
+    // Case 2: currentId is provided (ID of related record)
+    if (currentId && relatedTable) {
+      this.setState({ initialLoading: true });
+      try {
+        const response = await fetch(`/_api/${relatedTable}/${currentId}?compact=1`);
+        const data = await response.json();
+
+        if (data.success && data.rows && data.rows.length > 0) {
+          const record = data.rows[0];
+          // Build label from displayFields or fallback to available fields
+          const label = this.buildLabel(record);
+          this.setState({
+            searchText: label,
+            initialLoading: false
+          });
+        } else {
+          this.setState({ initialLoading: false });
+        }
+      } catch (error) {
+        console.error('Failed to load initial value:', error);
+        this.setState({ initialLoading: false });
+      }
+    } else {
+      this.setState({ initialLoading: false });
+    }
+  }
+
+  buildLabel(record) {
+    // Try to build a meaningful label from the record
+    const values = [];
+    for (const key in record) {
+      if (key !== 'id' && key !== 'ownerId' && key !== 'granted' &&
+          key !== 'createdAt' && key !== 'updatedAt' &&
+          !key.startsWith('_') && record[key]) {
+        values.push(record[key]);
+        if (values.length >= 3) break; // Limit to 3 fields
+      }
+    }
+    return values.length > 0 ? values.join(' ') : `#${record.id}`;
+  }
+
+  // Expose focus method for external use
+  focus() {
+    if (this.inputRef.current) {
+      this.inputRef.current.focus();
     }
   }
 
@@ -247,7 +307,7 @@ class RelationAutocomplete extends React.Component {
 
   render() {
     const { fieldName, disabled, canCreate } = this.props;
-    const { searchText, results, loading, showDropdown, selectedIndex } = this.state;
+    const { searchText, results, loading, showDropdown, selectedIndex, initialLoading } = this.state;
 
     return e('div', { className: 'relation-autocomplete', ref: this.dropdownRef },
       e('div', { className: 'relation-input-wrapper' },
@@ -258,8 +318,9 @@ class RelationAutocomplete extends React.Component {
           onChange: this.handleSearchChange,
           onKeyDown: this.handleKeyDown,
           onFocus: () => this.setState({ showDropdown: true }),
-          disabled: disabled,
-          placeholder: 'Rechercher...'
+          disabled: disabled || initialLoading,
+          placeholder: initialLoading ? 'Chargement...' : 'Rechercher...',
+          ref: this.inputRef
         }),
         canCreate && e('button', {
           type: 'button',
@@ -602,6 +663,7 @@ class EditForm extends React.Component {
           fieldName: fieldName,
           relatedTable: field.relation,
           value: formData._relations && formData._relations[fieldName],
+          currentId: value, // Pass the current ID of the related record
           onChange: (id, item) => this.handleFieldChange(fieldName, id),
           canCreate: permissions.canCreate,
           onAddNew: () => {

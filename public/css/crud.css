@@ -376,7 +376,7 @@ tr.detail-row:not(:has(~ tr)) {
 /* Detail Fields - Responsive Grid */
 .detail-fields {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(375px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(375px, 100%), 1fr));
   gap: 12px;
   margin-bottom: 12px;
 }
@@ -891,7 +891,7 @@ tr.detail-row:not(:has(~ tr)) {
 
 .edit-form-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(375px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(375px, 100%), 1fr));
   gap: 16px;
 }
 
@@ -1014,15 +1014,19 @@ tr.detail-row:not(:has(~ tr)) {
 /* Relation autocomplete */
 .relation-autocomplete {
   position: relative;
+  width: 100%;
 }
 
 .relation-input-wrapper {
   display: flex;
   gap: 4px;
+  width: 100%;
 }
 
 .relation-input {
   flex: 1;
+  min-width: 0; /* Allow flex item to shrink below content size */
+  width: 100%;
 }
 
 .btn-add-relation {
@@ -1172,5 +1176,38 @@ tr.detail-row:not(:has(~ tr)) {
 @media (max-width: 768px) {
   .edit-form-grid {
     grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .relation-input-wrapper {
+    flex-direction: row; /* Keep horizontal on mobile */
+  }
+
+  .btn-add-relation {
+    padding: 8px 10px;
+    font-size: 13px;
+    flex-shrink: 0;
+  }
+
+  .autocomplete-dropdown {
+    max-height: 150px; /* Smaller on mobile */
+  }
+}
+
+/* Extra responsive for very small screens */
+@media (max-width: 480px) {
+  .edit-form-grid {
+    gap: 10px;
+  }
+
+  .edit-field-label {
+    font-size: 11px;
+  }
+
+  .edit-field-input,
+  .edit-field-textarea,
+  .edit-field-select {
+    font-size: 14px;
+    padding: 6px 8px;
   }
 }
