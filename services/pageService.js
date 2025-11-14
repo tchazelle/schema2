@@ -10,6 +10,7 @@ const { hasPermission } = require('./permissionService');
 const EntityService = require('./entityService');
 const TemplateService = require('../services/templateService');
 const { getTableData } = require('../services/tableDataService');
+const CrudService = require('../services/crudService');
 
 class PageService {
 
@@ -83,7 +84,8 @@ class PageService {
       htmlSections += newSectionsWithRows.map(section => TemplateService.htmlSection(section))
     }
     const main = options.debug ? TemplateService.htmlDebugJSON(page) : htmlSections
-    const html = TemplateService.htmlSitePage({user, pages, main})
+    const accessibleTables = user ? CrudService.getMenuTables(user) : [];
+    const html = TemplateService.htmlSitePage({user, pages, main, accessibleTables})
     return html
   }
 
