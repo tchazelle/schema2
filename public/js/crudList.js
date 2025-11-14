@@ -325,59 +325,44 @@ class RowDetailView extends React.Component {
       !['id', 'ownerId', 'granted', 'createdAt', 'updatedAt'].includes(f)
     );
 
-    // Separate direct fields and relations
+    // Separate 1:N relations (arrays)
     const relations1N = {};
-    const relationsN1 = {};
 
     if (row._relations) {
       Object.entries(row._relations).forEach(([key, value]) => {
         if (Array.isArray(value)) {
           relations1N[key] = value;
-        } else {
-          relationsN1[key] = value;
         }
       });
     }
 
     return e('div', { className: 'row-detail' },
-      // Fields grid
+      // Fields grid - showing all fields in order, with N:1 relations inline
       e('div', { className: 'detail-fields' },
         allFields.map(fieldName => {
           const field = structure.fields[fieldName];
           const value = row[fieldName];
           const label = field?.label || fieldName;
 
-          // Skip if this is a relation field (already shown in relations)
-          if (relationsN1[fieldName]) return null;
+          // Check if this field has a N:1 relation in _relations
+          const relationN1 = row._relations && row._relations[fieldName] && !Array.isArray(row._relations[fieldName])
+            ? row._relations[fieldName]
+            : null;
 
           return e('div', { key: fieldName, className: 'detail-field' },
             e('label', { className: 'detail-label' }, label),
             e('div', { className: 'detail-value' },
-              e(FieldRenderer, {
-                value,
-                field,
-                tableName
-              })
-            )
-          );
-        })
-      ),
-
-      // N:1 Relations
-      Object.keys(relationsN1).length > 0 && e('div', { className: 'detail-relations-n1' },
-        e('h4', null, 'Relations'),
-        Object.entries(relationsN1).map(([relName, relData]) => {
-          const field = structure.fields[relName];
-          const label = field?.label || relName;
-
-          return e('div', { key: relName, className: 'detail-field' },
-            e('label', { className: 'detail-label' }, label),
-            e('div', { className: 'detail-value' },
-              e(RelationRenderer, {
-                relation: relData,
-                fieldName: relName,
-                relatedTable: field.relation
-              })
+              relationN1
+                ? e(RelationRenderer, {
+                    relation: relationN1,
+                    fieldName: fieldName,
+                    relatedTable: field.relation
+                  })
+                : e(FieldRenderer, {
+                    value,
+                    field,
+                    tableName
+                  })
             )
           );
         })
