@@ -15,6 +15,26 @@ const e = React.createElement;
 let SCHEMA_CONFIG = null;
 
 /**
+ * Helper function to build card title from displayFields
+ * @param {Object} row - The data row
+ * @param {string} tableName - Table name
+ * @param {Object} tableConfig - Table configuration
+ * @returns {string} - Display title
+ */
+function buildCardTitle(row, tableName, tableConfig) {
+  if (!tableConfig || !tableConfig.displayFields || tableConfig.displayFields.length === 0) {
+    return null;
+  }
+
+  const values = tableConfig.displayFields
+    .map(fieldName => row[fieldName])
+    .filter(val => val !== null && val !== undefined && val !== '')
+    .join(' ');
+
+  return values || null;
+}
+
+/**
  * Field Renderer Component
  * Renders field values according to their renderer type
  */
@@ -559,9 +579,19 @@ class EditForm extends React.Component {
     const value = formData[fieldName];
     const label = field.label || fieldName;
 
-    // Skip computed fields
+    // Show computed fields as readonly
     if (field.as || field.calculate) {
-      return null;
+      return e('div', { key: fieldName, className: 'edit-field' },
+        e('label', { className: 'edit-field-label' }, label, ' ', e('span', { style: { fontSize: '10px', color: '#6c757d', fontWeight: 400 } }, '(calculé)')),
+        e('input', {
+          type: 'text',
+          className: 'edit-field-input',
+          value: value || '',
+          readOnly: true,
+          disabled: true,
+          style: { background: '#e9ecef', cursor: 'not-allowed' }
+        })
+      );
     }
 
     // Check if this is a relation
@@ -715,39 +745,13 @@ class EditForm extends React.Component {
     }
 
     return e('div', { className: 'edit-form' },
-      // Header
-      e('div', { className: 'edit-form-header' },
-        e('div', { style: { display: 'flex', alignItems: 'center', gap: '12px', flex: 1 } },
-          e('h3', {
-            className: 'edit-form-title',
-            title: 'Fiche en édition'
-          }, `📋 ${tableName} / ${row.id}`),
-          // Granted selector in header
-          structure.fields.granted && e('div', { style: { marginLeft: 'auto' } },
-            e(GrantedSelector, {
-              value: formData.granted,
-              publishableTo: tableConfig.publishableTo || [],
-              userRole: 'member',
-              onChange: (val) => this.handleFieldChange('granted', val),
-              disabled: !permissions.canPublish,
-              compact: true
-            })
-          )
-        ),
-        e('div', { className: 'edit-form-actions' },
-          saveStatus !== 'idle' && e('span', {
-            className: `save-indicator ${saveStatus}`
-          }, this.getSaveIndicatorText()),
-          e('button', {
-            className: 'btn-close-edit',
-            onClick: onClose,
-            title: 'Fermer le formulaire'
-          }, '✖')
-        )
-      ),
-
       // General error
       errors._general && e('div', { className: 'error' }, errors._general),
+
+      // Save indicator (if not idle)
+      saveStatus !== 'idle' && e('div', {
+        style: { padding: '8px 12px', marginBottom: '12px', textAlign: 'center', background: saveStatus === 'saved' ? '#d4edda' : (saveStatus === 'error' ? '#f8d7da' : '#d1ecf1'), borderRadius: '4px' }
+      }, this.getSaveIndicatorText()),
 
       // Form fields grid
       e('div', { className: 'edit-form-grid' },
@@ -886,6 +890,22 @@ class TableRow extends React.Component {
       loading: false,
       focusFieldName: null
     };
+    this.handleKeyDown = this.handleKeyDown.bind(this);
+  }
+
+  componentDidMount() {
+    document.addEventListener('keydown', this.handleKeyDown);
+  }
+
+  componentWillUnmount() {
+    document.removeEventListener('keydown', this.handleKeyDown);
+  }
+
+  handleKeyDown(event) {
+    // Close on ESC key if this row is expanded
+    if (event.key === 'Escape' && this.state.expanded) {
+      this.setState({ expanded: false, editMode: false });
+    }
   }
 
   toggleExpand = async () => {
@@ -992,12 +1012,51 @@ class TableRow extends React.Component {
       // When expanded, show header row with table/id, granted, and close button
       expanded && e('tr', { className: 'detail-row-header' },
         e('td', { colSpan: fields.length },
-          e('div', { style: { display: 'flex', alignItems: 'center', gap: '12px', padding: '8px 12px', background: '#e7f5ff', borderBottom: '1px solid #dee2e6' } },
-            e('h3', {
-              style: { margin: 0, fontSize: '16px', fontWeight: 600, flex: 1 }
-            }, `📋 ${tableName} / ${row.id}`),
-            // Granted selector in header
-            structure.fields.granted && !editMode && e('div', null,
+          e('div', { style: { display: 'flex', alignItems: 'center', gap: '12px', padding: '8px 12px', background: editMode ? '#f8f9fa' : '#e7f5ff', borderBottom: '1px solid #dee2e6' } },
+            // Title with displayFields or table/id
+            (() => {
+              const cardTitle = buildCardTitle(displayData, tableName, tableConfig);
+              const tableIcon = editMode ? '📄' : '📋';
+
+              if (editMode) {
+                // Edit mode: show simple table/id
+                return e('h3', {
+                  style: { margin: 0, fontSize: '16px', fontWeight: 600, flex: 1, cursor: 'pointer' },
+                  onClick: (ev) => {
+                    ev.stopPropagation();
+                    this.setState({ expanded: false, editMode: false });
+                  },
+                  title: 'Cliquer pour fermer'
+                }, `${tableIcon} ${tableName} / ${row.id}`);
+              } else if (cardTitle) {
+                // View mode with displayFields: show displayFields prominently + table/id discreetly
+                return e('h3', {
+                  style: { margin: 0, fontSize: '16px', fontWeight: 600, flex: 1, cursor: 'pointer' },
+                  onClick: (ev) => {
+                    ev.stopPropagation();
+                    this.setState({ expanded: false, editMode: false });
+                  },
+                  title: 'Cliquer pour fermer'
+                },
+                  `${tableIcon} ${cardTitle}`,
+                  e('span', {
+                    style: { fontSize: '12px', color: '#6c757d', fontWeight: 400, marginLeft: '8px' }
+                  }, `(${tableName}/${row.id})`)
+                );
+              } else {
+                // View mode without displayFields: show table/id
+                return e('h3', {
+                  style: { margin: 0, fontSize: '16px', fontWeight: 600, flex: 1, cursor: 'pointer' },
+                  onClick: (ev) => {
+                    ev.stopPropagation();
+                    this.setState({ expanded: false, editMode: false });
+                  },
+                  title: 'Cliquer pour fermer'
+                }, `${tableIcon} ${tableName} / ${row.id}`);
+              }
+            })(),
+            // Granted selector in header (always visible)
+            structure.fields.granted && e('div', { onClick: (ev) => ev.stopPropagation() },
               e(GrantedSelector, {
                 value: displayData.granted,
                 publishableTo: tableConfig.publishableTo || [],
@@ -1233,6 +1292,22 @@ class SubListRow extends React.Component {
       loading: false,
       focusFieldName: null
     };
+    this.handleKeyDown = this.handleKeyDown.bind(this);
+  }
+
+  componentDidMount() {
+    document.addEventListener('keydown', this.handleKeyDown);
+  }
+
+  componentWillUnmount() {
+    document.removeEventListener('keydown', this.handleKeyDown);
+  }
+
+  handleKeyDown(event) {
+    // Close on ESC key if this row is expanded
+    if (event.key === 'Escape' && this.state.expanded) {
+      this.setState({ expanded: false, editMode: false });
+    }
   }
 
   toggleExpand = async () => {
@@ -1326,12 +1401,51 @@ class SubListRow extends React.Component {
       // When expanded, show header row with table/id, granted, and close button
       expanded && e('tr', { className: 'detail-row-header' },
         e('td', { colSpan: fields.length },
-          e('div', { style: { display: 'flex', alignItems: 'center', gap: '12px', padding: '8px 12px', background: '#e7f5ff', borderBottom: '1px solid #dee2e6' } },
-            e('h3', {
-              style: { margin: 0, fontSize: '14px', fontWeight: 600, flex: 1 }
-            }, `📋 ${tableName} / ${row.id}`),
-            // Granted selector in header
-            structure.fields.granted && !editMode && e('div', null,
+          e('div', { style: { display: 'flex', alignItems: 'center', gap: '12px', padding: '8px 12px', background: editMode ? '#f8f9fa' : '#e7f5ff', borderBottom: '1px solid #dee2e6' } },
+            // Title with displayFields or table/id
+            (() => {
+              const cardTitle = buildCardTitle(displayData, tableName, tableConfig);
+              const tableIcon = editMode ? '📄' : '📋';
+
+              if (editMode) {
+                // Edit mode: show simple table/id
+                return e('h3', {
+                  style: { margin: 0, fontSize: '14px', fontWeight: 600, flex: 1, cursor: 'pointer' },
+                  onClick: (ev) => {
+                    ev.stopPropagation();
+                    this.setState({ expanded: false, editMode: false });
+                  },
+                  title: 'Cliquer pour fermer'
+                }, `${tableIcon} ${tableName} / ${row.id}`);
+              } else if (cardTitle) {
+                // View mode with displayFields: show displayFields prominently + table/id discreetly
+                return e('h3', {
+                  style: { margin: 0, fontSize: '14px', fontWeight: 600, flex: 1, cursor: 'pointer' },
+                  onClick: (ev) => {
+                    ev.stopPropagation();
+                    this.setState({ expanded: false, editMode: false });
+                  },
+                  title: 'Cliquer pour fermer'
+                },
+                  `${tableIcon} ${cardTitle}`,
+                  e('span', {
+                    style: { fontSize: '11px', color: '#6c757d', fontWeight: 400, marginLeft: '8px' }
+                  }, `(${tableName}/${row.id})`)
+                );
+              } else {
+                // View mode without displayFields: show table/id
+                return e('h3', {
+                  style: { margin: 0, fontSize: '14px', fontWeight: 600, flex: 1, cursor: 'pointer' },
+                  onClick: (ev) => {
+                    ev.stopPropagation();
+                    this.setState({ expanded: false, editMode: false });
+                  },
+                  title: 'Cliquer pour fermer'
+                }, `${tableIcon} ${tableName} / ${row.id}`);
+              }
+            })(),
+            // Granted selector in header (always visible)
+            structure.fields.granted && e('div', { onClick: (ev) => ev.stopPropagation() },
               e(GrantedSelector, {
                 value: displayData.granted,
                 publishableTo: tableConfig?.publishableTo || [],
