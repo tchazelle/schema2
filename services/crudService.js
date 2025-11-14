@@ -71,6 +71,7 @@ class CrudService {
       orderBy,
       order,
       customWhere,
+      customWhereParams: searchParams,
       relation: 'default', // Load N:1 and Strong 1:N by default
       compact,
       includeSchema: '1'

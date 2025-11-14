@@ -191,6 +191,7 @@ async function loadRelationsForRow(user, tableName, row, options = {}) {
  * @param {string} [options.orderBy] - Champ de tri
  * @param {string} [options.order] - Direction du tri (ASC/DESC)
  * @param {string} [options.customWhere] - Clause WHERE personnalisée
+ * @param {Array} [options.customWhereParams] - Paramètres pour la clause WHERE personnalisée
  * @param {string} [options.relation] - Relations à charger ('all' ou liste CSV)
  * @param {string} [options.includeSchema] - Inclure le schéma ('1' pour oui)
  * @param {string} [options.compact] - Mode compact pour relations ('1' pour oui)
@@ -204,6 +205,7 @@ async function getTableData(user, tableName, options = {}) {
     orderBy,
     order,
     customWhere,
+    customWhereParams = [],
     relation,
     includeSchema,
     compact,
@@ -230,7 +232,7 @@ async function getTableData(user, tableName, options = {}) {
   }
 
   // Construire la requête SQL
-  const { where, params } = EntityService.buildWhereClause(user, customWhere);
+  const { where, params } = EntityService.buildWhereClause(user, customWhere, customWhereParams);
   let rows = []
   if(!id) {
     let query = `SELECT * FROM ${table} WHERE ${where}`;

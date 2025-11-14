@@ -111,9 +111,10 @@ class EntityService {
    *
    * @param {Object} user - L'utilisateur
    * @param {string} baseWhere - Clause WHERE de base (optionnelle)
+   * @param {Array} baseParams - Paramètres pour la clause WHERE de base (optionnelle)
    * @returns {Object} - { where: string, params: Array }
    */
-  static buildWhereClause(user, baseWhere = null) {
+  static buildWhereClause(user, baseWhere = null, baseParams = []) {
     const userRoles = getUserAllRoles(user);
     const conditions = [];
     const params = [];
@@ -121,6 +122,8 @@ class EntityService {
     // Ajouter la clause WHERE de base si fournie
     if (baseWhere) {
       conditions.push(`(${baseWhere})`);
+      // Ajouter les paramètres de base en premier
+      params.push(...baseParams);
     }
 
     // Conditions pour granted
