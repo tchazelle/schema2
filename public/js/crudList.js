@@ -2058,18 +2058,13 @@ class CrudList extends React.Component {
   handleSort = (fieldName) => {
     this.setState(prev => {
       if (prev.orderBy === fieldName) {
-        if (prev.order === 'ASC') {
-          return {
-            orderBy: fieldName,
-            order: 'DESC'
-          };
-        } else {
-          return {
-            orderBy: 'updatedAt',
-            order: 'DESC'
-          };
-        }
+        // Toggle between ASC and DESC on same field
+        return {
+          orderBy: fieldName,
+          order: prev.order === 'ASC' ? 'DESC' : 'ASC'
+        };
       } else {
+        // First click on a new field: start with ASC
         return {
           orderBy: fieldName,
           order: 'ASC'

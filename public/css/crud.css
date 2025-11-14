@@ -324,6 +324,8 @@ tr.detail-row td {
   padding: 0 !important;
   background: #f8f9fa;
   border: none;
+  max-width: 100vw;
+  overflow: hidden;
 }
 
 /* Detail Row Header (when row is expanded and replaced with table/id + granted + close) */
@@ -354,6 +356,8 @@ tr.detail-row:not(:has(~ tr)) {
   margin: 0;
   width: 100%;
   min-width: 100%;
+  max-width: 100vw;
+  overflow-x: auto;
   animation: expandDown 0.3s ease-out;
 }
 
@@ -508,7 +512,7 @@ tr.detail-row:not(:has(~ tr)) {
 }
 
 .sub-list-table tbody td {
-  padding: 4px 6px;
+  padding: 6px 8px;
   border-bottom: 1px solid #f1f3f5;
 }
 
@@ -803,8 +807,11 @@ tr.detail-row:not(:has(~ tr)) {
 }
 
 /* Responsive - Table to Card Layout */
-@media (max-width: 700px) {
-  /* Hide table header on mobile */
+/* Large screens - keep table (no changes needed) */
+
+/* Medium screens - 4 column cards */
+@media (max-width: 1399px) {
+  /* Hide table header */
   .crud-table thead {
     display: none;
   }
@@ -833,10 +840,10 @@ tr.detail-row:not(:has(~ tr)) {
     box-shadow: 0 4px 12px rgba(0,0,0,0.1);
   }
 
-  /* Display cells in 2-column grid */
+  /* Display cells in 4-column grid */
   .crud-table tbody tr.data-row {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: 12px 20px;
   }
 
@@ -903,7 +910,7 @@ tr.detail-row:not(:has(~ tr)) {
 
   .sub-list-table tbody tr {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: 10px 16px;
   }
 
@@ -920,6 +927,41 @@ tr.detail-row:not(:has(~ tr)) {
     margin-bottom: 3px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+  }
+}
+
+/* Vertical tablet - 3 column cards */
+@media (max-width: 1100px) {
+  .crud-table tbody tr.data-row {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .sub-list-table tbody tr {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Horizontal phone - 2 column cards */
+@media (max-width: 800px) {
+  .crud-table tbody tr.data-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .sub-list-table tbody tr {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Vertical phone - 1 column cards */
+@media (max-width: 500px) {
+  .crud-table tbody tr.data-row {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .sub-list-table tbody tr {
+    grid-template-columns: 1fr;
+    gap: 8px;
   }
 }
 
@@ -952,6 +994,8 @@ tr.detail-row:not(:has(~ tr)) {
   margin: 0;
   width: 100%;
   min-width: 100%;
+  max-width: 100vw;
+  overflow-x: auto;
   animation: expandDown 0.3s ease-out;
   transition: all 0.3s ease;
 }
