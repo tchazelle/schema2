@@ -46,6 +46,8 @@ module.exports = {
     pageSize: 100, // nombre maximum de fiches par page (bouton +lignes pour ajouter dynamiquement)
     dateFormat: "fr",
     cardWidth: "600px",
+    maxColWidth: "300px", // largeur maximale des colonnes dans les listes
+    maxColHeight: "100px", // hauteur maximale des colonnes dans les listes
     publishableTo: ["public", "member", "premium"], // pour quels rôle les rows de la table peut êre publiée
     granted: { // niveau maximum de protection par defaut
       "dev": ["read", "create", "update", "delete", "publish"]
