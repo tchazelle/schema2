@@ -311,11 +311,8 @@
 /* Detail Row */
 tr.detail-row td {
   padding: 0 !important;
-  background: #f8f9fa;
-  border-left: 3px solid #007bff;
-  border-right: 3px solid #007bff;
-  border-bottom: 3px solid #007bff;
-  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.15);
+  background: transparent;
+  border: none;
 }
 
 /* Add spacing after detail row to separate from next data row */
@@ -326,8 +323,13 @@ tr.detail-row + tr.data-row {
 .row-detail {
   padding: 16px;
   background: #ffffff;
-  margin: 2px;
-  border-radius: 4px;
+  margin: 0 1rem 1rem 1rem;
+  border-left: 1px solid #007bff;
+  border-right: 1px solid #007bff;
+  border-bottom: 1px solid #007bff;
+  border-bottom-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.15);
   animation: slideDown 0.2s ease;
 }
 
