@@ -6,7 +6,7 @@
 .crud-list-container {
   max-width: 100%;
   padding: 8px;
-  font-size: 14px;
+  font-size: 15px; /* Increased from 14px */
   height: 100vh;
   display: flex;
   flex-direction: column;
@@ -180,10 +180,10 @@
 }
 
 .crud-table {
-  width: auto;
+  width: 100%;
   border-collapse: collapse;
   background: white;
-  font-size: 13px;
+  font-size: 14px; /* Increased from 13px */
   table-layout: auto;
 }
 
@@ -284,14 +284,19 @@
 .field-value.telephone,
 .field-value.email,
 .field-value.url {
-  color: #007bff;
-  text-decoration: none;
+  color: #212529;
 }
 
-.field-value.telephone:hover,
-.field-value.email:hover,
-.field-value.url:hover {
-  text-decoration: underline;
+.field-icon-link {
+  color: #007bff;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 0.15s;
+  display: inline-block;
+}
+
+.field-icon-link:hover {
+  transform: scale(1.2);
 }
 
 .relation-link {
@@ -374,7 +379,7 @@ tr.detail-row + tr.data-row {
 }
 
 .detail-value {
-  font-size: 13px;
+  font-size: 14px; /* Increased from 13px */
   color: #212529;
 }
 
@@ -823,10 +828,19 @@ tr.detail-row + tr.data-row {
 }
 
 .edit-form-title {
-  font-size: 16px;
+  font-size: 17px; /* Increased from 16px */
   font-weight: 600;
   color: #212529;
   margin: 0;
+}
+
+.edit-form-title.clickable {
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.edit-form-title.clickable:hover {
+  color: #007bff;
 }
 
 .edit-form-actions {

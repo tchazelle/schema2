@@ -210,12 +210,27 @@ router.put('/:tableName/:id', async (req, res) => {
       return res.status(403).json({ success: false, error: 'Accès refusé à cet enregistrement' });
     }
 
-    // Prepare update data (remove protected fields)
+    // Prepare update data (remove protected fields and non-schema fields)
     const data = { ...req.body };
     delete data.id;
     delete data.ownerId;
     delete data.createdAt;
     delete data.updatedAt;
+    delete data._relations; // Remove computed relations field
+
+    // Get table schema to filter only valid fields
+    const tableSchema = schema.tables[table];
+    if (tableSchema && tableSchema.fields) {
+      // Filter to only include fields that exist in the schema
+      const validFields = {};
+      for (const [key, value] of Object.entries(data)) {
+        if (tableSchema.fields[key] && !tableSchema.fields[key].as && !tableSchema.fields[key].calculate) {
+          validFields[key] = value;
+        }
+      }
+      Object.assign(data, {}); // Clear data
+      Object.assign(data, validFields); // Replace with valid fields only
+    }
 
     // Update record
     await pool.query(`UPDATE ${table} SET ? WHERE id = ?`, [data, id]);
