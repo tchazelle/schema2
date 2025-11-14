@@ -41,7 +41,7 @@ module.exports = {
 
 
   defaultConfigTable : {
-    displayField: "name", // identifiant utilisateur, peut être un array (par exemple pour symboliser un lien n:1)
+    displayFields: ["name"], // identifiant utilisateur, peut être un array (par exemple pour symboliser un lien n:1)
     searchFields: null, // par défaut tous les champs varchar ou text de la structure
     pageSize: 100, // nombre maximum de fiches par page (bouton +lignes pour ajouter dynamiquement)
     dateFormat: "fr",
@@ -146,7 +146,7 @@ module.exports = {
     },
     Person: {
       // ... defaultConfigTable
-      displayField:["givenName","familyName"],
+      displayFields: ["givenName", "familyName"],
       granted: {
         "admin": ["read", "create", "update", "delete", "publish"]
       },
@@ -260,7 +260,7 @@ module.exports = {
       }
     },
     MusicAlbum: {
-      displayField: "name",
+      displayFields: ["name"],
       searchFields: ["name", "description", "genre"],
       pageSize: 50,
       dateFormat: "fr",

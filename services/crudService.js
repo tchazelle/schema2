@@ -47,6 +47,19 @@ class CrudService {
       ...tableSchema
     };
 
+    // Normalize displayFields to always be an array
+    // Handle both displayField (singular) and displayFields (plural) for backward compatibility
+    if (tableConfig.displayField && !tableConfig.displayFields) {
+      tableConfig.displayFields = Array.isArray(tableConfig.displayField)
+        ? tableConfig.displayField
+        : [tableConfig.displayField];
+    } else if (tableConfig.displayFields && typeof tableConfig.displayFields === 'string') {
+      tableConfig.displayFields = [tableConfig.displayFields];
+    } else if (!tableConfig.displayFields) {
+      // Fallback to ['name'] if nothing is specified
+      tableConfig.displayFields = ['name'];
+    }
+
     // Build WHERE clause for search
     let customWhere = '1=1';
     const searchParams = [];
