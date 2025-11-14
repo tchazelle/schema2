@@ -27,7 +27,7 @@ class FieldSelectorUI {
 
     try {
       // Charger la structure de la table
-      const response = await fetch(`/_crud/${this.table}`);
+      const response = await fetch(`/_crud/${this.table}/structure`);
       const data = await response.json();
 
       if (!data.success) {
@@ -47,7 +47,7 @@ class FieldSelectorUI {
    */
   async loadRelatedTableStructure(tableName) {
     try {
-      const response = await fetch(`/_crud/${tableName}`);
+      const response = await fetch(`/_crud/${tableName}/structure`);
       const data = await response.json();
 
       if (!data.success) {
