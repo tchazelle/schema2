@@ -1061,9 +1061,9 @@ class TableRow extends React.Component {
     const displayData = fullData || row;
 
     return e(React.Fragment, null,
-      // Show normal row only when NOT expanded
-      !expanded && e('tr', {
-        className: 'data-row',
+      // Always show the data row (no substitution)
+      e('tr', {
+        className: `data-row ${expanded ? 'expanded' : ''}`,
         onClick: this.toggleExpand,
         onDoubleClick: this.enterEditMode
       },
@@ -1091,127 +1091,160 @@ class TableRow extends React.Component {
           );
         })
       ),
-      // When expanded, show header row with table/id, granted, and close button
-      expanded && e('tr', { className: 'detail-row-header' },
-        e('td', { colSpan: fields.length },
-          e('div', { style: { display: 'flex', alignItems: 'center', gap: '12px', padding: '8px 12px', background: editMode ? '#f8f9fa' : '#e9ecef', borderBottom: '1px solid #dee2e6' } },
-            // Title with displayFields or table/id
-            (() => {
-              const cardTitle = buildCardTitle(displayData, tableName, tableConfig);
-              const tableIcon = editMode ? '📄' : '📋';
+      // Modal overlay when expanded
+      expanded && e(RowDetailModal, {
+        row: displayData,
+        tableName,
+        tableConfig,
+        structure,
+        permissions,
+        editMode,
+        loading,
+        focusFieldName,
+        onClose: () => this.setState({ expanded: false, editMode: false }),
+        onEnterEditMode: this.enterEditMode,
+        onExitEditMode: this.exitEditMode,
+        onSave: this.handleSave,
+        onUpdate: this.props.onUpdate
+      })
+    );
+  }
+}
 
-              if (editMode) {
-                // Edit mode: show simple table/id
-                return e('h3', {
-                  style: { margin: 0, fontSize: '16px', fontWeight: 600, flex: 1, cursor: 'pointer' },
-                  onClick: (ev) => {
-                    ev.stopPropagation();
-                    this.setState({ expanded: false, editMode: false });
-                  },
-                  title: 'Cliquer pour fermer'
-                }, `${tableIcon} ${tableName} / ${row.id}`);
-              } else if (cardTitle) {
-                // View mode with displayFields: show displayFields prominently + table/id discreetly
-                return e('h3', {
-                  style: { margin: 0, fontSize: '16px', fontWeight: 600, flex: 1, cursor: 'pointer' },
-                  onClick: (ev) => {
-                    ev.stopPropagation();
-                    this.setState({ expanded: false, editMode: false });
-                  },
-                  title: 'Cliquer pour fermer'
-                },
-                  `${tableIcon} ${cardTitle}`,
-                  e('span', {
-                    style: { fontSize: '12px', color: '#6c757d', fontWeight: 400, marginLeft: '8px' }
-                  }, `(${tableName}/${row.id})`)
-                );
-              } else {
-                // View mode without displayFields: show table/id
-                return e('h3', {
-                  style: { margin: 0, fontSize: '16px', fontWeight: 600, flex: 1, cursor: 'pointer' },
-                  onClick: (ev) => {
-                    ev.stopPropagation();
-                    this.setState({ expanded: false, editMode: false });
-                  },
-                  title: 'Cliquer pour fermer'
-                }, `${tableIcon} ${tableName} / ${row.id}`);
-              }
-            })(),
-            // Granted selector in header (always visible)
-            structure.fields.granted && e('div', { onClick: (ev) => ev.stopPropagation() },
-              e(GrantedSelector, {
-                value: displayData.granted,
-                publishableTo: tableConfig.publishableTo || [],
-                tableGranted: tableConfig.granted || {},
-                onChange: async (val) => {
-                  // Auto-save granted change
-                  try {
-                    const response = await fetch(`/_api/${tableName}/${row.id}`, {
-                      method: 'PUT',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ granted: val })
-                    });
-                    const data = await response.json();
-                    if (data.success) {
-                      this.setState(prev => ({
-                        fullData: {
-                          ...prev.fullData,
-                          granted: val
-                        }
-                      }));
-                      if (this.props.onUpdate) {
-                        this.props.onUpdate();
-                      }
-                    }
-                  } catch (error) {
-                    console.error('Failed to save granted:', error);
+/**
+ * Row Detail Modal Component
+ * Full-screen modal with fixed header containing title, granted selector, and close button
+ */
+class RowDetailModal extends React.Component {
+  componentDidMount() {
+    // Prevent body scroll when modal is open
+    document.body.style.overflow = 'hidden';
+  }
+
+  componentWillUnmount() {
+    // Restore body scroll
+    document.body.style.overflow = '';
+  }
+
+  handleOverlayClick = (e) => {
+    if (e.target === e.currentTarget) {
+      this.props.onClose();
+    }
+  }
+
+  render() {
+    const {
+      row,
+      tableName,
+      tableConfig,
+      structure,
+      permissions,
+      editMode,
+      loading,
+      focusFieldName,
+      onClose,
+      onEnterEditMode,
+      onExitEditMode,
+      onSave,
+      onUpdate,
+      parentTable,
+      hideRelations1N
+    } = this.props;
+
+    const cardTitle = buildCardTitle(row, tableName, tableConfig);
+    const tableIcon = editMode ? '📄' : '📋';
+
+    return e('div', {
+      className: 'modal-overlay-detail',
+      onClick: this.handleOverlayClick
+    },
+      e('div', { className: 'modal-content-detail' },
+        // Fixed header
+        e('div', { className: 'modal-header-detail' },
+          // Title section
+          e('div', { className: 'modal-title-section' },
+            e('h3', {
+              className: 'modal-title-detail'
+            },
+              `${tableIcon} `,
+              cardTitle ? [
+                cardTitle,
+                e('span', {
+                  key: 'subtitle',
+                  className: 'modal-subtitle'
+                }, ` ${tableName}/${row.id}`)
+              ] : `${tableName}/${row.id}`
+            )
+          ),
+          // Granted selector
+          structure.fields.granted && e('div', {
+            className: 'modal-granted-section',
+            onClick: (ev) => ev.stopPropagation()
+          },
+            e(GrantedSelector, {
+              value: row.granted,
+              publishableTo: tableConfig.publishableTo || [],
+              tableGranted: tableConfig.granted || {},
+              onChange: async (val) => {
+                try {
+                  const response = await fetch(`/_api/${tableName}/${row.id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ granted: val })
+                  });
+                  const data = await response.json();
+                  if (data.success && onUpdate) {
+                    onUpdate();
                   }
-                },
-                disabled: !permissions.canPublish,
-                compact: true
-              })
-            ),
-            e('button', {
-              style: {
-                background: 'none',
-                border: 'none',
-                fontSize: '18px',
-                cursor: 'pointer',
-                color: '#6c757d',
-                padding: '4px 8px'
+                } catch (error) {
+                  console.error('Failed to save granted:', error);
+                }
               },
-              onClick: (ev) => {
-                ev.stopPropagation();
-                this.setState({ expanded: false, editMode: false });
-              },
-              title: 'Fermer'
-            }, '✖')
-          )
-        )
-      ),
-      // Detail row with content
-      expanded && e('tr', { className: 'detail-row' },
-        e('td', { colSpan: fields.length },
+              disabled: !permissions.canPublish,
+              compact: true
+            })
+          ),
+          // Close button
+          e('button', {
+            className: 'modal-close-detail',
+            onClick: onClose,
+            title: 'Fermer (Echap)'
+          }, '✖')
+        ),
+        // Scrollable body
+        e('div', { className: 'modal-body-detail' },
           loading
             ? e('div', { className: 'detail-loading' }, 'Chargement des détails...')
             : editMode
               ? e(EditForm, {
-                  row: displayData,
+                  row,
                   structure,
                   tableName,
                   tableConfig,
                   permissions,
-                  onClose: this.exitEditMode,
-                  onSave: this.handleSave,
-                  focusFieldName: focusFieldName
+                  onClose: onExitEditMode,
+                  onSave,
+                  focusFieldName,
+                  parentTable,
+                  hideRelations1N
                 })
-              : e(RowDetailView, {
-                  row: displayData,
-                  structure,
-                  tableName,
-                  permissions,
-                  onEdit: this.enterEditMode
-                })
+              : (parentTable
+                  ? e(SubListRowDetailView, {
+                      row,
+                      structure,
+                      tableName,
+                      parentTable,
+                      permissions,
+                      onEdit: onEnterEditMode
+                    })
+                  : e(RowDetailView, {
+                      row,
+                      structure,
+                      tableName,
+                      permissions,
+                      onEdit: onEnterEditMode
+                    })
+                )
         )
       )
     );
@@ -1453,9 +1486,9 @@ class SubListRow extends React.Component {
     const displayData = fullData || row;
 
     return e(React.Fragment, null,
-      // Show normal row only when NOT expanded
-      !expanded && e('tr', {
-        className: 'data-row',
+      // Always show the data row (no substitution)
+      e('tr', {
+        className: `data-row ${expanded ? 'expanded' : ''}`,
         onClick: this.toggleExpand,
         onDoubleClick: this.enterEditMode
       },
@@ -1483,131 +1516,25 @@ class SubListRow extends React.Component {
           );
         })
       ),
-      // When expanded, show header row with table/id, granted, and close button
-      expanded && e('tr', { className: 'detail-row-header' },
-        e('td', { colSpan: fields.length },
-          e('div', { style: { display: 'flex', alignItems: 'center', gap: '12px', padding: '8px 12px', background: editMode ? '#f8f9fa' : '#e9ecef', borderBottom: '1px solid #dee2e6' } },
-            // Title with displayFields or table/id
-            (() => {
-              const cardTitle = buildCardTitle(displayData, tableName, tableConfig);
-              const tableIcon = editMode ? '📄' : '📋';
-
-              if (editMode) {
-                // Edit mode: show simple table/id
-                return e('h3', {
-                  style: { margin: 0, fontSize: '14px', fontWeight: 600, flex: 1, cursor: 'pointer' },
-                  onClick: (ev) => {
-                    ev.stopPropagation();
-                    this.setState({ expanded: false, editMode: false });
-                  },
-                  title: 'Cliquer pour fermer'
-                }, `${tableIcon} ${tableName} / ${row.id}`);
-              } else if (cardTitle) {
-                // View mode with displayFields: show displayFields prominently + table/id discreetly
-                return e('h3', {
-                  style: { margin: 0, fontSize: '14px', fontWeight: 600, flex: 1, cursor: 'pointer' },
-                  onClick: (ev) => {
-                    ev.stopPropagation();
-                    this.setState({ expanded: false, editMode: false });
-                  },
-                  title: 'Cliquer pour fermer'
-                },
-                  `${tableIcon} ${cardTitle}`,
-                  e('span', {
-                    style: { fontSize: '11px', color: '#6c757d', fontWeight: 400, marginLeft: '8px' }
-                  }, `(${tableName}/${row.id})`)
-                );
-              } else {
-                // View mode without displayFields: show table/id
-                return e('h3', {
-                  style: { margin: 0, fontSize: '14px', fontWeight: 600, flex: 1, cursor: 'pointer' },
-                  onClick: (ev) => {
-                    ev.stopPropagation();
-                    this.setState({ expanded: false, editMode: false });
-                  },
-                  title: 'Cliquer pour fermer'
-                }, `${tableIcon} ${tableName} / ${row.id}`);
-              }
-            })(),
-            // Granted selector in header (always visible)
-            structure.fields.granted && e('div', { onClick: (ev) => ev.stopPropagation() },
-              e(GrantedSelector, {
-                value: displayData.granted,
-                publishableTo: tableConfig?.publishableTo || [],
-                tableGranted: tableConfig?.granted || {},
-                onChange: async (val) => {
-                  try {
-                    const response = await fetch(`/_api/${tableName}/${row.id}`, {
-                      method: 'PUT',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ granted: val })
-                    });
-                    const data = await response.json();
-                    if (data.success) {
-                      this.setState(prev => ({
-                        fullData: {
-                          ...prev.fullData,
-                          granted: val
-                        }
-                      }));
-                      if (this.props.onUpdate) {
-                        this.props.onUpdate();
-                      }
-                    }
-                  } catch (error) {
-                    console.error('Failed to save granted:', error);
-                  }
-                },
-                disabled: !permissions || !permissions.canPublish,
-                compact: true
-              })
-            ),
-            e('button', {
-              style: {
-                background: 'none',
-                border: 'none',
-                fontSize: '18px',
-                cursor: 'pointer',
-                color: '#6c757d',
-                padding: '4px 8px'
-              },
-              onClick: (ev) => {
-                ev.stopPropagation();
-                this.setState({ expanded: false, editMode: false });
-              },
-              title: 'Fermer'
-            }, '✖')
-          )
-        )
-      ),
-      // Detail row with content (NO 1:N relations)
-      expanded && e('tr', { className: 'detail-row' },
-        e('td', { colSpan: fields.length },
-          loading
-            ? e('div', { className: 'detail-loading' }, 'Chargement des détails...')
-            : editMode
-              ? e(EditForm, {
-                  row: displayData,
-                  structure,
-                  tableName,
-                  parentTable: this.props.parentTable,
-                  tableConfig: tableConfig || {},
-                  permissions: permissions || {},
-                  onClose: this.exitEditMode,
-                  onSave: this.handleSave,
-                  focusFieldName: focusFieldName,
-                  hideRelations1N: true // Hide 1:N relations in sub-lists
-                })
-              : e(SubListRowDetailView, {
-                  row: displayData,
-                  structure,
-                  tableName,
-                  parentTable: this.props.parentTable,
-                  permissions: permissions || {},
-                  onEdit: this.enterEditMode
-                })
-        )
-      )
+      // Modal overlay when expanded
+      expanded && e(RowDetailModal, {
+        row: displayData,
+        tableName,
+        tableConfig: tableConfig || {},
+        structure,
+        permissions: permissions || {},
+        editMode,
+        loading,
+        focusFieldName,
+        onClose: () => this.setState({ expanded: false, editMode: false }),
+        onEnterEditMode: this.enterEditMode,
+        onExitEditMode: this.exitEditMode,
+        onSave: this.handleSave,
+        onUpdate: this.props.onUpdate,
+        // Special props for sub-lists
+        parentTable: this.props.parentTable,
+        hideRelations1N: true
+      })
     );
   }
 }
