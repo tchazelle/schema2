@@ -465,8 +465,8 @@ const canRead = PermissionService.hasPermission(user, 'Person', 'read');
 const canAccess = await EntityService.canAccessEntity(user, 'Person', row);
 
 // 3. Field-level (if needed)
-const field = SchemaService.getFieldDefinition('Person', 'salary');
-const canReadField = PermissionService.hasFieldPermission(user, field, 'read');
+const field = SchemaService.getFieldConfig('Person', 'salary');
+// Field permissions are checked automatically in EntityService.filterEntityFields()
 ```
 
 ### Data Flow Pattern

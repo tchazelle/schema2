@@ -143,42 +143,14 @@ router.get('/:slug?', async (req, res) => {
 });
 
 /**
- * GET /:page (JSON API)
- * Retourne le setup Page-Section de la page si autorisée
- * Inclut la page et ses sections avec toutes leurs configurations
+ * DEAD CODE - REMOVED
+ * This route was unreachable because the /:slug? route above catches all paths.
+ * It also called non-existent methods:
+ * - PageService.getPageWithSections() (does not exist)
+ * - PageService.buildPageResponse() (does not exist)
  *
- * Note: Cette route peut entrer en conflit avec /:slug? ci-dessus
- * À fusionner ou différencier avec un préfixe (ex: /_pages/:page)
+ * If a JSON API for pages is needed, create it at /_api/pages/:slug instead.
+ * The current implementation above at /:slug? handles page rendering correctly.
  */
-router.get('/:page', async (req, res) => {
-  try {
-    const { page: pageSlug } = req.params;
-    const user = req.user; // Déjà enrichi par userEnrichMiddleware
-
-    // Utilisation du PageService pour charger la page et ses sections
-    const pageData = await PageService.getPageWithSections(pageSlug, user);
-
-    if (!pageData) {
-      return res.status(404).json({
-        error: 'Page non trouvée ou accès refusé',
-        slug: pageSlug
-      });
-    }
-
-    // Construction de la réponse avec le service
-    const response = PageService.buildPageResponse(
-      pageData.page,
-      pageData.sections,
-      user
-    );
-
-    res.json(response);
-  } catch (error) {
-    console.error('Erreur lors de la récupération de la page:', error);
-    res.status(500).json({
-      error: 'Erreur serveur lors de la récupération de la page'
-    });
-  }
-});
 
 module.exports = router;
