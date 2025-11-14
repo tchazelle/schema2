@@ -180,17 +180,46 @@ class TableRow extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      expanded: false
+      expanded: false,
+      fullData: null,
+      loading: false
     };
   }
 
-  toggleExpand = () => {
-    this.setState({ expanded: !this.state.expanded });
+  toggleExpand = async () => {
+    const { expanded, fullData } = this.state;
+    const { row, tableName } = this.props;
+
+    if (!expanded && !fullData) {
+      // First time expanding - fetch full data with all relations
+      this.setState({ loading: true, expanded: true });
+
+      try {
+        const response = await fetch(`/_api/${tableName}/${row.id}?relation=all&compact=1`);
+        const data = await response.json();
+
+        if (data.success && data.rows && data.rows.length > 0) {
+          this.setState({
+            loading: false,
+            fullData: data.rows[0]
+          });
+        } else {
+          console.error('Failed to fetch full data:', data.error || 'No data returned');
+          this.setState({ loading: false });
+        }
+      } catch (error) {
+        console.error('Error fetching full data:', error);
+        this.setState({ loading: false });
+      }
+    } else {
+      // Just toggle
+      this.setState({ expanded: !expanded });
+    }
   }
 
   render() {
     const { row, fields, structure, displayMode, tableName } = this.props;
-    const { expanded } = this.state;
+    const { expanded, fullData, loading } = this.state;
 
     if (displayMode === 'raw') {
       // Raw mode: no formatting
@@ -200,6 +229,9 @@ class TableRow extends React.Component {
         )
       );
     }
+
+    // Use fullData if available, otherwise use row
+    const displayData = fullData || row;
 
     // Normal mode
     return e(React.Fragment, null,
@@ -231,11 +263,13 @@ class TableRow extends React.Component {
       ),
       expanded && e('tr', { className: 'detail-row' },
         e('td', { colSpan: fields.length },
-          e(RowDetailView, {
-            row,
-            structure,
-            tableName
-          })
+          loading
+            ? e('div', { className: 'detail-loading' }, 'Chargement des détails...')
+            : e(RowDetailView, {
+                row: displayData,
+                structure,
+                tableName
+              })
         )
       )
     );
@@ -381,14 +415,41 @@ class RowDetailView extends React.Component {
 
 /**
  * Sub-List Component
- * Renders 1:N relations as a compact list
+ * Renders 1:N relations as a compact list with proper N:1 relation rendering
  */
 class SubList extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      structure: null
+    };
+  }
+
+  async componentDidMount() {
+    const { tableName } = this.props;
+
+    // Fetch table structure to get field definitions
+    try {
+      const response = await fetch(`/_crud/${tableName}/structure`);
+      const data = await response.json();
+      if (data.success) {
+        this.setState({ structure: data.structure });
+      }
+    } catch (error) {
+      console.error('Failed to fetch table structure:', error);
+    }
+  }
+
   render() {
     const { rows, tableName, parentTable } = this.props;
+    const { structure } = this.state;
 
     if (!rows || rows.length === 0) {
       return e('div', { className: 'sub-list-empty' }, 'Aucune donnée');
+    }
+
+    if (!structure) {
+      return e('div', { className: 'sub-list-loading' }, 'Chargement...');
     }
 
     // Get fields to display (exclude parent relation field)
@@ -402,15 +463,37 @@ class SubList extends React.Component {
     return e('table', { className: 'sub-list-table' },
       e('thead', null,
         e('tr', null,
-          fields.map(f => e('th', { key: f }, f))
+          fields.map(f => {
+            const field = structure.fields[f];
+            const label = field?.label || f;
+            return e('th', { key: f }, label);
+          })
         )
       ),
       e('tbody', null,
         rows.map((row, idx) =>
           e('tr', { key: row.id || idx },
-            fields.map(f =>
-              e('td', { key: f }, String(row[f] || ''))
-            )
+            fields.map(f => {
+              const field = structure.fields[f];
+              const value = row[f];
+
+              // Check if this field has a relation in _relations
+              const relationData = row._relations && row._relations[f];
+
+              return e('td', { key: f },
+                relationData
+                  ? e(RelationRenderer, {
+                      relation: relationData,
+                      fieldName: f,
+                      relatedTable: field?.relation
+                    })
+                  : e(FieldRenderer, {
+                      value,
+                      field: field || { type: 'text' },
+                      tableName
+                    })
+              );
+            })
           )
         )
       )
