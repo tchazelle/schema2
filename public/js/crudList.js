@@ -288,9 +288,58 @@ class GrantedSelector extends React.Component {
     }
   }
 
-  render() {
-    const { publishableTo = [], userRole = 'member', disabled } = this.props;
+  getIcon() {
     const { selectedValue, publishRole } = this.state;
+    switch (selectedValue) {
+      case 'draft': return '📝';
+      case 'shared': return '👥';
+      case 'published': return '🌐';
+      default: return '📝';
+    }
+  }
+
+  getLabel() {
+    const { selectedValue, publishRole } = this.state;
+    switch (selectedValue) {
+      case 'draft': return 'Brouillon';
+      case 'shared': return 'Partagée';
+      case 'published': return `Publiée @${publishRole}`;
+      default: return 'Brouillon';
+    }
+  }
+
+  render() {
+    const { publishableTo = [], userRole = 'member', disabled, compact } = this.props;
+    const { selectedValue, publishRole } = this.state;
+
+    if (compact) {
+      return e('div', { className: 'granted-selector-compact' },
+        e('select', {
+          className: 'granted-compact-select',
+          value: selectedValue === 'published' ? `published:${publishRole}` : selectedValue,
+          onChange: (ev) => {
+            const val = ev.target.value;
+            if (val.startsWith('published:')) {
+              const role = val.replace('published:', '');
+              this.setState({ selectedValue: 'published', publishRole: role });
+              if (this.props.onChange) {
+                this.props.onChange(`published @${role}`);
+              }
+            } else {
+              this.handleChange(val);
+            }
+          },
+          disabled: disabled,
+          title: this.getLabel()
+        },
+          e('option', { value: 'draft' }, '📝 Brouillon'),
+          e('option', { value: 'shared' }, `👥 Partagée (${userRole})`),
+          publishableTo.length > 0 && publishableTo.map(role =>
+            e('option', { key: role, value: `published:${role}` }, `🌐 Publiée @${role}`)
+          )
+        )
+      );
+    }
 
     return e('div', { className: 'granted-selector' },
       // Draft option
@@ -307,7 +356,7 @@ class GrantedSelector extends React.Component {
           disabled: disabled
         }),
         e('div', { className: 'granted-option-label' },
-          e('strong', null, 'Brouillon'),
+          e('strong', null, '📝 Brouillon'),
           e('div', { className: 'granted-option-desc' }, 'La fiche vous appartient')
         )
       ),
@@ -326,7 +375,7 @@ class GrantedSelector extends React.Component {
           disabled: disabled
         }),
         e('div', { className: 'granted-option-label' },
-          e('strong', null, 'Partagée'),
+          e('strong', null, '👥 Partagée'),
           e('div', { className: 'granted-option-desc' }, `Partagée avec ${userRole}`)
         )
       ),
@@ -345,7 +394,7 @@ class GrantedSelector extends React.Component {
           disabled: disabled
         }),
         e('div', { className: 'granted-option-label' },
-          e('strong', null, 'Publiée'),
+          e('strong', null, '🌐 Publiée'),
           e('div', { className: 'granted-option-desc' },
             e('select', {
               className: 'edit-field-select',
@@ -382,8 +431,14 @@ class EditForm extends React.Component {
       }
     });
 
+    // Keep _relations for relation autocomplete
+    if (row._relations) {
+      formData._relations = row._relations;
+    }
+
     this.state = {
       formData: formData,
+      originalRow: row,
       saveStatus: 'idle', // idle, saving, saved, error
       errors: {}
     };
@@ -589,18 +644,31 @@ class EditForm extends React.Component {
   }
 
   render() {
-    const { structure, onClose, row } = this.props;
-    const { saveStatus, errors } = this.state;
+    const { structure, onClose, row, tableName, tableConfig, permissions } = this.props;
+    const { saveStatus, errors, formData } = this.state;
 
-    // Get editable fields (exclude system fields, id, and relations arrays)
+    // Get editable fields (exclude system fields, id, granted, and relations arrays)
     const editableFields = Object.keys(structure.fields).filter(f =>
-      !['id', 'ownerId', 'createdAt', 'updatedAt'].includes(f)
+      !['id', 'ownerId', 'granted', 'createdAt', 'updatedAt'].includes(f)
     );
 
     return e('div', { className: 'edit-form' },
       // Header
       e('div', { className: 'edit-form-header' },
-        e('h3', { className: 'edit-form-title' }, '✏️ Édition'),
+        e('div', { style: { display: 'flex', alignItems: 'center', gap: '12px', flex: 1 } },
+          e('h3', { className: 'edit-form-title' }, `✏️ ${tableName} / ${row.id}`),
+          // Granted selector in header
+          structure.fields.granted && e('div', { style: { marginLeft: 'auto' } },
+            e(GrantedSelector, {
+              value: formData.granted,
+              publishableTo: tableConfig.publishableTo || [],
+              userRole: 'member',
+              onChange: (val) => this.handleFieldChange('granted', val),
+              disabled: !permissions.canPublish,
+              compact: true
+            })
+          )
+        ),
         e('div', { className: 'edit-form-actions' },
           saveStatus !== 'idle' && e('span', {
             className: `save-indicator ${saveStatus}`
@@ -897,17 +965,20 @@ class RowDetailView extends React.Component {
       });
     }
 
-    return e('div', { className: 'row-detail' },
-      // Edit button
-      permissions && permissions.canUpdate && e('div', { style: { marginBottom: '12px' } },
-        e('button', {
-          className: 'btn-add-record',
-          onClick: onEdit
-        }, '✏️ Éditer')
-      ),
+    const handleFieldClick = (e) => {
+      if (permissions && permissions.canUpdate) {
+        onEdit();
+      }
+    };
 
-      // Fields grid
-      e('div', { className: 'detail-fields' },
+    return e('div', { className: 'row-detail' },
+      // Fields grid - clickable to edit
+      e('div', {
+        className: 'detail-fields',
+        style: permissions && permissions.canUpdate ? { cursor: 'pointer' } : {},
+        onClick: handleFieldClick,
+        title: permissions && permissions.canUpdate ? 'Cliquer pour éditer' : ''
+      },
         allFields.map(fieldName => {
           const field = structure.fields[fieldName];
           const value = row[fieldName];
@@ -946,11 +1017,24 @@ class RowDetailView extends React.Component {
           return e('div', { key: relName, className: 'relation-section' },
             e('div', {
               className: 'relation-header',
-              onClick: () => this.toggleRelation(relName)
+              style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between' }
             },
-              e('span', { className: 'relation-toggle' }, isOpen ? '▼' : '▶'),
-              e('strong', null, relName),
-              e('span', { className: 'relation-count' }, ` (${relRows.length})`)
+              e('div', {
+                style: { display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', flex: 1 },
+                onClick: () => this.toggleRelation(relName)
+              },
+                e('span', { className: 'relation-toggle' }, isOpen ? '▼' : '▶'),
+                e('strong', null, relName),
+                e('span', { className: 'relation-count' }, ` (${relRows.length})`)
+              ),
+              e('button', {
+                className: 'btn-add-relation-item',
+                onClick: (ev) => {
+                  ev.stopPropagation();
+                  window.open(`/_crud/${relatedTable}?parent=${tableName}&parentId=${row.id}`, '_blank');
+                },
+                title: `Créer un nouveau ${relatedTable}`
+              }, '+ Nouveau')
             ),
             isOpen && e('div', { className: 'relation-list' },
               e(SubList, {
