@@ -1055,8 +1055,12 @@ class TableRow extends React.Component {
           const field = structure.fields[fieldName];
           const value = row[fieldName];
           const relationData = row._relations && row._relations[fieldName];
+          const label = field?.label || fieldName;
 
-          return e('td', { key: fieldName },
+          return e('td', {
+            key: fieldName,
+            'data-label': label  // Add data-label for responsive cards
+          },
             relationData
               ? e(RelationRenderer, {
                   relation: relationData,
@@ -1444,8 +1448,12 @@ class SubListRow extends React.Component {
           const field = structure.fields[fieldName];
           const value = row[fieldName];
           const relationData = row._relations && row._relations[fieldName];
+          const label = field?.label || fieldName;
 
-          return e('td', { key: fieldName },
+          return e('td', {
+            key: fieldName,
+            'data-label': label  // Add data-label for responsive cards
+          },
             relationData
               ? e(RelationRenderer, {
                   relation: relationData,
