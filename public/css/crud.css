@@ -405,7 +405,7 @@ tr.detail-row + tr.data-row {
 
 .detail-relations-1n h4 {
   margin: 0 0 8px 0;
-  font-size: 13px;
+  font-size: 14px; /* Increased from 13px to match edit form */
   font-weight: 600;
   color: #495057;
 }
@@ -423,7 +423,7 @@ tr.detail-row + tr.data-row {
   border: 1px solid #dee2e6;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 13px;
+  font-size: 14px; /* Increased from 13px */
 }
 
 .relation-header:hover {
@@ -469,7 +469,7 @@ tr.detail-row + tr.data-row {
 .sub-list-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 12px;
+  font-size: 13px; /* Increased from 12px */
   background: white;
 }
 
@@ -816,6 +816,7 @@ tr.detail-row + tr.data-row {
   width: 100%;
   min-width: 100%;
   animation: expandDown 0.3s ease-out;
+  transition: all 0.3s ease;
 }
 
 .edit-form-header {
@@ -832,15 +833,6 @@ tr.detail-row + tr.data-row {
   font-weight: 600;
   color: #212529;
   margin: 0;
-}
-
-.edit-form-title.clickable {
-  cursor: pointer;
-  transition: color 0.15s;
-}
-
-.edit-form-title.clickable:hover {
-  color: #007bff;
 }
 
 .edit-form-actions {
@@ -1100,6 +1092,64 @@ tr.detail-row + tr.data-row {
   transform: translateY(1px);
 }
 
+
+/* Edit form 1:N relations */
+.edit-form-relations-1n {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #dee2e6;
+}
+
+.edit-form-relations-1n h4 {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #495057;
+}
+
+.edit-form-relations-1n .relation-section {
+  margin-bottom: 12px;
+}
+
+.edit-form-relations-1n .relation-header {
+  background: #fff;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 14px;
+}
+
+.edit-form-relations-1n .relation-list {
+  margin-top: 8px;
+}
+
+.edit-form-relations-1n .sub-list-table {
+  font-size: 13px;
+}
+
+/* Smooth transition for card to form */
+.detail-field {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.detail-field:hover {
+  opacity: 0.9;
+  transform: translateX(2px);
+}
+
+.edit-field {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.edit-field-input:focus,
+.edit-field-textarea:focus,
+.edit-field-select:focus {
+  transform: scale(1.01);
+  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
 
 /* Responsive edit form */
 @media (max-width: 768px) {

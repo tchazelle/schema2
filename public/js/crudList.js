@@ -463,15 +463,30 @@ class EditForm extends React.Component {
 
     this.saveTimeout = null;
     this.autosaveDelay = SCHEMA_CONFIG?.autosave || 500;
-    this.firstInputRef = React.createRef();
+    this.fieldRefs = {};
   }
 
   componentDidMount() {
-    // Auto-focus first input field
-    if (this.firstInputRef.current) {
+    // Auto-focus the specified field or first editable field
+    const { focusFieldName, structure } = this.props;
+
+    if (focusFieldName && this.fieldRefs[focusFieldName]) {
       setTimeout(() => {
-        this.firstInputRef.current.focus();
+        this.fieldRefs[focusFieldName].focus();
       }, 100);
+    } else {
+      // Find first editable, non-computed field
+      const editableFields = Object.keys(structure.fields).filter(f => {
+        const field = structure.fields[f];
+        return !['id', 'ownerId', 'granted', 'createdAt', 'updatedAt'].includes(f) &&
+               !field.as && !field.calculate;
+      });
+
+      if (editableFields.length > 0 && this.fieldRefs[editableFields[0]]) {
+        setTimeout(() => {
+          this.fieldRefs[editableFields[0]].focus();
+        }, 100);
+      }
     }
   }
 
@@ -538,7 +553,7 @@ class EditForm extends React.Component {
     }
   }
 
-  renderField = (fieldName, field, isFirstField = false) => {
+  renderField = (fieldName, field) => {
     const { formData, errors } = this.state;
     const { structure, tableConfig, permissions } = this.props;
     const value = formData[fieldName];
@@ -562,7 +577,8 @@ class EditForm extends React.Component {
           onAddNew: () => {
             // Open new window to create related record
             window.open(`/_crud/${field.relation}`, '_blank');
-          }
+          },
+          ref: (el) => { if (el) this.fieldRefs[fieldName] = el; }
         })
       );
     }
@@ -589,7 +605,8 @@ class EditForm extends React.Component {
           e('textarea', {
             className: 'edit-field-textarea',
             value: value || '',
-            onChange: (e) => this.handleFieldChange(fieldName, e.target.value)
+            onChange: (e) => this.handleFieldChange(fieldName, e.target.value),
+            ref: (el) => { if (el) this.fieldRefs[fieldName] = el; }
           }),
           errors[fieldName] && e('span', { className: 'edit-field-error' }, errors[fieldName])
         );
@@ -600,7 +617,8 @@ class EditForm extends React.Component {
           e('select', {
             className: 'edit-field-select',
             value: value || '',
-            onChange: (e) => this.handleFieldChange(fieldName, e.target.value)
+            onChange: (e) => this.handleFieldChange(fieldName, e.target.value),
+            ref: (el) => { if (el) this.fieldRefs[fieldName] = el; }
           },
             e('option', { value: '' }, '-- Sélectionner --'),
             field.values && field.values.map(val =>
@@ -622,7 +640,8 @@ class EditForm extends React.Component {
             onChange: (e) => this.handleFieldChange(
               fieldName,
               inputType === 'checkbox' ? e.target.checked : e.target.value
-            )
+            ),
+            ref: (el) => { if (el) this.fieldRefs[fieldName] = el; }
           }),
           errors[fieldName] && e('span', { className: 'edit-field-error' }, errors[fieldName])
         );
@@ -635,7 +654,8 @@ class EditForm extends React.Component {
             type: field.type === 'datetime' ? 'datetime-local' : 'date',
             className: 'edit-field-input',
             value: value ? this.formatDateForInput(value, field.type) : '',
-            onChange: (e) => this.handleFieldChange(fieldName, e.target.value)
+            onChange: (e) => this.handleFieldChange(fieldName, e.target.value),
+            ref: (el) => { if (el) this.fieldRefs[fieldName] = el; }
           }),
           errors[fieldName] && e('span', { className: 'edit-field-error' }, errors[fieldName])
         );
@@ -648,7 +668,7 @@ class EditForm extends React.Component {
             className: 'edit-field-input',
             value: value || '',
             onChange: (e) => this.handleFieldChange(fieldName, e.target.value),
-            ref: isFirstField ? this.firstInputRef : null
+            ref: (el) => { if (el) this.fieldRefs[fieldName] = el; }
           }),
           errors[fieldName] && e('span', { className: 'edit-field-error' }, errors[fieldName])
         );
@@ -684,15 +704,24 @@ class EditForm extends React.Component {
       !['id', 'ownerId', 'granted', 'createdAt', 'updatedAt'].includes(f)
     );
 
+    // Extract 1:N relations
+    const relations1N = {};
+    if (row._relations) {
+      Object.entries(row._relations).forEach(([key, value]) => {
+        if (Array.isArray(value)) {
+          relations1N[key] = value;
+        }
+      });
+    }
+
     return e('div', { className: 'edit-form' },
       // Header
       e('div', { className: 'edit-form-header' },
         e('div', { style: { display: 'flex', alignItems: 'center', gap: '12px', flex: 1 } },
           e('h3', {
-            className: 'edit-form-title clickable',
-            onClick: onClose,
-            title: 'Cliquer pour fermer le formulaire'
-          }, `✏️ ${tableName} / ${row.id}`),
+            className: 'edit-form-title',
+            title: 'Fiche en édition'
+          }, `📋 ${tableName} / ${row.id}`),
           // Granted selector in header
           structure.fields.granted && e('div', { style: { marginLeft: 'auto' } },
             e(GrantedSelector, {
@@ -722,14 +751,46 @@ class EditForm extends React.Component {
 
       // Form fields grid
       e('div', { className: 'edit-form-grid' },
-        editableFields.map((fieldName, index) => {
+        editableFields.map((fieldName) => {
           const field = structure.fields[fieldName];
-          // Check if this is the first non-computed field
-          const isFirstField = index === 0 || editableFields.slice(0, index).every(fn => {
-            const f = structure.fields[fn];
-            return f.as || f.calculate || f.relation || fn === 'granted';
-          });
-          return this.renderField(fieldName, field, isFirstField);
+          return this.renderField(fieldName, field);
+        })
+      ),
+
+      // 1:N Relations
+      Object.keys(relations1N).length > 0 && e('div', { className: 'edit-form-relations-1n' },
+        e('h4', null, 'Relations liées'),
+        Object.entries(relations1N).map(([relName, relRows]) => {
+          const relatedTable = relRows[0]?._table || relName;
+
+          return e('div', { key: relName, className: 'relation-section' },
+            e('div', {
+              className: 'relation-header',
+              style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between' }
+            },
+              e('div', {
+                style: { display: 'flex', alignItems: 'center', gap: '6px', flex: 1 }
+              },
+                e('strong', null, relName),
+                e('span', { className: 'relation-count' }, ` (${relRows.length})`)
+              ),
+              e('button', {
+                className: 'btn-add-relation-item',
+                onClick: (ev) => {
+                  ev.stopPropagation();
+                  window.open(`/_crud/${relatedTable}?parent=${tableName}&parentId=${row.id}`, '_blank');
+                },
+                title: `Créer un nouveau ${relatedTable}`
+              }, '+ Nouveau')
+            ),
+            e('div', { className: 'relation-list' },
+              e(SubList, {
+                rows: relRows,
+                tableName: relatedTable,
+                parentTable: tableName
+              })
+            )
+          );
         })
       )
     );
@@ -822,7 +883,8 @@ class TableRow extends React.Component {
       expanded: false,
       editMode: false,
       fullData: null,
-      loading: false
+      loading: false,
+      focusFieldName: null
     };
   }
 
@@ -860,15 +922,15 @@ class TableRow extends React.Component {
     }
   }
 
-  enterEditMode = () => {
+  enterEditMode = (focusFieldName = null) => {
     const { permissions } = this.props;
     if (permissions && permissions.canUpdate) {
-      this.setState({ editMode: true, expanded: true });
+      this.setState({ editMode: true, expanded: true, focusFieldName });
     }
   }
 
   exitEditMode = () => {
-    this.setState({ editMode: false });
+    this.setState({ editMode: false, focusFieldName: null });
   }
 
   handleSave = (updatedData) => {
@@ -888,7 +950,7 @@ class TableRow extends React.Component {
 
   render() {
     const { row, fields, structure, displayMode, tableName, permissions, tableConfig } = this.props;
-    const { expanded, editMode, fullData, loading } = this.state;
+    const { expanded, editMode, fullData, loading, focusFieldName } = this.state;
 
     if (displayMode === 'raw') {
       return e('tr', null,
@@ -938,7 +1000,8 @@ class TableRow extends React.Component {
                   tableConfig,
                   permissions,
                   onClose: this.exitEditMode,
-                  onSave: this.handleSave
+                  onSave: this.handleSave,
+                  focusFieldName: focusFieldName
                 })
               : e(RowDetailView, {
                   row: displayData,
@@ -1006,9 +1069,10 @@ class RowDetailView extends React.Component {
       });
     }
 
-    const handleFieldClick = (e) => {
+    const handleFieldClick = (fieldName, e) => {
       if (permissions && permissions.canUpdate) {
-        onEdit();
+        e.stopPropagation();
+        onEdit(fieldName);
       }
     };
 
@@ -1016,9 +1080,7 @@ class RowDetailView extends React.Component {
       // Fields grid - clickable to edit
       e('div', {
         className: 'detail-fields',
-        style: permissions && permissions.canUpdate ? { cursor: 'pointer' } : {},
-        onClick: handleFieldClick,
-        title: permissions && permissions.canUpdate ? 'Cliquer pour éditer' : ''
+        title: permissions && permissions.canUpdate ? 'Cliquer sur un champ pour éditer' : ''
       },
         allFields.map(fieldName => {
           const field = structure.fields[fieldName];
@@ -1029,7 +1091,12 @@ class RowDetailView extends React.Component {
             ? row._relations[fieldName]
             : null;
 
-          return e('div', { key: fieldName, className: 'detail-field' },
+          return e('div', {
+            key: fieldName,
+            className: 'detail-field',
+            style: permissions && permissions.canUpdate ? { cursor: 'pointer' } : {},
+            onClick: (e) => handleFieldClick(fieldName, e)
+          },
             e('label', { className: 'detail-label' }, label),
             e('div', { className: 'detail-value' },
               relationN1
