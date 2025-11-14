@@ -5,7 +5,7 @@ module.exports = {
   country: "FR",
   languages: "fr", // pourra devenir un tableau
   seo: "schema.org microdata",
-
+  maxRows: 1000,
   // Enregistrement automatique avec debounce  + sauvegarde garantie
   autosave: 500, // debounce en ms 
   // Actions disponibles pour le système d'autorisation
@@ -249,7 +249,7 @@ module.exports = {
       },  
       fields: {
         id: { type: "integer", isPrimary: true, autoIncrement: true },
-        name: { type: "varchar" },
+        name: { type:   "varchar" },
         description: { type: "text" },
         // ... commonFields
       }
