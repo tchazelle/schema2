@@ -197,7 +197,7 @@
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  max-width: 300px; /* Default maxColWidth from schema */
+  max-width: var(--max-col-width, 20em); /* From schema.maxColWidth */
   overflow: hidden;
   word-wrap: break-word;
   word-break: break-word;
@@ -234,20 +234,22 @@
 .crud-table tbody td {
   padding: 6px 8px;
   vertical-align: top;
-  max-width: 300px; /* Default maxColWidth from schema */
-  max-height: 100px; /* Default maxColHeight from schema */
+  max-width: var(--max-col-width, 20em); /* From schema.maxColWidth */
+  max-height: var(--max-col-height, 1em); /* From schema.maxColHeight */
   overflow: hidden;
   word-wrap: break-word;
   word-break: break-word;
+  line-height: 1.4;
 }
 
 /* For fields that might wrap, allow wrapping but limit height */
 .crud-table tbody td .field-value {
   display: block;
-  max-height: 100px;
+  max-height: var(--max-col-height, 1em); /* From schema.maxColHeight */
   overflow: hidden;
   word-wrap: break-word;
   word-break: break-word;
+  line-height: 1.4;
 }
 
 /* Field Values */
@@ -767,5 +769,282 @@ tr.detail-row + tr.data-row {
   .modal-content {
     width: 95%;
     max-height: 90vh;
+  }
+}
+
+/* Inline Edit Form Styles */
+.edit-form {
+  background: #ffffff;
+  padding: 20px;
+  margin: 0 1rem 1rem 1rem;
+  border-left: 1px solid #4a4a4a;
+  border-right: 1px solid #4a4a4a;
+  border-bottom: 1px solid #4a4a4a;
+  border-bottom-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+}
+
+.edit-form-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.edit-form-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #212529;
+  margin: 0;
+}
+
+.edit-form-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.save-indicator {
+  font-size: 12px;
+  color: #6c757d;
+  padding: 4px 8px;
+}
+
+.save-indicator.saving {
+  color: #007bff;
+}
+
+.save-indicator.saved {
+  color: #28a745;
+}
+
+.save-indicator.error {
+  color: #dc3545;
+}
+
+.btn-close-edit {
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  color: #6c757d;
+  padding: 4px 8px;
+}
+
+.btn-close-edit:hover {
+  color: #212529;
+}
+
+.edit-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 16px;
+}
+
+.edit-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.edit-field-label {
+  font-weight: 600;
+  font-size: 12px;
+  color: #495057;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.edit-field-input,
+.edit-field-textarea,
+.edit-field-select {
+  padding: 8px 10px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 14px;
+  font-family: inherit;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.edit-field-input:focus,
+.edit-field-textarea:focus,
+.edit-field-select:focus {
+  outline: none;
+  border-color: #80bdff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.15);
+}
+
+.edit-field-textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+
+.edit-field-input.error,
+.edit-field-textarea.error,
+.edit-field-select.error {
+  border-color: #dc3545;
+}
+
+.edit-field-error {
+  font-size: 12px;
+  color: #dc3545;
+  margin-top: 2px;
+}
+
+/* Granted field selector */
+.granted-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.granted-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.granted-option:hover {
+  background: #f8f9fa;
+}
+
+.granted-option.selected {
+  background: #e7f5ff;
+  border-color: #007bff;
+}
+
+.granted-option input[type="radio"] {
+  margin: 0;
+}
+
+.granted-option-label {
+  flex: 1;
+  font-size: 14px;
+}
+
+.granted-option-desc {
+  font-size: 12px;
+  color: #6c757d;
+}
+
+/* Relation autocomplete */
+.relation-autocomplete {
+  position: relative;
+}
+
+.relation-input-wrapper {
+  display: flex;
+  gap: 4px;
+}
+
+.relation-input {
+  flex: 1;
+}
+
+.btn-add-relation {
+  padding: 8px 12px;
+  background: #28a745;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.btn-add-relation:hover {
+  background: #218838;
+}
+
+.autocomplete-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 2px;
+  background: white;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 1000;
+}
+
+.autocomplete-item {
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.15s;
+}
+
+.autocomplete-item:hover {
+  background: #f8f9fa;
+}
+
+.autocomplete-item.selected {
+  background: #e7f5ff;
+}
+
+.autocomplete-loading {
+  padding: 8px 12px;
+  color: #6c757d;
+  font-size: 13px;
+  text-align: center;
+}
+
+.autocomplete-empty {
+  padding: 8px 12px;
+  color: #6c757d;
+  font-size: 13px;
+  text-align: center;
+  font-style: italic;
+}
+
+/* Add button for lists */
+.btn-add-record {
+  padding: 8px 16px;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-add-record:hover {
+  background: #0056b3;
+}
+
+.btn-add-record:active {
+  transform: translateY(1px);
+}
+
+/* Full width edit form when list is narrow */
+@media (max-width: 1200px) {
+  .row-detail.edit-mode,
+  .edit-form {
+    width: calc(100vw - 2rem);
+    max-width: none;
+  }
+}
+
+/* Responsive edit form */
+@media (max-width: 768px) {
+  .edit-form-grid {
+    grid-template-columns: 1fr;
   }
 }

@@ -4,6 +4,76 @@ const pool = require('../config/database');
 const schema = require('../schema.js');
 
 const { getTableData } = require('../services/tableDataService');
+const SchemaService = require('../services/schemaService');
+const PermissionService = require('../services/permissionService');
+
+/**
+ * GET /_api/search/:table
+ * Search for records in a table (for autocomplete in relations)
+ */
+router.get('/search/:tableName', async (req, res) => {
+  try {
+    const { tableName } = req.params;
+    const { q: searchQuery, limit = 10 } = req.query;
+    const user = req.user;
+
+    // Normalize table name
+    const table = SchemaService.getTableName(tableName);
+    if (!table) {
+      return res.status(404).json({ success: false, error: 'Table non trouvée' });
+    }
+
+    // Check read permission
+    if (!PermissionService.hasPermission(user, table, 'read')) {
+      return res.status(403).json({ success: false, error: 'Permission refusée' });
+    }
+
+    // Get table config to find displayFields
+    const tableConfig = SchemaService.getTableConfig(table);
+    const displayField = tableConfig.displayField || 'name';
+    const displayFields = Array.isArray(displayField) ? displayField : [displayField];
+
+    // Build search condition
+    let whereClause = '1=1';
+    const params = [];
+
+    if (searchQuery && searchQuery.length >= 1) {
+      const searchConditions = displayFields.map(field => `${field} LIKE ?`);
+      whereClause += ` AND (${searchConditions.join(' OR ')})`;
+      const searchPattern = `%${searchQuery}%`;
+      displayFields.forEach(() => params.push(searchPattern));
+    }
+
+    // Build SELECT clause with displayFields + id
+    const selectFields = ['id', ...displayFields].join(', ');
+
+    // Query records
+    const [rows] = await pool.query(
+      `SELECT ${selectFields} FROM ${table} WHERE ${whereClause} ORDER BY ${displayFields[0]} ASC LIMIT ?`,
+      [...params, parseInt(limit)]
+    );
+
+    // Format results for autocomplete
+    const results = rows.map(row => ({
+      id: row.id,
+      label: displayFields.map(f => row[f]).filter(Boolean).join(' '),
+      ...row
+    }));
+
+    res.json({
+      success: true,
+      results
+    });
+
+  } catch (error) {
+    console.error('Erreur lors de la recherche:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erreur serveur lors de la recherche',
+      details: error.message
+    });
+  }
+});
 
 /**
  * GET /_api/:table
@@ -48,6 +118,173 @@ router.get('/:tableName/:id', async (req, res) => {
     console.error('Erreur lors de la récupération de l\'enregistrement:', error);
     res.status(500).json({
       error: 'Erreur serveur lors de la récupération de l\'enregistrement',
+      details: error.message
+    });
+  }
+});
+
+/**
+ * POST /_api/:table
+ * Create a new record
+ */
+router.post('/:tableName', async (req, res) => {
+  try {
+    const { tableName } = req.params;
+    const user = req.user;
+    const PermissionService = require('../services/permissionService');
+    const SchemaService = require('../services/schemaService');
+
+    // Normalize table name
+    const table = SchemaService.getTableName(tableName);
+    if (!table) {
+      return res.status(404).json({ success: false, error: 'Table non trouvée' });
+    }
+
+    // Check create permission
+    if (!PermissionService.hasPermission(user, table, 'create')) {
+      return res.status(403).json({ success: false, error: 'Permission refusée' });
+    }
+
+    // Prepare data with automatic fields
+    const data = { ...req.body };
+    if (user && user.id) {
+      data.ownerId = user.id;
+    }
+    if (!data.granted) {
+      data.granted = 'draft';
+    }
+
+    // Insert record
+    const [result] = await pool.query(`INSERT INTO ${table} SET ?`, [data]);
+
+    res.json({
+      success: true,
+      id: result.insertId,
+      message: 'Enregistrement créé avec succès'
+    });
+
+  } catch (error) {
+    console.error('Erreur lors de la création:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erreur serveur lors de la création',
+      details: error.message
+    });
+  }
+});
+
+/**
+ * PUT /_api/:table/:id
+ * Update an existing record
+ */
+router.put('/:tableName/:id', async (req, res) => {
+  try {
+    const { tableName, id } = req.params;
+    const user = req.user;
+    const PermissionService = require('../services/permissionService');
+    const EntityService = require('../services/entityService');
+    const SchemaService = require('../services/schemaService');
+
+    // Normalize table name
+    const table = SchemaService.getTableName(tableName);
+    if (!table) {
+      return res.status(404).json({ success: false, error: 'Table non trouvée' });
+    }
+
+    // Check update permission
+    if (!PermissionService.hasPermission(user, table, 'update')) {
+      return res.status(403).json({ success: false, error: 'Permission refusée' });
+    }
+
+    // Get existing record
+    const [existingRows] = await pool.query(`SELECT * FROM ${table} WHERE id = ?`, [id]);
+    if (existingRows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Enregistrement non trouvé' });
+    }
+
+    const existingRecord = existingRows[0];
+
+    // Check row-level access
+    const canAccess = await EntityService.canAccessEntity(user, table, existingRecord);
+    if (!canAccess) {
+      return res.status(403).json({ success: false, error: 'Accès refusé à cet enregistrement' });
+    }
+
+    // Prepare update data (remove protected fields)
+    const data = { ...req.body };
+    delete data.id;
+    delete data.ownerId;
+    delete data.createdAt;
+    delete data.updatedAt;
+
+    // Update record
+    await pool.query(`UPDATE ${table} SET ? WHERE id = ?`, [data, id]);
+
+    res.json({
+      success: true,
+      message: 'Enregistrement mis à jour avec succès'
+    });
+
+  } catch (error) {
+    console.error('Erreur lors de la mise à jour:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erreur serveur lors de la mise à jour',
+      details: error.message
+    });
+  }
+});
+
+/**
+ * DELETE /_api/:table/:id
+ * Delete a record
+ */
+router.delete('/:tableName/:id', async (req, res) => {
+  try {
+    const { tableName, id } = req.params;
+    const user = req.user;
+    const PermissionService = require('../services/permissionService');
+    const EntityService = require('../services/entityService');
+    const SchemaService = require('../services/schemaService');
+
+    // Normalize table name
+    const table = SchemaService.getTableName(tableName);
+    if (!table) {
+      return res.status(404).json({ success: false, error: 'Table non trouvée' });
+    }
+
+    // Check delete permission
+    if (!PermissionService.hasPermission(user, table, 'delete')) {
+      return res.status(403).json({ success: false, error: 'Permission refusée' });
+    }
+
+    // Get existing record
+    const [existingRows] = await pool.query(`SELECT * FROM ${table} WHERE id = ?`, [id]);
+    if (existingRows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Enregistrement non trouvé' });
+    }
+
+    const existingRecord = existingRows[0];
+
+    // Check row-level access
+    const canAccess = await EntityService.canAccessEntity(user, table, existingRecord);
+    if (!canAccess) {
+      return res.status(403).json({ success: false, error: 'Accès refusé à cet enregistrement' });
+    }
+
+    // Delete record
+    await pool.query(`DELETE FROM ${table} WHERE id = ?`, [id]);
+
+    res.json({
+      success: true,
+      message: 'Enregistrement supprimé avec succès'
+    });
+
+  } catch (error) {
+    console.error('Erreur lors de la suppression:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erreur serveur lors de la suppression',
       details: error.message
     });
   }
