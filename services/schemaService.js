@@ -190,8 +190,22 @@ class SchemaService {
    */
   static getDisplayFields(tableName) {
     const tableConfig = this.getTableConfig(tableName);
-    const displayFields = tableConfig.displayFields ? tableConfig.displayFields : (tableConfig.fields.name ? ["name"] : null);
-    return displayFields
+    if (!tableConfig) return null;
+
+    // Handle both displayField (singular) and displayFields (plural)
+    let displayFields = tableConfig.displayFields || tableConfig.displayField;
+
+    // Convert string to array
+    if (displayFields && typeof displayFields === 'string') {
+      displayFields = [displayFields];
+    }
+
+    // Default to ["name"] if name field exists
+    if (!displayFields && tableConfig.fields && tableConfig.fields.name) {
+      displayFields = ["name"];
+    }
+
+    return displayFields;
   }
 
   /**
