@@ -65,6 +65,9 @@ class CrudService {
     }
 
     // Get data with relations
+    // Don't pass 'relation' parameter to use the actual default behavior:
+    // - All N:1 relations
+    // - Only Strong 1:N relations
     const result = await TableDataService.getTableData(user, table, {
       limit,
       offset,
@@ -72,7 +75,6 @@ class CrudService {
       order,
       customWhere,
       customWhereParams: searchParams,
-      relation: 'default', // Load N:1 and Strong 1:N by default
       compact,
       includeSchema: '1'
     });

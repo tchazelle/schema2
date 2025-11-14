@@ -7,6 +7,10 @@
   max-width: 100%;
   padding: 8px;
   font-size: 14px;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 /* Header - Compact */
@@ -18,6 +22,7 @@
   background: #f8f9fa;
   border-bottom: 2px solid #dee2e6;
   margin-bottom: 8px;
+  flex-shrink: 0; /* Don't shrink header */
 }
 
 .crud-title {
@@ -167,6 +172,11 @@
 /* CRUD Table - Compact */
 .crud-content {
   margin-top: 8px;
+  /* Make content scrollable within viewport */
+  flex: 1 1 auto; /* Take remaining space */
+  overflow-y: auto;
+  overflow-x: auto;
+  min-height: 0; /* Allow flex item to shrink below content size */
 }
 
 .crud-table {
@@ -186,6 +196,10 @@
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  max-width: 300px; /* Default maxColWidth from schema */
+  overflow: hidden;
+  word-wrap: break-word;
+  word-break: break-word;
 }
 
 .crud-table thead th.sortable {
@@ -218,7 +232,21 @@
 
 .crud-table tbody td {
   padding: 6px 8px;
-  vertical-align: middle;
+  vertical-align: top;
+  max-width: 300px; /* Default maxColWidth from schema */
+  max-height: 100px; /* Default maxColHeight from schema */
+  overflow: hidden;
+  word-wrap: break-word;
+  word-break: break-word;
+}
+
+/* For fields that might wrap, allow wrapping but limit height */
+.crud-table tbody td .field-value {
+  display: block;
+  max-height: 100px;
+  overflow: hidden;
+  word-wrap: break-word;
+  word-break: break-word;
 }
 
 /* Field Values */
@@ -528,6 +556,175 @@ tr.detail-row td {
   margin-bottom: 15px;
 }
 
+/* Field Selector Modal */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.modal-content {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  max-width: 500px;
+  width: 90%;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.2s ease;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #212529;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: #6c757d;
+  padding: 4px 8px;
+  line-height: 1;
+}
+
+.modal-close:hover {
+  color: #212529;
+}
+
+.modal-body {
+  padding: 20px;
+  overflow-y: auto;
+  flex: 1 1 auto;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.btn-select-all,
+.btn-select-none {
+  padding: 6px 12px;
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-select-all:hover,
+.btn-select-none:hover {
+  background: #e9ecef;
+  border-color: #adb5bd;
+}
+
+.field-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.field-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.field-checkbox:hover {
+  background: #f8f9fa;
+}
+
+.field-checkbox input[type="checkbox"] {
+  cursor: pointer;
+  width: 16px;
+  height: 16px;
+}
+
+.field-checkbox span {
+  font-size: 14px;
+  color: #212529;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 16px 20px;
+  border-top: 1px solid #dee2e6;
+}
+
+.btn-cancel,
+.btn-apply {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-cancel {
+  background: #f8f9fa;
+  color: #495057;
+}
+
+.btn-cancel:hover {
+  background: #e9ecef;
+}
+
+.btn-apply {
+  background: #007bff;
+  color: white;
+}
+
+.btn-apply:hover {
+  background: #0056b3;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .crud-header {
@@ -551,5 +748,10 @@ tr.detail-row td {
   .crud-table thead th,
   .crud-table tbody td {
     padding: 4px 6px;
+  }
+
+  .modal-content {
+    width: 95%;
+    max-height: 90vh;
   }
 }

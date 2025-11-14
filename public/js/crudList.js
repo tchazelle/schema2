@@ -509,6 +509,109 @@ class SubList extends React.Component {
 }
 
 /**
+ * Field Selector Modal Component
+ * Modal for selecting which fields to display
+ */
+class FieldSelectorModal extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      selectedFields: props.selectedFields ? new Set(props.selectedFields) : new Set(props.allFields)
+    };
+  }
+
+  toggleField = (fieldName) => {
+    this.setState(prev => {
+      const newSet = new Set(prev.selectedFields);
+      if (newSet.has(fieldName)) {
+        newSet.delete(fieldName);
+      } else {
+        newSet.add(fieldName);
+      }
+      return { selectedFields: newSet };
+    });
+  }
+
+  selectAll = () => {
+    this.setState({ selectedFields: new Set(this.props.allFields) });
+  }
+
+  selectNone = () => {
+    this.setState({ selectedFields: new Set() });
+  }
+
+  apply = () => {
+    const fieldsArray = Array.from(this.state.selectedFields);
+    this.props.onApply(fieldsArray);
+    this.props.onClose();
+  }
+
+  render() {
+    const { allFields, structure, onClose } = this.props;
+    const { selectedFields } = this.state;
+
+    return e('div', {
+      className: 'modal-overlay',
+      onClick: onClose
+    },
+      e('div', {
+        className: 'modal-content',
+        onClick: (ev) => ev.stopPropagation()
+      },
+        e('div', { className: 'modal-header' },
+          e('h3', null, 'Sélectionner les champs à afficher'),
+          e('button', {
+            className: 'modal-close',
+            onClick: onClose
+          }, '✖')
+        ),
+        e('div', { className: 'modal-body' },
+          e('div', { className: 'modal-actions' },
+            e('button', {
+              className: 'btn-select-all',
+              onClick: this.selectAll
+            }, 'Tout sélectionner'),
+            e('button', {
+              className: 'btn-select-none',
+              onClick: this.selectNone
+            }, 'Tout désélectionner')
+          ),
+          e('div', { className: 'field-list' },
+            allFields.map(fieldName => {
+              const field = structure.fields[fieldName];
+              const label = field?.label || fieldName;
+              const isSelected = selectedFields.has(fieldName);
+
+              return e('label', {
+                key: fieldName,
+                className: 'field-checkbox'
+              },
+                e('input', {
+                  type: 'checkbox',
+                  checked: isSelected,
+                  onChange: () => this.toggleField(fieldName)
+                }),
+                e('span', null, label)
+              );
+            })
+          )
+        ),
+        e('div', { className: 'modal-footer' },
+          e('button', {
+            className: 'btn-cancel',
+            onClick: onClose
+          }, 'Annuler'),
+          e('button', {
+            className: 'btn-apply',
+            onClick: this.apply
+          }, 'Appliquer')
+        )
+      )
+    );
+  }
+}
+
+/**
  * Three-Dot Menu Component
  * Dropdown menu with display options
  */
@@ -615,6 +718,7 @@ class CrudList extends React.Component {
       displayMode: 'default', // default, all, raw, custom
       showSystemFields: false,
       selectedFields: null,
+      showFieldSelector: false,
       page: 0,
       limit: 100
     };
@@ -663,7 +767,7 @@ class CrudList extends React.Component {
     this.setState({ loading: true, error: null });
 
     const { table } = this.props;
-    const { search, orderBy, order, page, limit, displayMode } = this.state;
+    const { search, orderBy, order, page, limit, displayMode, selectedFields } = this.state;
 
     const showSystemFields = displayMode === 'all' || displayMode === 'raw';
 
@@ -676,6 +780,11 @@ class CrudList extends React.Component {
         search: search || '',
         showSystemFields: showSystemFields ? '1' : '0'
       });
+
+      // Add selected fields if in custom mode
+      if (displayMode === 'custom' && selectedFields && selectedFields.length > 0) {
+        params.set('selectedFields', selectedFields.join(','));
+      }
 
       const response = await fetch(`/_crud/${table}/data?${params}`);
       const data = await response.json();
@@ -698,11 +807,28 @@ class CrudList extends React.Component {
 
   handleSort = (fieldName) => {
     this.setState(prev => {
-      const newOrder = prev.orderBy === fieldName && prev.order === 'ASC' ? 'DESC' : 'ASC';
-      return {
-        orderBy: fieldName,
-        order: newOrder
-      };
+      // Cycle: ASC → DESC → no sort (back to default)
+      if (prev.orderBy === fieldName) {
+        if (prev.order === 'ASC') {
+          // ASC → DESC
+          return {
+            orderBy: fieldName,
+            order: 'DESC'
+          };
+        } else {
+          // DESC → no sort (back to default)
+          return {
+            orderBy: 'updatedAt',
+            order: 'DESC'
+          };
+        }
+      } else {
+        // Different field → start with ASC
+        return {
+          orderBy: fieldName,
+          order: 'ASC'
+        };
+      }
     }, this.loadData);
   }
 
@@ -731,6 +857,24 @@ class CrudList extends React.Component {
     });
   }
 
+  handleShowFieldSelector = () => {
+    this.setState({ showFieldSelector: true });
+  }
+
+  handleCloseFieldSelector = () => {
+    this.setState({ showFieldSelector: false });
+  }
+
+  handleApplyFieldSelection = (fields) => {
+    this.setState({
+      selectedFields: fields,
+      displayMode: 'custom'
+    }, () => {
+      this.saveUserPreferences();
+      this.loadData();
+    });
+  }
+
   handleLoadMore = () => {
     // Increase limit by 100 rows
     this.setState(prev => ({
@@ -740,7 +884,7 @@ class CrudList extends React.Component {
 
   render() {
     const { table } = this.props;
-    const { loading, error, data, search, orderBy, order, displayMode } = this.state;
+    const { loading, error, data, search, orderBy, order, displayMode, showFieldSelector, selectedFields } = this.state;
 
     return e('div', { className: 'crud-list-container' },
       // Header
@@ -757,7 +901,7 @@ class CrudList extends React.Component {
           e(ThreeDotsMenu, {
             displayMode,
             onDisplayModeChange: this.handleDisplayModeChange,
-            onFieldSelect: () => alert('Field selector à implémenter - ouvrir /_crud/' + table + '/view')
+            onFieldSelect: this.handleShowFieldSelector
           })
         )
       ),
@@ -801,7 +945,16 @@ class CrudList extends React.Component {
             onClick: this.handleLoadMore
           }, '+ Plus de lignes')
         )
-      )
+      ),
+
+      // Field Selector Modal
+      showFieldSelector && data && e(FieldSelectorModal, {
+        allFields: data.allFields,
+        selectedFields: selectedFields,
+        structure: data.structure,
+        onApply: this.handleApplyFieldSelection,
+        onClose: this.handleCloseFieldSelector
+      })
     );
   }
 }
