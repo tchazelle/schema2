@@ -322,7 +322,7 @@ tr.detail-row td {
 tr.detail-row-header td {
   padding: 0 !important;
   background: #e7f5ff;
-  border-top: 2px solid #007bff;
+  border-top: none;
   border-bottom: none;
 }
 
