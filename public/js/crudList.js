@@ -696,7 +696,7 @@ class EditForm extends React.Component {
   }
 
   render() {
-    const { structure, onClose, row, tableName, tableConfig, permissions } = this.props;
+    const { structure, onClose, row, tableName, tableConfig, permissions, hideRelations1N = false } = this.props;
     const { saveStatus, errors, formData } = this.state;
 
     // Get editable fields (exclude system fields, id, granted, and relations arrays)
@@ -704,9 +704,9 @@ class EditForm extends React.Component {
       !['id', 'ownerId', 'granted', 'createdAt', 'updatedAt'].includes(f)
     );
 
-    // Extract 1:N relations
+    // Extract 1:N relations (only if not hidden)
     const relations1N = {};
-    if (row._relations) {
+    if (!hideRelations1N && row._relations) {
       Object.entries(row._relations).forEach(([key, value]) => {
         if (Array.isArray(value)) {
           relations1N[key] = value;
@@ -963,8 +963,9 @@ class TableRow extends React.Component {
     const displayData = fullData || row;
 
     return e(React.Fragment, null,
-      e('tr', {
-        className: `data-row ${expanded ? 'expanded' : ''}`,
+      // Show normal row only when NOT expanded
+      !expanded && e('tr', {
+        className: 'data-row',
         onClick: this.toggleExpand,
         onDoubleClick: this.enterEditMode
       },
@@ -988,6 +989,66 @@ class TableRow extends React.Component {
           );
         })
       ),
+      // When expanded, show header row with table/id, granted, and close button
+      expanded && e('tr', { className: 'detail-row-header' },
+        e('td', { colSpan: fields.length },
+          e('div', { style: { display: 'flex', alignItems: 'center', gap: '12px', padding: '8px 12px', background: '#e7f5ff', borderBottom: '1px solid #dee2e6' } },
+            e('h3', {
+              style: { margin: 0, fontSize: '16px', fontWeight: 600, flex: 1 }
+            }, `📋 ${tableName} / ${row.id}`),
+            // Granted selector in header
+            structure.fields.granted && !editMode && e('div', null,
+              e(GrantedSelector, {
+                value: displayData.granted,
+                publishableTo: tableConfig.publishableTo || [],
+                userRole: 'member',
+                onChange: async (val) => {
+                  // Auto-save granted change
+                  try {
+                    const response = await fetch(`/_api/${tableName}/${row.id}`, {
+                      method: 'PUT',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ granted: val })
+                    });
+                    const data = await response.json();
+                    if (data.success) {
+                      this.setState(prev => ({
+                        fullData: {
+                          ...prev.fullData,
+                          granted: val
+                        }
+                      }));
+                      if (this.props.onUpdate) {
+                        this.props.onUpdate();
+                      }
+                    }
+                  } catch (error) {
+                    console.error('Failed to save granted:', error);
+                  }
+                },
+                disabled: !permissions.canPublish,
+                compact: true
+              })
+            ),
+            e('button', {
+              style: {
+                background: 'none',
+                border: 'none',
+                fontSize: '18px',
+                cursor: 'pointer',
+                color: '#6c757d',
+                padding: '4px 8px'
+              },
+              onClick: (ev) => {
+                ev.stopPropagation();
+                this.setState({ expanded: false, editMode: false });
+              },
+              title: 'Fermer'
+            }, '✖')
+          )
+        )
+      ),
+      // Detail row with content
       expanded && e('tr', { className: 'detail-row' },
         e('td', { colSpan: fields.length },
           loading
@@ -1159,13 +1220,268 @@ class RowDetailView extends React.Component {
 }
 
 /**
+ * Sub-List Row Component (for rows in 1:N relations)
+ * Similar to TableRow but without 1:N relations
+ */
+class SubListRow extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      expanded: false,
+      editMode: false,
+      fullData: null,
+      loading: false,
+      focusFieldName: null
+    };
+  }
+
+  toggleExpand = async () => {
+    const { expanded, fullData, editMode } = this.state;
+    const { row, tableName } = this.props;
+
+    if (editMode) return;
+
+    if (!expanded && !fullData) {
+      this.setState({ loading: true, expanded: true });
+
+      try {
+        const response = await fetch(`/_api/${tableName}/${row.id}?relation=default&compact=1`);
+        const data = await response.json();
+
+        if (data.success && data.rows && data.rows.length > 0) {
+          this.setState({
+            loading: false,
+            fullData: data.rows[0]
+          });
+        } else {
+          console.error('Failed to fetch full data:', data.error || 'No data returned');
+          this.setState({ loading: false });
+        }
+      } catch (error) {
+        console.error('Error fetching full data:', error);
+        this.setState({ loading: false });
+      }
+    } else {
+      this.setState({ expanded: !expanded });
+    }
+  }
+
+  enterEditMode = (focusFieldName = null) => {
+    const { permissions } = this.props;
+    if (permissions && permissions.canUpdate) {
+      this.setState({ editMode: true, expanded: true, focusFieldName });
+    }
+  }
+
+  exitEditMode = () => {
+    this.setState({ editMode: false, focusFieldName: null });
+  }
+
+  handleSave = (updatedData) => {
+    this.setState(prev => ({
+      fullData: {
+        ...prev.fullData,
+        ...updatedData
+      }
+    }));
+
+    if (this.props.onUpdate) {
+      this.props.onUpdate();
+    }
+  }
+
+  render() {
+    const { row, fields, structure, tableName, tableConfig, permissions } = this.props;
+    const { expanded, editMode, fullData, loading, focusFieldName } = this.state;
+
+    const displayData = fullData || row;
+
+    return e(React.Fragment, null,
+      // Show normal row only when NOT expanded
+      !expanded && e('tr', {
+        className: 'data-row',
+        onClick: this.toggleExpand,
+        onDoubleClick: this.enterEditMode
+      },
+        fields.map(fieldName => {
+          const field = structure.fields[fieldName];
+          const value = row[fieldName];
+          const relationData = row._relations && row._relations[fieldName];
+
+          return e('td', { key: fieldName },
+            relationData
+              ? e(RelationRenderer, {
+                  relation: relationData,
+                  fieldName,
+                  relatedTable: field?.relation
+                })
+              : e(FieldRenderer, {
+                  value,
+                  field: field || { type: 'text' },
+                  tableName
+                })
+          );
+        })
+      ),
+      // When expanded, show header row with table/id, granted, and close button
+      expanded && e('tr', { className: 'detail-row-header' },
+        e('td', { colSpan: fields.length },
+          e('div', { style: { display: 'flex', alignItems: 'center', gap: '12px', padding: '8px 12px', background: '#e7f5ff', borderBottom: '1px solid #dee2e6' } },
+            e('h3', {
+              style: { margin: 0, fontSize: '14px', fontWeight: 600, flex: 1 }
+            }, `📋 ${tableName} / ${row.id}`),
+            // Granted selector in header
+            structure.fields.granted && !editMode && e('div', null,
+              e(GrantedSelector, {
+                value: displayData.granted,
+                publishableTo: tableConfig?.publishableTo || [],
+                userRole: 'member',
+                onChange: async (val) => {
+                  try {
+                    const response = await fetch(`/_api/${tableName}/${row.id}`, {
+                      method: 'PUT',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ granted: val })
+                    });
+                    const data = await response.json();
+                    if (data.success) {
+                      this.setState(prev => ({
+                        fullData: {
+                          ...prev.fullData,
+                          granted: val
+                        }
+                      }));
+                      if (this.props.onUpdate) {
+                        this.props.onUpdate();
+                      }
+                    }
+                  } catch (error) {
+                    console.error('Failed to save granted:', error);
+                  }
+                },
+                disabled: !permissions || !permissions.canPublish,
+                compact: true
+              })
+            ),
+            e('button', {
+              style: {
+                background: 'none',
+                border: 'none',
+                fontSize: '18px',
+                cursor: 'pointer',
+                color: '#6c757d',
+                padding: '4px 8px'
+              },
+              onClick: (ev) => {
+                ev.stopPropagation();
+                this.setState({ expanded: false, editMode: false });
+              },
+              title: 'Fermer'
+            }, '✖')
+          )
+        )
+      ),
+      // Detail row with content (NO 1:N relations)
+      expanded && e('tr', { className: 'detail-row' },
+        e('td', { colSpan: fields.length },
+          loading
+            ? e('div', { className: 'detail-loading' }, 'Chargement des détails...')
+            : editMode
+              ? e(EditForm, {
+                  row: displayData,
+                  structure,
+                  tableName,
+                  tableConfig: tableConfig || {},
+                  permissions: permissions || {},
+                  onClose: this.exitEditMode,
+                  onSave: this.handleSave,
+                  focusFieldName: focusFieldName,
+                  hideRelations1N: true // Hide 1:N relations in sub-lists
+                })
+              : e(SubListRowDetailView, {
+                  row: displayData,
+                  structure,
+                  tableName,
+                  permissions: permissions || {},
+                  onEdit: this.enterEditMode
+                })
+        )
+      )
+    );
+  }
+}
+
+/**
+ * Sub-List Row Detail View (without 1:N relations)
+ */
+class SubListRowDetailView extends React.Component {
+  render() {
+    const { row, structure, tableName, permissions, onEdit } = this.props;
+
+    const allFields = Object.keys(structure.fields).filter(f =>
+      !['id', 'ownerId', 'granted', 'createdAt', 'updatedAt'].includes(f)
+    );
+
+    const handleFieldClick = (fieldName, e) => {
+      if (permissions && permissions.canUpdate) {
+        e.stopPropagation();
+        onEdit(fieldName);
+      }
+    };
+
+    return e('div', { className: 'row-detail' },
+      // Fields grid - clickable to edit
+      e('div', {
+        className: 'detail-fields',
+        title: permissions && permissions.canUpdate ? 'Cliquer sur un champ pour éditer' : ''
+      },
+        allFields.map(fieldName => {
+          const field = structure.fields[fieldName];
+          const value = row[fieldName];
+          const label = field?.label || fieldName;
+
+          const relationN1 = row._relations && row._relations[fieldName] && !Array.isArray(row._relations[fieldName])
+            ? row._relations[fieldName]
+            : null;
+
+          return e('div', {
+            key: fieldName,
+            className: 'detail-field',
+            style: permissions && permissions.canUpdate ? { cursor: 'pointer' } : {},
+            onClick: (e) => handleFieldClick(fieldName, e)
+          },
+            e('label', { className: 'detail-label' }, label),
+            e('div', { className: 'detail-value' },
+              relationN1
+                ? e(RelationRenderer, {
+                    relation: relationN1,
+                    fieldName: fieldName,
+                    relatedTable: field.relation
+                  })
+                : e(FieldRenderer, {
+                    value,
+                    field,
+                    tableName
+                  })
+            )
+          );
+        })
+      )
+      // NO 1:N relations in sub-lists
+    );
+  }
+}
+
+/**
  * Sub-List Component
  */
 class SubList extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      structure: null
+      structure: null,
+      tableConfig: null,
+      permissions: null
     };
   }
 
@@ -1178,6 +1494,16 @@ class SubList extends React.Component {
       if (data.success) {
         this.setState({ structure: data.structure });
       }
+
+      // Also fetch table config and permissions
+      const configResponse = await fetch(`/_crud/${tableName}/data?limit=1`);
+      const configData = await configResponse.json();
+      if (configData.success) {
+        this.setState({
+          tableConfig: configData.tableConfig,
+          permissions: configData.permissions
+        });
+      }
     } catch (error) {
       console.error('Failed to fetch table structure:', error);
     }
@@ -1185,7 +1511,7 @@ class SubList extends React.Component {
 
   render() {
     const { rows, tableName, parentTable } = this.props;
-    const { structure } = this.state;
+    const { structure, tableConfig, permissions } = this.state;
 
     if (!rows || rows.length === 0) {
       return e('div', { className: 'sub-list-empty' }, 'Aucune donnée');
@@ -1214,27 +1540,15 @@ class SubList extends React.Component {
       ),
       e('tbody', null,
         rows.map((row, idx) =>
-          e('tr', { key: row.id || idx },
-            fields.map(f => {
-              const field = structure.fields[f];
-              const value = row[f];
-              const relationData = row._relations && row._relations[f];
-
-              return e('td', { key: f },
-                relationData
-                  ? e(RelationRenderer, {
-                      relation: relationData,
-                      fieldName: f,
-                      relatedTable: field?.relation
-                    })
-                  : e(FieldRenderer, {
-                      value,
-                      field: field || { type: 'text' },
-                      tableName
-                    })
-              );
-            })
-          )
+          e(SubListRow, {
+            key: row.id || idx,
+            row,
+            fields,
+            structure,
+            tableName,
+            tableConfig,
+            permissions
+          })
         )
       )
     );

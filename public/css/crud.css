@@ -318,9 +318,26 @@ tr.detail-row td {
   border: none;
 }
 
+/* Detail Row Header (when row is expanded and replaced with table/id + granted + close) */
+tr.detail-row-header td {
+  padding: 0 !important;
+  background: #e7f5ff;
+  border-top: 2px solid #007bff;
+  border-bottom: none;
+}
+
 /* Add spacing after detail row to separate from next data row */
 tr.detail-row + tr.data-row {
   border-top: 2px solid #dee2e6;
+}
+
+/* Add spacing after detail-row-header + detail-row sequence to separate from next data row */
+tr.detail-row:has(~ tr.data-row) {
+  border-bottom: 2px solid #dee2e6;
+}
+
+tr.detail-row:not(:has(~ tr)) {
+  border-bottom: 2px solid #dee2e6;
 }
 
 .row-detail {
