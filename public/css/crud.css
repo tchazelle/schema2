@@ -228,7 +228,7 @@
 }
 
 .crud-table tbody tr.data-row.expanded {
-  background: #e7f5ff;
+  background: #e9ecef;
 }
 
 .crud-table tbody td {
@@ -331,7 +331,7 @@ tr.detail-row td {
 /* Detail Row Header (when row is expanded and replaced with table/id + granted + close) */
 tr.detail-row-header td {
   padding: 0 !important;
-  background: #e7f5ff;
+  background: #e9ecef;
   border-top: none;
   border-bottom: none;
 }
@@ -339,15 +339,6 @@ tr.detail-row-header td {
 /* Add spacing after detail row to separate from next data row */
 tr.detail-row + tr.data-row {
   border-top: 2px solid #dee2e6;
-}
-
-/* Add spacing after detail-row-header + detail-row sequence to separate from next data row */
-tr.detail-row:has(~ tr.data-row) {
-  border-bottom: 2px solid #dee2e6;
-}
-
-tr.detail-row:not(:has(~ tr)) {
-  border-bottom: 2px solid #dee2e6;
 }
 
 .row-detail {
@@ -449,8 +440,7 @@ tr.detail-row:not(:has(~ tr)) {
   gap: 6px;
   padding: 6px;
   background: #fff;
-  border: 1px solid #dee2e6;
-  border-radius: 4px;
+  border-top: 1px solid #dee2e6;
   cursor: pointer;
   font-size: 14px; /* Increased from 13px */
 }
@@ -465,8 +455,15 @@ tr.detail-row:not(:has(~ tr)) {
 }
 
 .relation-count {
-  color: #6c757d;
-  font-size: 12px;
+  background: #6c757d;
+  color: white;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 12px;
+  margin-left: auto;
+  min-width: 20px;
+  text-align: center;
 }
 
 .btn-add-relation-item {
@@ -492,7 +489,7 @@ tr.detail-row:not(:has(~ tr)) {
 /* Sub-List */
 .relation-list {
   margin-top: 6px;
-  padding-left: 20px;
+  padding-left: 0;
 }
 
 .sub-list-table {
@@ -876,13 +873,38 @@ tr.detail-row:not(:has(~ tr)) {
   .crud-table tbody tr.detail-row,
   .crud-table tbody tr.detail-row-header {
     display: block;
-    width: 100%;
+    width: 100% !important;
+    max-width: 100vw !important;
   }
 
   .crud-table tbody tr.detail-row td,
   .crud-table tbody tr.detail-row-header td {
     display: block;
-    width: 100%;
+    width: 100% !important;
+    max-width: 100vw !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  /* Ensure row-detail takes full width and shows all content */
+  .row-detail {
+    width: 100% !important;
+    max-width: 100vw !important;
+    max-height: none !important;
+    overflow-y: auto !important;
+    padding: 12px !important;
+  }
+
+  /* Ensure detail fields grid is responsive */
+  .detail-fields {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Ensure relations section is visible */
+  .detail-relations-1n {
+    width: 100% !important;
+    max-height: none !important;
+    overflow: visible !important;
   }
 
   /* Responsive sub-list tables (1:N relations) */
@@ -1298,8 +1320,7 @@ tr.detail-row:not(:has(~ tr)) {
 
 .edit-form-relations-1n .relation-header {
   background: #fff;
-  border: 1px solid #dee2e6;
-  border-radius: 4px;
+  border-top: 1px solid #dee2e6;
   padding: 8px;
   display: flex;
   align-items: center;
