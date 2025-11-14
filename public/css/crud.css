@@ -47,6 +47,10 @@
   box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.15);
 }
 
+.menu-dots {
+  position: relative;
+}
+
 .btn-menu {
   background: none;
   border: none;
@@ -59,6 +63,62 @@
 .btn-menu:hover {
   background: #e9ecef;
   border-radius: 4px;
+}
+
+.menu-dropdown {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  margin-top: 4px;
+  background: white;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  min-width: 280px;
+  z-index: 1000;
+  animation: slideDown 0.15s ease;
+}
+
+.menu-section {
+  padding: 4px 0;
+}
+
+.menu-label {
+  padding: 6px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #6c757d;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.menu-item {
+  display: block;
+  width: 100%;
+  padding: 8px 12px;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  font-size: 13px;
+  color: #212529;
+  transition: background 0.15s;
+}
+
+.menu-item:hover {
+  background: #f8f9fa;
+}
+
+.menu-item.active {
+  background: #e7f5ff;
+  color: #0056b3;
+  font-weight: 500;
+}
+
+.menu-divider {
+  height: 1px;
+  background: #dee2e6;
+  margin: 4px 0;
 }
 
 /* Filter Options */
@@ -360,11 +420,38 @@ tr.detail-row td {
 
 /* Pagination */
 .pagination {
-  padding: 8px 12px;
-  text-align: center;
+  padding: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   border-top: 1px solid #dee2e6;
   font-size: 13px;
   color: #6c757d;
+  background: #f8f9fa;
+}
+
+.pagination-info {
+  color: #495057;
+}
+
+.btn-load-more {
+  padding: 6px 16px;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 13px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background 0.15s;
+}
+
+.btn-load-more:hover {
+  background: #0056b3;
+}
+
+.btn-load-more:active {
+  transform: translateY(1px);
 }
 
 /* Loading & Error States */

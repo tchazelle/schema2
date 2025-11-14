@@ -88,20 +88,11 @@ router.get('/:table', async (req, res) => {
       `);
     }
 
-    // Get full user information if authenticated
-    let fullUser = null;
-    if (user) {
-      const [users] = await pool.query(
-        'SELECT * FROM Person WHERE id = ?',
-        [user.id]
-      );
-      if (users.length > 0) {
-        fullUser = users[0];
-      }
-    }
+    // user is already enriched by userEnrichMiddleware with all necessary info
+    // (fullName, abbreviation, allRoles, etc.)
 
     // Get accessible tables for menu (tables user can create or update)
-    const accessibleTables = fullUser ? CrudService.getMenuTables(fullUser) : [];
+    const accessibleTables = user ? CrudService.getMenuTables(user) : [];
 
     // Get pages for menu
     let pages = [];
@@ -115,7 +106,7 @@ router.get('/:table', async (req, res) => {
 
     // Serve the React-based CRUD interface with navigation
     const html = TemplateService.htmlCrudPage({
-      user: fullUser,
+      user: user,
       pages: pages,
       table: table,
       accessibleTables: accessibleTables

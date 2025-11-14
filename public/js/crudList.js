@@ -86,6 +86,7 @@ class FieldRenderer extends React.Component {
 /**
  * N:1 Relation Renderer
  * Renders compact N:1 relations with link
+ * The relation object is already in compact mode (only displayFields + id)
  */
 class RelationRenderer extends React.Component {
   render() {
@@ -104,23 +105,31 @@ class RelationRenderer extends React.Component {
         className: 'relation-link',
         onClick: (ev) => {
           ev.stopPropagation();
-          // Could navigate or open in modal
+          // Navigate to the related record
         }
       }, '🔗 ', displayValue)
     );
   }
 
   getDisplayValue(relation) {
-    // If compact, relation might be just the display fields
+    // If it's a string, return it directly
     if (typeof relation === 'string') return relation;
-    if (relation.name) return relation.name;
 
-    // Try common display fields
-    const displayFields = ['name', 'givenName', 'familyName', 'title'];
-    for (const field of displayFields) {
-      if (relation[field]) return relation[field];
+    // Build display value from all non-id, non-_table fields
+    // These are the displayFields from the schema (thanks to compact mode)
+    const values = [];
+    for (const key in relation) {
+      if (key !== 'id' && key !== '_table' && relation[key]) {
+        values.push(relation[key]);
+      }
     }
 
+    // Join with space if multiple fields
+    if (values.length > 0) {
+      return values.join(' ');
+    }
+
+    // Fallback to ID
     return `#${relation.id || '?'}`;
   }
 }
@@ -417,30 +426,92 @@ class SubList extends React.Component {
 }
 
 /**
- * Filter Options Component
- * Display mode selector and field selector
+ * Three-Dot Menu Component
+ * Dropdown menu with display options
  */
-class FilterOptions extends React.Component {
-  render() {
-    const { displayMode, showSystemFields, onDisplayModeChange, onSystemFieldsToggle, onFieldSelect } = this.props;
+class ThreeDotsMenu extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      isOpen: false
+    };
+    this.menuRef = React.createRef();
+  }
 
-    return e('div', { className: 'filter-options' },
-      e('div', { className: 'display-mode' },
-        e('label', null, 'Mode:'),
-        e('select', {
-          value: displayMode,
-          onChange: (ev) => onDisplayModeChange(ev.target.value)
-        },
-          e('option', { value: 'default' }, 'Par défaut (masquer champs système)'),
-          e('option', { value: 'all' }, 'Tous les champs'),
-          e('option', { value: 'raw' }, 'Raw (données brutes)'),
-          e('option', { value: 'custom' }, 'Sélection personnalisée')
-        )
-      ),
-      displayMode === 'custom' && e('button', {
-        className: 'btn-field-selector',
-        onClick: onFieldSelect
-      }, '🎯 Sélectionner les champs')
+  componentDidMount() {
+    document.addEventListener('click', this.handleClickOutside);
+  }
+
+  componentWillUnmount() {
+    document.removeEventListener('click', this.handleClickOutside);
+  }
+
+  handleClickOutside = (event) => {
+    if (this.menuRef.current && !this.menuRef.current.contains(event.target)) {
+      this.setState({ isOpen: false });
+    }
+  }
+
+  toggleMenu = (ev) => {
+    ev.stopPropagation();
+    this.setState(prev => ({ isOpen: !prev.isOpen }));
+  }
+
+  handleOptionClick = (action) => {
+    this.setState({ isOpen: false });
+    if (this.props[action]) {
+      this.props[action]();
+    }
+  }
+
+  render() {
+    const { displayMode, onDisplayModeChange, onFieldSelect } = this.props;
+    const { isOpen } = this.state;
+
+    return e('div', { className: 'menu-dots', ref: this.menuRef },
+      e('button', {
+        className: 'btn-menu',
+        onClick: this.toggleMenu,
+        'aria-label': 'Options'
+      }, '⋮'),
+      isOpen && e('div', { className: 'menu-dropdown' },
+        e('div', { className: 'menu-section' },
+          e('div', { className: 'menu-label' }, 'Mode de présentation'),
+          e('button', {
+            className: `menu-item ${displayMode === 'default' ? 'active' : ''}`,
+            onClick: () => {
+              this.handleOptionClick('onDisplayModeChange');
+              onDisplayModeChange('default');
+            }
+          }, displayMode === 'default' ? '✓ ' : '', 'Par défaut (masquer champs système)'),
+          e('button', {
+            className: `menu-item ${displayMode === 'all' ? 'active' : ''}`,
+            onClick: () => {
+              this.handleOptionClick('onDisplayModeChange');
+              onDisplayModeChange('all');
+            }
+          }, displayMode === 'all' ? '✓ ' : '', 'Tous les champs'),
+          e('button', {
+            className: `menu-item ${displayMode === 'raw' ? 'active' : ''}`,
+            onClick: () => {
+              this.handleOptionClick('onDisplayModeChange');
+              onDisplayModeChange('raw');
+            }
+          }, displayMode === 'raw' ? '✓ ' : '', 'Données brutes'),
+          e('button', {
+            className: `menu-item ${displayMode === 'custom' ? 'active' : ''}`,
+            onClick: () => {
+              this.handleOptionClick('onDisplayModeChange');
+              onDisplayModeChange('custom');
+            }
+          }, displayMode === 'custom' ? '✓ ' : '', 'Sélection personnalisée')
+        ),
+        e('div', { className: 'menu-divider' }),
+        e('button', {
+          className: 'menu-item',
+          onClick: () => this.handleOptionClick('onFieldSelect')
+        }, '🎯 Sélectionner les champs')
+      )
     );
   }
 }
@@ -577,6 +648,13 @@ class CrudList extends React.Component {
     });
   }
 
+  handleLoadMore = () => {
+    // Increase limit by 100 rows
+    this.setState(prev => ({
+      limit: prev.limit + 100
+    }), this.loadData);
+  }
+
   render() {
     const { table } = this.props;
     const { loading, error, data, search, orderBy, order, displayMode } = this.state;
@@ -593,18 +671,13 @@ class CrudList extends React.Component {
             value: search,
             onChange: (ev) => this.handleSearch(ev.target.value)
           }),
-          e('div', { className: 'menu-dots' },
-            e('button', { className: 'btn-menu' }, '⋮')
-          )
+          e(ThreeDotsMenu, {
+            displayMode,
+            onDisplayModeChange: this.handleDisplayModeChange,
+            onFieldSelect: () => alert('Field selector à implémenter - ouvrir /_crud/' + table + '/view')
+          })
         )
       ),
-
-      // Filter options
-      e(FilterOptions, {
-        displayMode,
-        onDisplayModeChange: this.handleDisplayModeChange,
-        onFieldSelect: () => alert('Field selector à implémenter')
-      }),
 
       // Content
       loading && e('div', { className: 'loading' }, 'Chargement...'),
@@ -635,9 +708,15 @@ class CrudList extends React.Component {
           )
         ),
 
-        // Pagination
+        // Pagination with load more button
         data.pagination && e('div', { className: 'pagination' },
-          e('span', null, `${data.pagination.count} sur ${data.pagination.total} résultats`)
+          e('span', { className: 'pagination-info' },
+            `Affichage de ${data.pagination.offset + 1} à ${data.pagination.offset + data.pagination.count} sur ${data.pagination.total} résultats`
+          ),
+          (data.pagination.offset + data.pagination.count < data.pagination.total) && e('button', {
+            className: 'btn-load-more',
+            onClick: this.handleLoadMore
+          }, '+ Plus de lignes')
         )
       )
     );
