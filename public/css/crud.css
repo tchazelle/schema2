@@ -794,7 +794,128 @@ tr.detail-row:not(:has(~ tr)) {
   background: #0056b3;
 }
 
-/* Responsive */
+/* Responsive - Table to Card Layout */
+@media (max-width: 700px) {
+  /* Hide table header on mobile */
+  .crud-table thead {
+    display: none;
+  }
+
+  /* Transform table structure to block layout */
+  .crud-table,
+  .crud-table tbody,
+  .crud-table tbody tr.data-row,
+  .crud-table tbody tr.data-row td {
+    display: block;
+    width: 100%;
+    border: none;
+  }
+
+  /* Style each row as a card */
+  .crud-table tbody tr.data-row {
+    background: white;
+    margin-bottom: 16px;
+    padding: 16px;
+    border-radius: 12px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    border: 1px solid #e9ecef;
+  }
+
+  .crud-table tbody tr.data-row:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  }
+
+  /* Display cells in 2-column grid */
+  .crud-table tbody tr.data-row {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px 20px;
+  }
+
+  /* Reset cell padding */
+  .crud-table tbody tr.data-row td {
+    padding: 0;
+    max-width: none;
+    max-height: none;
+  }
+
+  /* Add label before each cell value using data-label */
+  .crud-table tbody tr.data-row td::before {
+    content: attr(data-label);
+    display: block;
+    font-size: 0.85em;
+    color: #6c757d;
+    font-weight: 600;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  /* Adjust field value display in cards */
+  .crud-table tbody tr.data-row td .field-value {
+    max-height: none;
+    white-space: normal;
+  }
+
+  /* Full width for expanded rows */
+  .crud-table tbody tr.detail-row,
+  .crud-table tbody tr.detail-row-header {
+    display: block;
+    width: 100%;
+  }
+
+  .crud-table tbody tr.detail-row td,
+  .crud-table tbody tr.detail-row-header td {
+    display: block;
+    width: 100%;
+  }
+
+  /* Responsive sub-list tables (1:N relations) */
+  .sub-list-table thead {
+    display: none;
+  }
+
+  .sub-list-table,
+  .sub-list-table tbody,
+  .sub-list-table tbody tr,
+  .sub-list-table tbody tr td {
+    display: block;
+    width: 100%;
+    border: none;
+  }
+
+  .sub-list-table tbody tr {
+    background: white;
+    margin-bottom: 12px;
+    padding: 12px;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    border: 1px solid #e9ecef;
+  }
+
+  .sub-list-table tbody tr {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px 16px;
+  }
+
+  .sub-list-table tbody tr td {
+    padding: 0;
+  }
+
+  .sub-list-table tbody tr td::before {
+    content: attr(data-label);
+    display: block;
+    font-size: 0.8em;
+    color: #6c757d;
+    font-weight: 600;
+    margin-bottom: 3px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+}
+
+/* Responsive - General Mobile Adjustments */
 @media (max-width: 768px) {
   .crud-header {
     flex-direction: column;
@@ -808,15 +929,6 @@ tr.detail-row:not(:has(~ tr)) {
 
   .detail-fields {
     grid-template-columns: 1fr;
-  }
-
-  .crud-table {
-    font-size: 12px;
-  }
-
-  .crud-table thead th,
-  .crud-table tbody td {
-    padding: 4px 6px;
   }
 
   .modal-content {
