@@ -798,13 +798,23 @@ class EditForm extends React.Component {
     }
   }
 
+  isParentField(fieldName) {
+    const { parentTable } = this.props;
+    if (!parentTable) return false;
+
+    const lowerField = fieldName.toLowerCase();
+    const lowerParent = parentTable.toLowerCase();
+    return lowerField.includes(lowerParent) || lowerField === `id${lowerParent}`;
+  }
+
   render() {
-    const { structure, onClose, row, tableName, tableConfig, permissions, hideRelations1N = false } = this.props;
+    const { structure, onClose, row, tableName, tableConfig, permissions, hideRelations1N = false, parentTable } = this.props;
     const { saveStatus, errors, formData } = this.state;
 
-    // Get editable fields (exclude system fields, id, granted, and relations arrays)
+    // Get editable fields (exclude system fields, id, granted, relations arrays, and parent fields in sub-lists)
     const editableFields = Object.keys(structure.fields).filter(f =>
-      !['id', 'ownerId', 'granted', 'createdAt', 'updatedAt'].includes(f)
+      !['id', 'ownerId', 'granted', 'createdAt', 'updatedAt'].includes(f) &&
+      !this.isParentField(f)
     );
 
     // Extract 1:N relations (only if not hidden)
@@ -1580,6 +1590,7 @@ class SubListRow extends React.Component {
                   row: displayData,
                   structure,
                   tableName,
+                  parentTable: this.props.parentTable,
                   tableConfig: tableConfig || {},
                   permissions: permissions || {},
                   onClose: this.exitEditMode,
@@ -1591,6 +1602,7 @@ class SubListRow extends React.Component {
                   row: displayData,
                   structure,
                   tableName,
+                  parentTable: this.props.parentTable,
                   permissions: permissions || {},
                   onEdit: this.enterEditMode
                 })
@@ -1604,11 +1616,22 @@ class SubListRow extends React.Component {
  * Sub-List Row Detail View (without 1:N relations)
  */
 class SubListRowDetailView extends React.Component {
-  render() {
-    const { row, structure, tableName, permissions, onEdit } = this.props;
+  isParentField(fieldName) {
+    const { parentTable } = this.props;
+    if (!parentTable) return false;
 
+    const lowerField = fieldName.toLowerCase();
+    const lowerParent = parentTable.toLowerCase();
+    return lowerField.includes(lowerParent) || lowerField === `id${lowerParent}`;
+  }
+
+  render() {
+    const { row, structure, tableName, permissions, onEdit, parentTable } = this.props;
+
+    // Filter out system fields AND parent relation fields
     const allFields = Object.keys(structure.fields).filter(f =>
-      !['id', 'ownerId', 'granted', 'createdAt', 'updatedAt'].includes(f)
+      !['id', 'ownerId', 'granted', 'createdAt', 'updatedAt'].includes(f) &&
+      !this.isParentField(f)
     );
 
     const handleFieldClick = (fieldName, e) => {
@@ -1735,6 +1758,7 @@ class SubList extends React.Component {
             fields,
             structure,
             tableName,
+            parentTable,
             tableConfig,
             permissions
           })

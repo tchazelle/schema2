@@ -324,8 +324,7 @@ tr.detail-row td {
   padding: 0 !important;
   background: #f8f9fa;
   border: none;
-  max-width: 100vw;
-  overflow: hidden;
+  overflow: visible;
 }
 
 /* Detail Row Header (when row is expanded and replaced with table/id + granted + close) */
@@ -344,12 +343,12 @@ tr.detail-row + tr.data-row {
 .row-detail {
   padding: 16px;
   background: #f8f9fa;
-  margin: 0;
+  margin: 0 auto;
   width: 100%;
-  min-width: 100%;
-  max-width: 100vw;
+  max-width: 1400px; /* Limite la largeur maximale */
   overflow-x: auto;
   animation: expandDown 0.3s ease-out;
+  box-sizing: border-box;
 }
 
 @keyframes slideDown {
@@ -461,7 +460,7 @@ tr.detail-row + tr.data-row {
   font-weight: 600;
   padding: 2px 8px;
   border-radius: 12px;
-  margin-left: auto;
+  margin-left: 6px; /* Suit le titre au lieu d'être à droite */
   min-width: 20px;
   text-align: center;
 }
@@ -509,7 +508,7 @@ tr.detail-row + tr.data-row {
 }
 
 .sub-list-table tbody td {
-  padding: 6px 8px;
+  padding: 10px 8px; /* Augmenté de 6px à 10px pour plus d'espacement */
   border-bottom: 1px solid #f1f3f5;
 }
 
@@ -872,32 +871,32 @@ tr.detail-row + tr.data-row {
   /* Full width for expanded rows */
   .crud-table tbody tr.detail-row,
   .crud-table tbody tr.detail-row-header {
-    display: block;
-    width: 100% !important;
-    max-width: 100vw !important;
+    display: table-row !important; /* Garde le comportement de table */
+    width: auto !important;
   }
 
   .crud-table tbody tr.detail-row td,
   .crud-table tbody tr.detail-row-header td {
-    display: block;
-    width: 100% !important;
-    max-width: 100vw !important;
+    display: table-cell !important; /* Garde le comportement de cellule */
+    width: auto !important;
     max-height: none !important;
     overflow: visible !important;
   }
 
-  /* Ensure row-detail takes full width and shows all content */
+  /* Ensure row-detail maintains proper width and padding */
   .row-detail {
     width: 100% !important;
-    max-width: 100vw !important;
+    max-width: 100% !important; /* Utilise la largeur du conteneur au lieu de 100vw */
     max-height: none !important;
-    overflow-y: auto !important;
-    padding: 12px !important;
+    overflow-y: visible !important;
+    overflow-x: auto !important;
+    padding: 16px !important;
+    box-sizing: border-box !important;
   }
 
   /* Ensure detail fields grid is responsive */
   .detail-fields {
-    grid-template-columns: 1fr !important;
+    grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr)) !important;
   }
 
   /* Ensure relations section is visible */
@@ -905,6 +904,18 @@ tr.detail-row + tr.data-row {
     width: 100% !important;
     max-height: none !important;
     overflow: visible !important;
+  }
+
+  /* Edit form responsive */
+  .edit-form {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 16px !important;
+    box-sizing: border-box !important;
+  }
+
+  .edit-form-grid {
+    grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr)) !important;
   }
 
   /* Responsive sub-list tables (1:N relations) */
@@ -1013,13 +1024,13 @@ tr.detail-row + tr.data-row {
 .edit-form {
   background: #f8f9fa;
   padding: 20px;
-  margin: 0;
+  margin: 0 auto;
   width: 100%;
-  min-width: 100%;
-  max-width: 100vw;
+  max-width: 1400px; /* Limite la largeur maximale */
   overflow-x: auto;
   animation: expandDown 0.3s ease-out;
   transition: all 0.3s ease;
+  box-sizing: border-box;
 }
 
 .edit-form-header {
