@@ -49,11 +49,31 @@ async function loadRelationsForRow(user, tableName, row, options = {}) {
             // Ajouter le champ _table pour marquer la provenance
             filteredRelatedRow._table = relConfig.relatedTable;
 
+            // Ajouter un label construit à partir des displayFields
+            const displayFields = SchemaService.getDisplayFields(relConfig.relatedTable);
+            if (displayFields && displayFields.length > 0) {
+              const labelValues = displayFields
+                .map(field => filteredRelatedRow[field])
+                .filter(val => val !== null && val !== undefined && val !== '');
+              if (labelValues.length > 0) {
+                filteredRelatedRow._label = labelValues.join(' ');
+              }
+            }
+
             // Appliquer le mode compact si demandé
             if (compact) {
               filteredRelatedRow = EntityService.compactRelation(filteredRelatedRow, relConfig.relatedTable);
+              // Réajouter le _label si compact l'a supprimé
+              if (displayFields && displayFields.length > 0) {
+                const labelValues = displayFields
+                  .map(field => filteredRelatedRow[field])
+                  .filter(val => val !== null && val !== undefined && val !== '');
+                if (labelValues.length > 0) {
+                  filteredRelatedRow._label = labelValues.join(' ');
+                }
+              }
             }
-            
+
             if (noId) {
               delete filteredRelatedRow.id
               delete filteredRelatedRow._table
@@ -290,7 +310,18 @@ async function getTableData(user, tableName, options = {}) {
   const filteredRows = [];
   for (const row of accessibleRows) {
     const filteredRow = EntityService.filterEntityFields(user, table, row);
-    
+
+    // Ajouter un label construit à partir des displayFields
+    const displayFields = SchemaService.getDisplayFields(table);
+    if (displayFields && displayFields.length > 0) {
+      const labelValues = displayFields
+        .map(field => filteredRow[field])
+        .filter(val => val !== null && val !== undefined && val !== '');
+      if (labelValues.length > 0) {
+        filteredRow._label = labelValues.join(' ');
+      }
+    }
+
     // Retirer les champs système si demandé (ownerId, granted, createdAt, updatedAt)
     if (noSystemFields) {
       delete filteredRow.ownerId;
@@ -298,7 +329,7 @@ async function getTableData(user, tableName, options = {}) {
       delete filteredRow.createdAt;
       delete filteredRow.updatedAt;
     }
-    
+
     // Retirer l'id si demandé
     if (noId) {
       delete filteredRow.id;
