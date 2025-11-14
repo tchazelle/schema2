@@ -726,13 +726,26 @@ class EditForm extends React.Component {
   }
 
   render() {
-    const { structure, onClose, row, tableName, tableConfig, permissions, hideRelations1N = false } = this.props;
+    const { structure, onClose, row, tableName, tableConfig, permissions, hideRelations1N = false, parentTable = null } = this.props;
     const { saveStatus, errors, formData } = this.state;
 
     // Get editable fields (exclude system fields, id, granted, and relations arrays)
-    const editableFields = Object.keys(structure.fields).filter(f =>
-      !['id', 'ownerId', 'granted', 'createdAt', 'updatedAt'].includes(f)
-    );
+    const editableFields = Object.keys(structure.fields).filter(f => {
+      if (['id', 'ownerId', 'granted', 'createdAt', 'updatedAt'].includes(f)) {
+        return false;
+      }
+
+      // Hide parent relation field in sub-lists
+      if (parentTable) {
+        const field = structure.fields[f];
+        // Check if this field is a relation pointing to the parent table
+        if (field.relation && field.relation === parentTable) {
+          return false;
+        }
+      }
+
+      return true;
+    });
 
     // Extract 1:N relations (only if not hidden)
     const relations1N = {};
@@ -1013,81 +1026,74 @@ class TableRow extends React.Component {
       expanded && e('tr', { className: 'detail-row-header' },
         e('td', { colSpan: fields.length },
           e('div', { style: { display: 'flex', alignItems: 'center', gap: '12px', padding: '8px 12px', background: editMode ? '#f8f9fa' : '#e7f5ff', borderBottom: '1px solid #dee2e6' } },
-            // Title with displayFields or table/id
-            (() => {
-              const cardTitle = buildCardTitle(displayData, tableName, tableConfig);
-              const tableIcon = editMode ? '📄' : '📋';
+            // Title section with displayFields (both view and edit mode) and granted selector
+            e('div', { style: { flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' } },
+              // Title with displayFields or table/id
+              (() => {
+                const cardTitle = buildCardTitle(displayData, tableName, tableConfig);
+                const tableIcon = editMode ? '📄' : '📋';
 
-              if (editMode) {
-                // Edit mode: show simple table/id
-                return e('h3', {
-                  style: { margin: 0, fontSize: '16px', fontWeight: 600, flex: 1, cursor: 'pointer' },
-                  onClick: (ev) => {
-                    ev.stopPropagation();
-                    this.setState({ expanded: false, editMode: false });
+                if (cardTitle) {
+                  // Show displayFields prominently + table/id discreetly
+                  return e('h3', {
+                    style: { margin: 0, fontSize: '16px', fontWeight: 600, cursor: 'pointer' },
+                    onClick: (ev) => {
+                      ev.stopPropagation();
+                      this.setState({ expanded: false, editMode: false });
+                    },
+                    title: 'Cliquer pour fermer'
                   },
-                  title: 'Cliquer pour fermer'
-                }, `${tableIcon} ${tableName} / ${row.id}`);
-              } else if (cardTitle) {
-                // View mode with displayFields: show displayFields prominently + table/id discreetly
-                return e('h3', {
-                  style: { margin: 0, fontSize: '16px', fontWeight: 600, flex: 1, cursor: 'pointer' },
-                  onClick: (ev) => {
-                    ev.stopPropagation();
-                    this.setState({ expanded: false, editMode: false });
-                  },
-                  title: 'Cliquer pour fermer'
-                },
-                  `${tableIcon} ${cardTitle}`,
-                  e('span', {
-                    style: { fontSize: '12px', color: '#6c757d', fontWeight: 400, marginLeft: '8px' }
-                  }, `(${tableName}/${row.id})`)
-                );
-              } else {
-                // View mode without displayFields: show table/id
-                return e('h3', {
-                  style: { margin: 0, fontSize: '16px', fontWeight: 600, flex: 1, cursor: 'pointer' },
-                  onClick: (ev) => {
-                    ev.stopPropagation();
-                    this.setState({ expanded: false, editMode: false });
-                  },
-                  title: 'Cliquer pour fermer'
-                }, `${tableIcon} ${tableName} / ${row.id}`);
-              }
-            })(),
-            // Granted selector in header (always visible)
-            structure.fields.granted && e('div', { onClick: (ev) => ev.stopPropagation() },
-              e(GrantedSelector, {
-                value: displayData.granted,
-                publishableTo: tableConfig.publishableTo || [],
-                userRole: 'member',
-                onChange: async (val) => {
-                  // Auto-save granted change
-                  try {
-                    const response = await fetch(`/_api/${tableName}/${row.id}`, {
-                      method: 'PUT',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ granted: val })
-                    });
-                    const data = await response.json();
-                    if (data.success) {
-                      this.setState(prev => ({
-                        fullData: {
-                          ...prev.fullData,
-                          granted: val
+                    `${tableIcon} ${cardTitle}`,
+                    e('span', {
+                      style: { fontSize: '12px', color: '#6c757d', fontWeight: 400, marginLeft: '8px' }
+                    }, `(${tableName}/${row.id})`)
+                  );
+                } else {
+                  // Show table/id
+                  return e('h3', {
+                    style: { margin: 0, fontSize: '16px', fontWeight: 600, cursor: 'pointer' },
+                    onClick: (ev) => {
+                      ev.stopPropagation();
+                      this.setState({ expanded: false, editMode: false });
+                    },
+                    title: 'Cliquer pour fermer'
+                  }, `${tableIcon} ${tableName} / ${row.id}`);
+                }
+              })(),
+              // Granted selector below title
+              structure.fields.granted && e('div', { onClick: (ev) => ev.stopPropagation() },
+                e(GrantedSelector, {
+                  value: displayData.granted,
+                  publishableTo: tableConfig.publishableTo || [],
+                  userRole: 'member',
+                  onChange: async (val) => {
+                    // Auto-save granted change
+                    try {
+                      const response = await fetch(`/_api/${tableName}/${row.id}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ granted: val })
+                      });
+                      const data = await response.json();
+                      if (data.success) {
+                        this.setState(prev => ({
+                          fullData: {
+                            ...prev.fullData,
+                            granted: val
+                          }
+                        }));
+                        if (this.props.onUpdate) {
+                          this.props.onUpdate();
                         }
-                      }));
-                      if (this.props.onUpdate) {
-                        this.props.onUpdate();
                       }
+                    } catch (error) {
+                      console.error('Failed to save granted:', error);
                     }
-                  } catch (error) {
-                    console.error('Failed to save granted:', error);
-                  }
-                },
-                disabled: !permissions.canPublish,
-                compact: true
-              })
+                  },
+                  disabled: !permissions.canPublish,
+                  compact: true
+                })
+              )
             ),
             e('button', {
               style: {
@@ -1402,80 +1408,73 @@ class SubListRow extends React.Component {
       expanded && e('tr', { className: 'detail-row-header' },
         e('td', { colSpan: fields.length },
           e('div', { style: { display: 'flex', alignItems: 'center', gap: '12px', padding: '8px 12px', background: editMode ? '#f8f9fa' : '#e7f5ff', borderBottom: '1px solid #dee2e6' } },
-            // Title with displayFields or table/id
-            (() => {
-              const cardTitle = buildCardTitle(displayData, tableName, tableConfig);
-              const tableIcon = editMode ? '📄' : '📋';
+            // Title section with displayFields (both view and edit mode) and granted selector
+            e('div', { style: { flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' } },
+              // Title with displayFields or table/id
+              (() => {
+                const cardTitle = buildCardTitle(displayData, tableName, tableConfig);
+                const tableIcon = editMode ? '📄' : '📋';
 
-              if (editMode) {
-                // Edit mode: show simple table/id
-                return e('h3', {
-                  style: { margin: 0, fontSize: '14px', fontWeight: 600, flex: 1, cursor: 'pointer' },
-                  onClick: (ev) => {
-                    ev.stopPropagation();
-                    this.setState({ expanded: false, editMode: false });
+                if (cardTitle) {
+                  // Show displayFields prominently + table/id discreetly
+                  return e('h3', {
+                    style: { margin: 0, fontSize: '14px', fontWeight: 600, cursor: 'pointer' },
+                    onClick: (ev) => {
+                      ev.stopPropagation();
+                      this.setState({ expanded: false, editMode: false });
+                    },
+                    title: 'Cliquer pour fermer'
                   },
-                  title: 'Cliquer pour fermer'
-                }, `${tableIcon} ${tableName} / ${row.id}`);
-              } else if (cardTitle) {
-                // View mode with displayFields: show displayFields prominently + table/id discreetly
-                return e('h3', {
-                  style: { margin: 0, fontSize: '14px', fontWeight: 600, flex: 1, cursor: 'pointer' },
-                  onClick: (ev) => {
-                    ev.stopPropagation();
-                    this.setState({ expanded: false, editMode: false });
-                  },
-                  title: 'Cliquer pour fermer'
-                },
-                  `${tableIcon} ${cardTitle}`,
-                  e('span', {
-                    style: { fontSize: '11px', color: '#6c757d', fontWeight: 400, marginLeft: '8px' }
-                  }, `(${tableName}/${row.id})`)
-                );
-              } else {
-                // View mode without displayFields: show table/id
-                return e('h3', {
-                  style: { margin: 0, fontSize: '14px', fontWeight: 600, flex: 1, cursor: 'pointer' },
-                  onClick: (ev) => {
-                    ev.stopPropagation();
-                    this.setState({ expanded: false, editMode: false });
-                  },
-                  title: 'Cliquer pour fermer'
-                }, `${tableIcon} ${tableName} / ${row.id}`);
-              }
-            })(),
-            // Granted selector in header (always visible)
-            structure.fields.granted && e('div', { onClick: (ev) => ev.stopPropagation() },
-              e(GrantedSelector, {
-                value: displayData.granted,
-                publishableTo: tableConfig?.publishableTo || [],
-                userRole: 'member',
-                onChange: async (val) => {
-                  try {
-                    const response = await fetch(`/_api/${tableName}/${row.id}`, {
-                      method: 'PUT',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ granted: val })
-                    });
-                    const data = await response.json();
-                    if (data.success) {
-                      this.setState(prev => ({
-                        fullData: {
-                          ...prev.fullData,
-                          granted: val
+                    `${tableIcon} ${cardTitle}`,
+                    e('span', {
+                      style: { fontSize: '11px', color: '#6c757d', fontWeight: 400, marginLeft: '8px' }
+                    }, `(${tableName}/${row.id})`)
+                  );
+                } else {
+                  // Show table/id
+                  return e('h3', {
+                    style: { margin: 0, fontSize: '14px', fontWeight: 600, cursor: 'pointer' },
+                    onClick: (ev) => {
+                      ev.stopPropagation();
+                      this.setState({ expanded: false, editMode: false });
+                    },
+                    title: 'Cliquer pour fermer'
+                  }, `${tableIcon} ${tableName} / ${row.id}`);
+                }
+              })(),
+              // Granted selector below title
+              structure.fields.granted && e('div', { onClick: (ev) => ev.stopPropagation() },
+                e(GrantedSelector, {
+                  value: displayData.granted,
+                  publishableTo: tableConfig?.publishableTo || [],
+                  userRole: 'member',
+                  onChange: async (val) => {
+                    try {
+                      const response = await fetch(`/_api/${tableName}/${row.id}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ granted: val })
+                      });
+                      const data = await response.json();
+                      if (data.success) {
+                        this.setState(prev => ({
+                          fullData: {
+                            ...prev.fullData,
+                            granted: val
+                          }
+                        }));
+                        if (this.props.onUpdate) {
+                          this.props.onUpdate();
                         }
-                      }));
-                      if (this.props.onUpdate) {
-                        this.props.onUpdate();
                       }
+                    } catch (error) {
+                      console.error('Failed to save granted:', error);
                     }
-                  } catch (error) {
-                    console.error('Failed to save granted:', error);
-                  }
-                },
-                disabled: !permissions || !permissions.canPublish,
-                compact: true
-              })
+                  },
+                  disabled: !permissions || !permissions.canPublish,
+                  compact: true
+                })
+              )
             ),
             e('button', {
               style: {
@@ -1510,7 +1509,8 @@ class SubListRow extends React.Component {
                   onClose: this.exitEditMode,
                   onSave: this.handleSave,
                   focusFieldName: focusFieldName,
-                  hideRelations1N: true // Hide 1:N relations in sub-lists
+                  hideRelations1N: true, // Hide 1:N relations in sub-lists
+                  parentTable: this.props.parentTable // Pass parent table to hide supporting relation field
                 })
               : e(SubListRowDetailView, {
                   row: displayData,
@@ -1661,7 +1661,8 @@ class SubList extends React.Component {
             structure,
             tableName,
             tableConfig,
-            permissions
+            permissions,
+            parentTable
           })
         )
       )

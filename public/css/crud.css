@@ -812,16 +812,59 @@ tr.detail-row:not(:has(~ tr)) {
 
   .crud-table {
     font-size: 12px;
+    /* Enable horizontal scroll on mobile with smooth scrolling */
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .crud-table thead,
+  .crud-table tbody {
+    display: table;
+    width: 100%;
   }
 
   .crud-table thead th,
   .crud-table tbody td {
     padding: 4px 6px;
+    /* Ensure minimum width for readability */
+    min-width: 80px;
+  }
+
+  /* Add shadow indicators for scroll */
+  .crud-content {
+    position: relative;
+  }
+
+  .crud-content::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 20px;
+    background: linear-gradient(to left, rgba(0,0,0,0.1), transparent);
+    pointer-events: none;
   }
 
   .modal-content {
     width: 95%;
     max-height: 90vh;
+  }
+
+  /* Optimize detail row header for mobile */
+  tr.detail-row-header td > div {
+    flex-wrap: wrap;
+    gap: 8px !important;
+  }
+
+  /* Make granted selector full width on mobile when in detail row */
+  tr.detail-row-header .granted-selector-compact {
+    width: 100%;
+  }
+
+  tr.detail-row-header .granted-compact-select {
+    width: 100%;
   }
 }
 
@@ -1172,5 +1215,63 @@ tr.detail-row:not(:has(~ tr)) {
 @media (max-width: 768px) {
   .edit-form-grid {
     grid-template-columns: 1fr;
+  }
+
+  .edit-form {
+    padding: 12px;
+  }
+}
+
+/* Tablet and medium screens */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .crud-table {
+    font-size: 13px;
+  }
+
+  .detail-fields {
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  }
+
+  .edit-form-grid {
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  }
+}
+
+/* Small mobile screens (phones in portrait) */
+@media (max-width: 480px) {
+  .crud-header {
+    padding: 6px 8px;
+  }
+
+  .crud-title {
+    font-size: 16px;
+  }
+
+  .crud-table {
+    font-size: 11px;
+  }
+
+  .crud-table thead th,
+  .crud-table tbody td {
+    padding: 3px 4px;
+    min-width: 60px;
+  }
+
+  .detail-fields,
+  .edit-form-grid {
+    gap: 8px;
+  }
+
+  .edit-form {
+    padding: 8px;
+  }
+
+  /* Optimize header row for small screens */
+  tr.detail-row-header h3 {
+    font-size: 13px !important;
+  }
+
+  tr.detail-row-header button {
+    font-size: 16px !important;
   }
 }

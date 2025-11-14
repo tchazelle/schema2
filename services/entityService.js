@@ -165,7 +165,7 @@ class EntityService {
    *
    * @param {Object} relatedEntity - L'entité de la relation
    * @param {string} relatedTable - Nom de la table de la relation
-   * @returns {Object} - Version compacte de la relation
+   * @returns {Object} - Version compacte de la relation avec un champ 'label' pour l'affichage
    */
   static compactRelation(relatedEntity, relatedTable) {
     const displayFields = SchemaService.getDisplayFields(relatedTable);
@@ -181,11 +181,19 @@ class EntityService {
     }
 
     // Inclure les displayFields
+    const labelParts = [];
     for (const field of displayFields) {
       if (relatedEntity[field] !== undefined) {
         compactedEntity[field] = relatedEntity[field];
+        // Collecter les valeurs non vides pour construire le label
+        if (relatedEntity[field] !== null && relatedEntity[field] !== '') {
+          labelParts.push(relatedEntity[field]);
+        }
       }
     }
+
+    // Ajouter un champ 'label' pour faciliter l'affichage dans les composants UI
+    compactedEntity.label = labelParts.length > 0 ? labelParts.join(' ') : `#${relatedEntity.id || '?'}`;
 
     return compactedEntity;
   }
