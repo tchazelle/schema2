@@ -30,24 +30,42 @@ class FieldRenderer extends React.Component {
 
     switch (renderer) {
       case 'telephone':
-        return e('a', {
-          href: `tel:${value}`,
-          className: 'field-value telephone'
-        }, '📞 ', value);
+        return e('span', { className: 'field-value telephone' },
+          e('a', {
+            href: `tel:${value}`,
+            onClick: (ev) => ev.stopPropagation(),
+            className: 'field-icon-link',
+            title: 'Appeler'
+          }, '📞'),
+          ' ',
+          value
+        );
 
       case 'email':
-        return e('a', {
-          href: `mailto:${value}`,
-          className: 'field-value email'
-        }, '📧 ', value);
+        return e('span', { className: 'field-value email' },
+          e('a', {
+            href: `mailto:${value}`,
+            onClick: (ev) => ev.stopPropagation(),
+            className: 'field-icon-link',
+            title: 'Envoyer un email'
+          }, '📧'),
+          ' ',
+          value
+        );
 
       case 'url':
-        return e('a', {
-          href: value,
-          target: '_blank',
-          rel: 'noopener noreferrer',
-          className: 'field-value url'
-        }, '🔗 ', value);
+        return e('span', { className: 'field-value url' },
+          e('a', {
+            href: value,
+            target: '_blank',
+            rel: 'noopener noreferrer',
+            onClick: (ev) => ev.stopPropagation(),
+            className: 'field-icon-link',
+            title: 'Ouvrir le lien'
+          }, '🔗'),
+          ' ',
+          value
+        );
 
       case 'markdown':
         return e('div', {
@@ -445,6 +463,16 @@ class EditForm extends React.Component {
 
     this.saveTimeout = null;
     this.autosaveDelay = SCHEMA_CONFIG?.autosave || 500;
+    this.firstInputRef = React.createRef();
+  }
+
+  componentDidMount() {
+    // Auto-focus first input field
+    if (this.firstInputRef.current) {
+      setTimeout(() => {
+        this.firstInputRef.current.focus();
+      }, 100);
+    }
   }
 
   componentWillUnmount() {
@@ -479,10 +507,13 @@ class EditForm extends React.Component {
     this.setState({ saveStatus: 'saving' });
 
     try {
+      // Remove _relations before sending (it's a computed field, not a database field)
+      const { _relations, ...dataToSend } = formData;
+
       const response = await fetch(`/_api/${tableName}/${row.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(dataToSend)
       });
 
       const data = await response.json();
@@ -507,7 +538,7 @@ class EditForm extends React.Component {
     }
   }
 
-  renderField = (fieldName, field) => {
+  renderField = (fieldName, field, isFirstField = false) => {
     const { formData, errors } = this.state;
     const { structure, tableConfig, permissions } = this.props;
     const value = formData[fieldName];
@@ -616,7 +647,8 @@ class EditForm extends React.Component {
             type: 'text',
             className: 'edit-field-input',
             value: value || '',
-            onChange: (e) => this.handleFieldChange(fieldName, e.target.value)
+            onChange: (e) => this.handleFieldChange(fieldName, e.target.value),
+            ref: isFirstField ? this.firstInputRef : null
           }),
           errors[fieldName] && e('span', { className: 'edit-field-error' }, errors[fieldName])
         );
@@ -656,7 +688,11 @@ class EditForm extends React.Component {
       // Header
       e('div', { className: 'edit-form-header' },
         e('div', { style: { display: 'flex', alignItems: 'center', gap: '12px', flex: 1 } },
-          e('h3', { className: 'edit-form-title' }, `✏️ ${tableName} / ${row.id}`),
+          e('h3', {
+            className: 'edit-form-title clickable',
+            onClick: onClose,
+            title: 'Cliquer pour fermer le formulaire'
+          }, `✏️ ${tableName} / ${row.id}`),
           // Granted selector in header
           structure.fields.granted && e('div', { style: { marginLeft: 'auto' } },
             e(GrantedSelector, {
@@ -686,9 +722,14 @@ class EditForm extends React.Component {
 
       // Form fields grid
       e('div', { className: 'edit-form-grid' },
-        editableFields.map(fieldName => {
+        editableFields.map((fieldName, index) => {
           const field = structure.fields[fieldName];
-          return this.renderField(fieldName, field);
+          // Check if this is the first non-computed field
+          const isFirstField = index === 0 || editableFields.slice(0, index).every(fn => {
+            const f = structure.fields[fn];
+            return f.as || f.calculate || f.relation || fn === 'granted';
+          });
+          return this.renderField(fieldName, field, isFirstField);
         })
       )
     );
