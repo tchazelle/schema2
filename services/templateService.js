@@ -9,7 +9,6 @@ const mustache = require('mustache');
 class TemplateService {
 
   static htmlSection(section) {
-    console.log("section", section.presentationType)
     return `<section data-section="${section.slug}">
     ${section.mustache 
       ? mustache.render(section.mustache, section) 
@@ -57,6 +56,7 @@ class TemplateService {
       <link rel="stylesheet" href="/css/user-menu.css">
       <link rel="stylesheet" href="/css/login-form.css">
       <link rel="stylesheet" href="/css/pages-content.css">
+      <link rel="stylesheet" href="/css/rows.css">
     `
   }
 

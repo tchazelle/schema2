@@ -1,0 +1,113 @@
+/* --- MODE LISTE (PAR DÉFAUT) --- */
+
+
+main.rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+main.rows > article  {
+  display: flex;
+  flex-direction: column;
+  padding: 0.4rem;
+  border: 1px solid #ddd;
+  border-radius: .5rem;
+  background: #fafafa;
+  transition: transform .2s, box-shadow .2s;
+}
+
+main.rows > article:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px #0001;
+}
+
+main.rows [data-field],
+main.rows [data-relation] {
+  display: flex;
+  gap: .5rem;
+  margin-bottom: .5rem;
+}
+
+main.rows .label {
+  font-weight: bold;
+  width: 120px;
+}
+
+
+
+/* --- MODE CARDS : ACTIVÉ UNIQUEMENT SI .cards EST PRÉSENT --- */
+
+main.rows.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  gap: 1.2rem;
+  padding: .5rem;
+}
+
+/* On surcharge seulement ce qui change en mode cards */
+main.rows.cards > article {
+  display: block;
+  border-radius: 1rem;
+  background: #fff;
+  border: 1px solid #eee;
+  box-shadow: 0 2px 6px #0002;
+  transition: transform .2s, box-shadow .2s;
+}
+
+main.rows.cards > article:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 6px 14px #0003;
+}
+
+/* En mode cards, on masque les labels */
+main.rows.cards .label {
+  display: none;
+}
+
+/* Espacement des valeurs */
+main.rows.cards [data-field] .value,
+main.rows.cards [data-relation] .value {
+  margin-bottom: .6rem;
+}
+
+/* Gestion de l’image si présente */
+main.rows.cards [data-field="image"] .value img {
+  width: 100%;
+  border-radius: .5rem;
+}
+
+main.rows.cards .value {
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+main.rows.cards [data-relation=oneToMany] {
+  width: 100%;
+  border-radius: .5rem;
+	
+	grid-template-columns:1fr
+}
+
+article [data-relation=oneToMany] {
+	display: block;
+	grid-template-columns:1fr
+}
+article [data-relation=oneToMany] .value {
+	display: block;
+	width: 100%;
+	
+}
+
+article  article {
+	border:solid 1px red;
+	display: flex;
+  flex-direction: rows;
+  gap: 0.3rem;
+}
+
+article  article  *{
+	padding:0;
+	margin:0;
+	border:solid 1px blue;
+}
