@@ -5,12 +5,132 @@ const { hasPermission, getUserAllRoles } = require('../services/permissionServic
 const schema = require('../schema.js');
 const SchemaService = require('../services/schemaService');
 const EntityService = require('../services/entityService');
+const CrudService = require('../services/crudService');
 
 // getTableStructure() a été déplacée dans SchemaService.getTableStructure()
 
 /**
+ * GET /_crud/:table/data
+ * Returns JSON data for the CRUD list interface
+ */
+router.get('/:table/data', async (req, res) => {
+  try {
+    const { table: tableParam } = req.params;
+    const user = req.user; // Already enriched by userEnrichMiddleware
+
+    // Get query parameters
+    const {
+      limit = 100,
+      offset = 0,
+      orderBy = 'updatedAt',
+      order = 'DESC',
+      search = '',
+      showSystemFields = '0',
+      selectedFields = null
+    } = req.query;
+
+    // Parse selectedFields if provided (comma-separated)
+    const parsedFields = selectedFields ? selectedFields.split(',').map(f => f.trim()) : null;
+
+    // Get list data using CrudService
+    const result = await CrudService.getListData(user, tableParam, {
+      limit: parseInt(limit),
+      offset: parseInt(offset),
+      orderBy,
+      order,
+      search,
+      showSystemFields: showSystemFields === '1',
+      selectedFields: parsedFields
+    });
+
+    if (!result.success) {
+      return res.status(result.error.includes('non trouvée') ? 404 : 403).json(result);
+    }
+
+    res.json(result);
+
+  } catch (error) {
+    console.error('Error fetching CRUD data:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erreur serveur lors de la récupération des données'
+    });
+  }
+});
+
+/**
+ * GET /_crud/:table
+ * Serves the new React-based CRUD list interface
+ */
+router.get('/:table', async (req, res) => {
+  try {
+    const { table: tableParam } = req.params;
+    const user = req.user; // Already enriched by userEnrichMiddleware
+
+    // Normalize table name
+    const table = SchemaService.getTableName(tableParam);
+
+    // Check if table exists
+    if (!table) {
+      return res.status(404).send(`
+        <!DOCTYPE html>
+        <html><body><h1>Table non trouvée</h1><p>La table "${tableParam}" n'existe pas.</p></body></html>
+      `);
+    }
+
+    // Check if user has read permission
+    if (!hasPermission(user, table, 'read')) {
+      return res.status(403).send(`
+        <!DOCTYPE html>
+        <html><body><h1>Accès refusé</h1><p>Vous n'avez pas la permission d'accéder à cette table.</p></body></html>
+      `);
+    }
+
+    // Serve the React-based CRUD interface
+    const html = `
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CRUD - ${table}</title>
+  <link rel="stylesheet" href="/css/common.css">
+  <link rel="stylesheet" href="/css/crud.css">
+
+  <!-- React from CDN (production) -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+</head>
+<body>
+  <div id="root"></div>
+
+  <!-- CRUD List Component -->
+  <script src="/js/crudList.js"></script>
+
+  <script>
+    // Mount the React component
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(React.createElement(CrudList, { table: '${table}' }));
+  </script>
+</body>
+</html>
+    `;
+
+    res.send(html);
+
+  } catch (error) {
+    console.error('Error rendering CRUD page:', error);
+    res.status(500).send(`
+      <!DOCTYPE html>
+      <html><body><h1>Erreur serveur</h1><p>${error.message}</p></body></html>
+    `);
+  }
+});
+
+/**
  * GET /_crud/:table/view
  * Affiche une interface HTML pour visualiser la structure de la table avec fieldSelectorUI
+ * (Legacy route)
  */
 router.get('/:table/view', async (req, res) => {
   try {
@@ -136,11 +256,12 @@ router.get('/:table/view', async (req, res) => {
 });
 
 /**
- * GET /_crud/:table
+ * GET /_crud/:table/structure
  * Retourne la structure des champs accessibles de la table
  * ainsi que les champs des relations si autorisés
+ * (Used by fieldSelectorUI)
  */
-router.get('/:table', async (req, res) => {
+router.get('/:table/structure', async (req, res) => {
   try {
     const { table: tableParam } = req.params;
     const user = req.user; // Déjà enrichi par userEnrichMiddleware
