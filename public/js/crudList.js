@@ -754,7 +754,8 @@ class CrudList extends React.Component {
     const { table } = this.props;
     const { search, orderBy, order, page, limit, displayMode, selectedFields } = this.state;
 
-    const showSystemFields = displayMode === 'all' || displayMode === 'raw';
+    // Only show system fields in 'raw' mode, not in 'all' mode
+    const showSystemFields = displayMode === 'raw';
 
     try {
       const params = new URLSearchParams({
