@@ -407,9 +407,20 @@ class GrantedSelector extends React.Component {
     }
   }
 
+  getTableRoles() {
+    const { tableGranted = {} } = this.props;
+    // Get all roles that have at least "read" permission
+    const rolesWithRead = Object.keys(tableGranted).filter(role => {
+      const permissions = tableGranted[role];
+      return Array.isArray(permissions) && permissions.includes('read');
+    });
+    return rolesWithRead.length > 0 ? rolesWithRead.join(', ') : 'utilisateurs autorisés';
+  }
+
   render() {
-    const { publishableTo = [], userRole = 'member', disabled, compact } = this.props;
+    const { publishableTo = [], tableGranted = {}, disabled, compact } = this.props;
     const { selectedValue, publishRole } = this.state;
+    const tableRolesLabel = this.getTableRoles();
 
     if (compact) {
       return e('div', { className: 'granted-selector-compact' },
@@ -432,7 +443,7 @@ class GrantedSelector extends React.Component {
           title: this.getLabel()
         },
           e('option', { value: 'draft' }, '📝 Brouillon'),
-          e('option', { value: 'shared' }, `👥 Partagée (${userRole})`),
+          e('option', { value: 'shared' }, `👥 Partagée (${tableRolesLabel})`),
           publishableTo.length > 0 && publishableTo.map(role =>
             e('option', { key: role, value: `published:${role}` }, `🌐 Publiée @${role}`)
           )
@@ -475,7 +486,7 @@ class GrantedSelector extends React.Component {
         }),
         e('div', { className: 'granted-option-label' },
           e('strong', null, '👥 Partagée'),
-          e('div', { className: 'granted-option-desc' }, `Partagée avec ${userRole}`)
+          e('div', { className: 'granted-option-desc' }, `Partagée avec ${tableRolesLabel}`)
         )
       ),
 
@@ -682,7 +693,7 @@ class EditForm extends React.Component {
         e(GrantedSelector, {
           value: value,
           publishableTo: tableConfig.publishableTo || [],
-          userRole: 'member', // TODO: Get from user context
+          tableGranted: tableConfig.granted || {},
           onChange: (val) => this.handleFieldChange(fieldName, val),
           disabled: !permissions.canPublish
         })
@@ -825,21 +836,16 @@ class EditForm extends React.Component {
 
       // 1:N Relations
       Object.keys(relations1N).length > 0 && e('div', { className: 'edit-form-relations-1n' },
-        e('h4', null, 'Relations liées'),
         Object.entries(relations1N).map(([relName, relRows]) => {
           const relatedTable = relRows[0]?._table || relName;
 
           return e('div', { key: relName, className: 'relation-section' },
             e('div', {
               className: 'relation-header',
-              style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between' }
+              style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }
             },
-              e('div', {
-                style: { display: 'flex', alignItems: 'center', gap: '6px', flex: 1 }
-              },
-                e('strong', null, relName),
-                e('span', { className: 'relation-count' }, ` (${relRows.length})`)
-              ),
+              e('strong', null, relName),
+              e('span', { className: 'relation-count' }, relRows.length),
               e('button', {
                 className: 'btn-add-relation-item',
                 onClick: (ev) => {
@@ -1078,7 +1084,7 @@ class TableRow extends React.Component {
       // When expanded, show header row with table/id, granted, and close button
       expanded && e('tr', { className: 'detail-row-header' },
         e('td', { colSpan: fields.length },
-          e('div', { style: { display: 'flex', alignItems: 'center', gap: '12px', padding: '8px 12px', background: editMode ? '#f8f9fa' : '#e7f5ff', borderBottom: '1px solid #dee2e6' } },
+          e('div', { style: { display: 'flex', alignItems: 'center', gap: '12px', padding: '8px 12px', background: editMode ? '#f8f9fa' : '#e9ecef', borderBottom: '1px solid #dee2e6' } },
             // Title with displayFields or table/id
             (() => {
               const cardTitle = buildCardTitle(displayData, tableName, tableConfig);
@@ -1126,7 +1132,7 @@ class TableRow extends React.Component {
               e(GrantedSelector, {
                 value: displayData.granted,
                 publishableTo: tableConfig.publishableTo || [],
-                userRole: 'member',
+                tableGranted: tableConfig.granted || {},
                 onChange: async (val) => {
                   // Auto-save granted change
                   try {
@@ -1303,7 +1309,6 @@ class RowDetailView extends React.Component {
 
       // 1:N Relations
       Object.keys(relations1N).length > 0 && e('div', { className: 'detail-relations-1n' },
-        e('h4', null, 'Relations liées'),
         Object.entries(relations1N).map(([relName, relRows]) => {
           const isOpen = openRelations.has(relName);
           const relatedTable = relRows[0]?._table || relName;
@@ -1311,16 +1316,16 @@ class RowDetailView extends React.Component {
           return e('div', { key: relName, className: 'relation-section' },
             e('div', {
               className: 'relation-header',
-              style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between' }
+              style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }
             },
               e('div', {
-                style: { display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', flex: 1 },
+                style: { display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' },
                 onClick: () => this.toggleRelation(relName)
               },
                 e('span', { className: 'relation-toggle' }, isOpen ? '▼' : '▶'),
-                e('strong', null, relName),
-                e('span', { className: 'relation-count' }, ` (${relRows.length})`)
+                e('strong', null, relName)
               ),
+              e('span', { className: 'relation-count' }, relRows.length),
               e('button', {
                 className: 'btn-add-relation-item',
                 onClick: (ev) => {
@@ -1471,7 +1476,7 @@ class SubListRow extends React.Component {
       // When expanded, show header row with table/id, granted, and close button
       expanded && e('tr', { className: 'detail-row-header' },
         e('td', { colSpan: fields.length },
-          e('div', { style: { display: 'flex', alignItems: 'center', gap: '12px', padding: '8px 12px', background: editMode ? '#f8f9fa' : '#e7f5ff', borderBottom: '1px solid #dee2e6' } },
+          e('div', { style: { display: 'flex', alignItems: 'center', gap: '12px', padding: '8px 12px', background: editMode ? '#f8f9fa' : '#e9ecef', borderBottom: '1px solid #dee2e6' } },
             // Title with displayFields or table/id
             (() => {
               const cardTitle = buildCardTitle(displayData, tableName, tableConfig);
@@ -1519,7 +1524,7 @@ class SubListRow extends React.Component {
               e(GrantedSelector, {
                 value: displayData.granted,
                 publishableTo: tableConfig?.publishableTo || [],
-                userRole: 'member',
+                tableGranted: tableConfig?.granted || {},
                 onChange: async (val) => {
                   try {
                     const response = await fetch(`/_api/${tableName}/${row.id}`, {
