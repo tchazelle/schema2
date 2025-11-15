@@ -1058,6 +1058,9 @@ tr.detail-row td {
     display: block;
     padding: 0;
     border: none;
+    max-height: none;
+    white-space: normal;
+    overflow: visible;
   }
 
   .sub-list-table tbody tr td::before {
@@ -1068,6 +1071,11 @@ tr.detail-row td {
     font-weight: 600;
     margin-bottom: 3px;
     letter-spacing: 0.3px;
+  }
+
+  .sub-list-table tbody tr td .field-value {
+    max-height: none;
+    white-space: normal;
   }
 }
 

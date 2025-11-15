@@ -818,13 +818,37 @@ class EditForm extends React.Component {
     );
 
     // Extract 1:N relations (only if not hidden)
-    const relations1N = {};
-    if (!hideRelations1N && row._relations) {
-      Object.entries(row._relations).forEach(([key, value]) => {
-        if (Array.isArray(value)) {
-          relations1N[key] = value;
+    const relations1N = [];
+    if (!hideRelations1N) {
+      // Get all defined 1:N relations from schema IN ORDER
+      Object.entries(structure.fields).forEach(([fieldName, field]) => {
+        if (field.arrayName) {
+          const relName = field.arrayName;
+          const relData = (row._relations && row._relations[relName]) || [];
+          const relatedTable = field.relation;
+
+          relations1N.push({
+            name: relName,
+            data: Array.isArray(relData) ? relData : [],
+            relatedTable: relatedTable,
+            relationshipStrength: field.relationshipStrength
+          });
         }
       });
+
+      // Also include any 1:N relations from row._relations not yet in relations1N
+      if (row._relations) {
+        Object.entries(row._relations).forEach(([key, value]) => {
+          if (Array.isArray(value) && !relations1N.find(r => r.name === key)) {
+            relations1N.push({
+              name: key,
+              data: value,
+              relatedTable: value[0]?._table || key,
+              relationshipStrength: 'Weak'
+            });
+          }
+        });
+      }
     }
 
     return e('div', { className: 'edit-form' },
@@ -845,9 +869,11 @@ class EditForm extends React.Component {
       ),
 
       // 1:N Relations
-      Object.keys(relations1N).length > 0 && e('div', { className: 'edit-form-relations-1n' },
-        Object.entries(relations1N).map(([relName, relRows]) => {
-          const relatedTable = relRows[0]?._table || relName;
+      relations1N.length > 0 && e('div', { className: 'edit-form-relations-1n' },
+        relations1N.map((relation) => {
+          const relName = relation.name;
+          const relRows = relation.data;
+          const relatedTable = relation.relatedTable;
 
           return e('div', { key: relName, className: 'relation-section' },
             e('div', {
@@ -924,11 +950,12 @@ class RelationRenderer extends React.Component {
  */
 class TableHeader extends React.Component {
   render() {
-    const { fields, structure, orderBy, order, onSort, displayMode } = this.props;
+    const { fields, structure, orderBy, order, onSort, displayMode, showDeleteButton, permissions } = this.props;
 
     if (displayMode === 'raw') {
       return e('thead', null,
         e('tr', null,
+          showDeleteButton && permissions && permissions.canDelete && e('th', { key: 'delete-header', style: { width: '40px' } }, ''),
           fields.map(fieldName =>
             e('th', { key: fieldName }, fieldName)
           )
@@ -938,6 +965,7 @@ class TableHeader extends React.Component {
 
     return e('thead', null,
       e('tr', null,
+        showDeleteButton && permissions && permissions.canDelete && e('th', { key: 'delete-header', style: { width: '40px' } }, ''),
         fields.map(fieldName => {
           const field = structure.fields[fieldName];
           const label = field?.label || fieldName;
@@ -1046,8 +1074,37 @@ class TableRow extends React.Component {
     }
   }
 
+  handleDelete = async (e) => {
+    e.stopPropagation();
+    const { row, tableName, onUpdate } = this.props;
+
+    if (!confirm(`Êtes-vous sûr de vouloir supprimer cet enregistrement ?`)) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/_api/${tableName}/${row.id}`, {
+        method: 'DELETE'
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Refresh list
+        if (onUpdate) {
+          onUpdate();
+        }
+      } else {
+        alert(`Erreur lors de la suppression : ${data.error}`);
+      }
+    } catch (error) {
+      console.error('Delete error:', error);
+      alert(`Erreur lors de la suppression : ${error.message}`);
+    }
+  }
+
   render() {
-    const { row, fields, structure, displayMode, tableName, permissions, tableConfig, parentTable } = this.props;
+    const { row, fields, structure, displayMode, tableName, permissions, tableConfig, parentTable, showDeleteButton } = this.props;
     const { expanded, editMode, fullData, loading, focusFieldName } = this.state;
 
     if (displayMode === 'raw') {
@@ -1067,6 +1124,28 @@ class TableRow extends React.Component {
         onClick: this.toggleExpand,
         onDoubleClick: this.enterEditMode
       },
+        // Delete button column (if enabled)
+        showDeleteButton && permissions && permissions.canDelete && e('td', {
+          key: 'delete-col',
+          'data-label': 'Supprimer',
+          style: { width: '40px', textAlign: 'center' }
+        },
+          e('button', {
+            className: 'btn-delete-row',
+            onClick: this.handleDelete,
+            title: 'Supprimer cet enregistrement',
+            style: {
+              background: '#dc3545',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              padding: '4px 8px',
+              cursor: 'pointer',
+              fontSize: '12px'
+            }
+          }, '🗑️')
+        ),
+        // Regular field columns
         fields.map(fieldName => {
           const field = structure.fields[fieldName];
           const value = row[fieldName];
@@ -1115,6 +1194,22 @@ class TableRow extends React.Component {
 }
 
 /**
+ * Get icon representing the granted status
+ * @param {string} granted - The granted value (draft, shared, published @role)
+ * @returns {string} - Emoji icon
+ */
+function getGrantedIcon(granted) {
+  if (!granted || granted === 'draft') {
+    return '📝'; // Draft - pencil
+  } else if (granted === 'shared') {
+    return '👥'; // Shared - people
+  } else if (granted.startsWith('published @')) {
+    return '🌐'; // Published - globe
+  }
+  return '📋'; // Default - clipboard
+}
+
+/**
  * Row Detail Modal Component
  * Full-screen modal with fixed header containing title, granted selector, and close button
  */
@@ -1155,7 +1250,7 @@ class RowDetailModal extends React.Component {
     } = this.props;
 
     const cardTitle = buildCardTitle(row, tableName, tableConfig);
-    const tableIcon = editMode ? '📄' : '📋';
+    const grantedIcon = getGrantedIcon(row.granted);
 
     return e('div', {
       className: 'modal-overlay-detail',
@@ -1169,7 +1264,7 @@ class RowDetailModal extends React.Component {
             e('h3', {
               className: 'modal-title-detail'
             },
-              `${tableIcon} `,
+              `${grantedIcon} `,
               cardTitle ? [
                 cardTitle,
                 e('span', {
@@ -1258,16 +1353,19 @@ class RowDetailView extends React.Component {
   }
 
   componentDidMount() {
-    const { row } = this.props;
-    if (row._relations) {
-      const strongRelations = new Set();
-      Object.entries(row._relations).forEach(([relName, relData]) => {
-        if (Array.isArray(relData) && relData.length > 0) {
-          strongRelations.add(relName);
+    const { row, structure } = this.props;
+    // Open "Strong" relations by default, keep "Weak" relations closed
+    const strongRelations = new Set();
+
+    if (structure && structure.fields) {
+      Object.entries(structure.fields).forEach(([fieldName, field]) => {
+        if (field.arrayName && field.relationshipStrength === 'Strong') {
+          strongRelations.add(field.arrayName);
         }
       });
-      this.setState({ openRelations: strongRelations });
     }
+
+    this.setState({ openRelations: strongRelations });
   }
 
   toggleRelation = (relName) => {
@@ -1301,30 +1399,38 @@ class RowDetailView extends React.Component {
     );
 
     // Collect all 1:N relations defined in schema (even if empty)
-    const relations1N = {};
+    // Maintain order from schema definition
+    const relations1N = [];
 
-    // First, get all defined 1:N relations from schema
+    // Get all defined 1:N relations from schema IN ORDER
     Object.entries(structure.fields).forEach(([fieldName, field]) => {
       if (field.arrayName) {
         // This field has a reverse relation (1:N)
         const relName = field.arrayName;
         // Check if data exists in row._relations, otherwise use empty array
         const relData = (row._relations && row._relations[relName]) || [];
-        if (Array.isArray(relData) || relData.length === 0) {
-          relations1N[relName] = Array.isArray(relData) ? relData : [];
-          // Store the related table name for empty relations
-          if (!relations1N[relName]._table && field.relation) {
-            relations1N[relName]._relatedTable = field.relation;
-          }
-        }
+        const relatedTable = field.relation;
+
+        relations1N.push({
+          name: relName,
+          data: Array.isArray(relData) ? relData : [],
+          relatedTable: relatedTable,
+          relationshipStrength: field.relationshipStrength
+        });
       }
     });
 
     // Also include any 1:N relations from row._relations not yet in relations1N
+    // (for backwards compatibility)
     if (row._relations) {
       Object.entries(row._relations).forEach(([key, value]) => {
-        if (Array.isArray(value) && !relations1N[key]) {
-          relations1N[key] = value;
+        if (Array.isArray(value) && !relations1N.find(r => r.name === key)) {
+          relations1N.push({
+            name: key,
+            data: value,
+            relatedTable: value[0]?._table || key,
+            relationshipStrength: 'Weak'
+          });
         }
       });
     }
@@ -1376,10 +1482,12 @@ class RowDetailView extends React.Component {
       ),
 
       // 1:N Relations (show all, even empty ones, unless hideRelations1N is true)
-      !hideRelations1N && Object.keys(relations1N).length > 0 && e('div', { className: 'detail-relations-1n' },
-        Object.entries(relations1N).map(([relName, relRows]) => {
+      !hideRelations1N && relations1N.length > 0 && e('div', { className: 'detail-relations-1n' },
+        relations1N.map((relation) => {
+          const relName = relation.name;
+          const relRows = relation.data;
+          const relatedTable = relation.relatedTable;
           const isOpen = openRelations.has(relName);
-          const relatedTable = relRows[0]?._table || relRows._relatedTable || relName;
           const count = relRows.length;
 
           return e('div', { key: relName, className: 'relation-section' },
@@ -1429,7 +1537,11 @@ class SubList extends React.Component {
       tableConfig: null,
       permissions: null,
       orderBy: 'updatedAt',
-      order: 'DESC'
+      order: 'DESC',
+      displayMode: 'default',
+      showDeleteButtons: false,
+      selectedFields: null,
+      showFieldSelector: false
     };
   }
 
@@ -1455,6 +1567,29 @@ class SubList extends React.Component {
     } catch (error) {
       console.error('Failed to fetch table structure:', error);
     }
+  }
+
+  handleDisplayModeChange = (mode) => {
+    this.setState({ displayMode: mode });
+  }
+
+  handleToggleDeleteButtons = () => {
+    this.setState(prev => ({ showDeleteButtons: !prev.showDeleteButtons }));
+  }
+
+  handleShowFieldSelector = () => {
+    this.setState({ showFieldSelector: true });
+  }
+
+  handleCloseFieldSelector = () => {
+    this.setState({ showFieldSelector: false });
+  }
+
+  handleApplyFieldSelection = (fields) => {
+    this.setState({
+      selectedFields: fields,
+      displayMode: 'custom'
+    });
   }
 
   handleSort = (fieldName) => {
@@ -1509,7 +1644,7 @@ class SubList extends React.Component {
 
   render() {
     const { rows, tableName, parentTable } = this.props;
-    const { structure, tableConfig, permissions, orderBy, order } = this.state;
+    const { structure, tableConfig, permissions, orderBy, order, displayMode, showDeleteButtons, selectedFields, showFieldSelector } = this.state;
 
     if (!rows || rows.length === 0) {
       return e('div', { className: 'sub-list-empty' }, 'Aucune donnée');
@@ -1519,39 +1654,80 @@ class SubList extends React.Component {
       return e('div', { className: 'sub-list-loading' }, 'Chargement...');
     }
 
+    // Get all fields from first row
     const firstRow = rows[0];
-    const fields = Object.keys(firstRow).filter(f =>
+    const allFields = Object.keys(firstRow).filter(f =>
       !f.startsWith('_') &&
-      !['id', 'ownerId', 'granted', 'createdAt', 'updatedAt'].includes(f) &&
       !this.isParentField(f, parentTable)
     );
+
+    // Filter fields based on display mode
+    let fields;
+    if (displayMode === 'raw') {
+      fields = allFields;
+    } else if (displayMode === 'all') {
+      fields = allFields;
+    } else if (displayMode === 'custom' && selectedFields && selectedFields.length > 0) {
+      fields = selectedFields.filter(f => allFields.includes(f));
+    } else {
+      // default: exclude system fields
+      fields = allFields.filter(f =>
+        !['id', 'ownerId', 'granted', 'createdAt', 'updatedAt'].includes(f)
+      );
+    }
 
     // Sort rows
     const sortedRows = this.sortRows(rows, orderBy, order);
 
-    return e('table', { className: 'sub-list-table' },
-      e(TableHeader, {
-        fields,
-        structure,
-        orderBy,
-        order,
-        onSort: this.handleSort,
-        displayMode: 'default'
-      }),
-      e('tbody', null,
-        sortedRows.map((row, idx) =>
-          e(TableRow, {
-            key: row.id || idx,
-            row,
-            fields,
-            structure,
-            tableName,
-            parentTable,
-            tableConfig,
-            permissions
-          })
+    return e('div', { className: 'sub-list-container', style: { position: 'relative' } },
+      // Header with three-dots menu
+      e('div', { style: { display: 'flex', justifyContent: 'flex-end', padding: '4px 0', marginBottom: '4px' } },
+        e(ThreeDotsMenu, {
+          displayMode,
+          onDisplayModeChange: this.handleDisplayModeChange,
+          onFieldSelect: this.handleShowFieldSelector,
+          onToggleDelete: this.handleToggleDeleteButtons,
+          showDeleteButtons
+        })
+      ),
+
+      // Table
+      e('table', { className: 'sub-list-table' },
+        e(TableHeader, {
+          fields,
+          structure,
+          orderBy,
+          order,
+          onSort: this.handleSort,
+          displayMode,
+          showDeleteButton: showDeleteButtons,
+          permissions
+        }),
+        e('tbody', null,
+          sortedRows.map((row, idx) =>
+            e(TableRow, {
+              key: row.id || idx,
+              row,
+              fields,
+              structure,
+              tableName,
+              parentTable,
+              tableConfig,
+              permissions,
+              showDeleteButton: showDeleteButtons
+            })
+          )
         )
-      )
+      ),
+
+      // Field selector modal
+      showFieldSelector && e(FieldSelectorModal, {
+        allFields,
+        selectedFields,
+        structure,
+        onApply: this.handleApplyFieldSelection,
+        onClose: this.handleCloseFieldSelector
+      })
     );
   }
 
@@ -1703,7 +1879,7 @@ class ThreeDotsMenu extends React.Component {
   }
 
   render() {
-    const { displayMode, onDisplayModeChange, onFieldSelect } = this.props;
+    const { displayMode, onDisplayModeChange, onFieldSelect, onToggleDelete, showDeleteButtons } = this.props;
     const { isOpen } = this.state;
 
     return e('div', { className: 'menu-dots', ref: this.menuRef },
@@ -1748,7 +1924,15 @@ class ThreeDotsMenu extends React.Component {
         e('button', {
           className: 'menu-item',
           onClick: () => this.handleOptionClick('onFieldSelect')
-        }, '🎯 Sélectionner les champs')
+        }, '🎯 Sélectionner les champs'),
+        onToggleDelete && [
+          e('div', { key: 'divider-delete', className: 'menu-divider' }),
+          e('button', {
+            key: 'toggle-delete',
+            className: `menu-item ${showDeleteButtons ? 'active' : ''}`,
+            onClick: () => this.handleOptionClick('onToggleDelete')
+          }, showDeleteButtons ? '✓ ' : '', '🗑️ Mode suppression')
+        ]
       )
     );
   }
@@ -1771,6 +1955,7 @@ class CrudList extends React.Component {
       showSystemFields: false,
       selectedFields: null,
       showFieldSelector: false,
+      showDeleteButtons: false,
       page: 0,
       limit: 100
     };
@@ -1936,6 +2121,10 @@ class CrudList extends React.Component {
     }), this.loadData);
   }
 
+  handleToggleDeleteButtons = () => {
+    this.setState(prev => ({ showDeleteButtons: !prev.showDeleteButtons }));
+  }
+
   handleAddNew = () => {
     // For now, just reload. Could open a modal or navigate to create form
     window.location.href = `/_crud/${this.props.table}?new=1`;
@@ -1943,7 +2132,7 @@ class CrudList extends React.Component {
 
   render() {
     const { table } = this.props;
-    const { loading, error, data, search, orderBy, order, displayMode, showFieldSelector, selectedFields } = this.state;
+    const { loading, error, data, search, orderBy, order, displayMode, showFieldSelector, selectedFields, showDeleteButtons } = this.state;
 
     return e('div', { className: 'crud-list-container' },
       // Header
@@ -1964,7 +2153,9 @@ class CrudList extends React.Component {
           e(ThreeDotsMenu, {
             displayMode,
             onDisplayModeChange: this.handleDisplayModeChange,
-            onFieldSelect: this.handleShowFieldSelector
+            onFieldSelect: this.handleShowFieldSelector,
+            onToggleDelete: this.handleToggleDeleteButtons,
+            showDeleteButtons
           })
         )
       ),
@@ -1981,7 +2172,9 @@ class CrudList extends React.Component {
             orderBy,
             order,
             onSort: this.handleSort,
-            displayMode
+            displayMode,
+            showDeleteButton: showDeleteButtons,
+            permissions: data.permissions
           }),
           e('tbody', null,
             data.rows.map((row, idx) =>
@@ -1994,7 +2187,8 @@ class CrudList extends React.Component {
                 tableName: table,
                 permissions: data.permissions,
                 tableConfig: data.tableConfig,
-                onUpdate: this.loadData
+                onUpdate: this.loadData,
+                showDeleteButton: showDeleteButtons
               })
             )
           )
