@@ -7,7 +7,7 @@ module.exports = {
   seo: "schema.org microdata",
   maxRows: 1000,
   maxColWidth:"20em",
-  maxColHeight:"1em",
+  maxColHeight:"3em",
 
   // Enregistrement automatique avec debounce  + sauvegarde garantie
   autosave: 500, // debounce en ms 
