@@ -1047,7 +1047,7 @@ class TableRow extends React.Component {
   }
 
   render() {
-    const { row, fields, structure, displayMode, tableName, permissions, tableConfig } = this.props;
+    const { row, fields, structure, displayMode, tableName, permissions, tableConfig, parentTable } = this.props;
     const { expanded, editMode, fullData, loading, focusFieldName } = this.state;
 
     if (displayMode === 'raw') {
@@ -1085,7 +1085,7 @@ class TableRow extends React.Component {
                 })
               : e(FieldRenderer, {
                   value,
-                  field,
+                  field: field || { type: 'text' },
                   tableName
                 })
           );
@@ -1095,9 +1095,9 @@ class TableRow extends React.Component {
       expanded && e(RowDetailModal, {
         row: displayData,
         tableName,
-        tableConfig,
+        tableConfig: tableConfig || {},
         structure,
-        permissions,
+        permissions: permissions || {},
         editMode,
         loading,
         focusFieldName,
@@ -1105,7 +1105,10 @@ class TableRow extends React.Component {
         onEnterEditMode: this.enterEditMode,
         onExitEditMode: this.exitEditMode,
         onSave: this.handleSave,
-        onUpdate: this.props.onUpdate
+        onUpdate: this.props.onUpdate,
+        // Props for sub-lists (automatically enabled when parentTable is provided)
+        parentTable: parentTable,
+        hideRelations1N: !!parentTable
       })
     );
   }
@@ -1228,23 +1231,15 @@ class RowDetailModal extends React.Component {
                   parentTable,
                   hideRelations1N
                 })
-              : (parentTable
-                  ? e(SubListRowDetailView, {
-                      row,
-                      structure,
-                      tableName,
-                      parentTable,
-                      permissions,
-                      onEdit: onEnterEditMode
-                    })
-                  : e(RowDetailView, {
-                      row,
-                      structure,
-                      tableName,
-                      permissions,
-                      onEdit: onEnterEditMode
-                    })
-                )
+              : e(RowDetailView, {
+                  row,
+                  structure,
+                  tableName,
+                  permissions,
+                  onEdit: onEnterEditMode,
+                  parentTable,
+                  hideRelations1N
+                })
         )
       )
     );
@@ -1287,12 +1282,22 @@ class RowDetailView extends React.Component {
     });
   }
 
+  isParentField(fieldName) {
+    const { parentTable } = this.props;
+    if (!parentTable) return false;
+
+    const lowerField = fieldName.toLowerCase();
+    const lowerParent = parentTable.toLowerCase();
+    return lowerField.includes(lowerParent) || lowerField === `id${lowerParent}`;
+  }
+
   render() {
-    const { row, structure, tableName, permissions, onEdit } = this.props;
+    const { row, structure, tableName, permissions, onEdit, parentTable, hideRelations1N } = this.props;
     const { openRelations } = this.state;
 
     const allFields = Object.keys(structure.fields).filter(f =>
-      !['id', 'ownerId', 'granted', 'createdAt', 'updatedAt'].includes(f)
+      !['id', 'ownerId', 'granted', 'createdAt', 'updatedAt'].includes(f) &&
+      !this.isParentField(f)
     );
 
     // Collect all 1:N relations defined in schema (even if empty)
@@ -1370,8 +1375,8 @@ class RowDetailView extends React.Component {
         })
       ),
 
-      // 1:N Relations (show all, even empty ones)
-      Object.keys(relations1N).length > 0 && e('div', { className: 'detail-relations-1n' },
+      // 1:N Relations (show all, even empty ones, unless hideRelations1N is true)
+      !hideRelations1N && Object.keys(relations1N).length > 0 && e('div', { className: 'detail-relations-1n' },
         Object.entries(relations1N).map(([relName, relRows]) => {
           const isOpen = openRelations.has(relName);
           const relatedTable = relRows[0]?._table || relRows._relatedTable || relName;
@@ -1414,225 +1419,6 @@ class RowDetailView extends React.Component {
 }
 
 /**
- * Sub-List Row Component (for rows in 1:N relations)
- * Similar to TableRow but without 1:N relations
- */
-class SubListRow extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      expanded: false,
-      editMode: false,
-      fullData: null,
-      loading: false,
-      focusFieldName: null
-    };
-    this.handleKeyDown = this.handleKeyDown.bind(this);
-  }
-
-  componentDidMount() {
-    document.addEventListener('keydown', this.handleKeyDown);
-  }
-
-  componentWillUnmount() {
-    document.removeEventListener('keydown', this.handleKeyDown);
-  }
-
-  handleKeyDown(event) {
-    // Close on ESC key if this row is expanded
-    if (event.key === 'Escape' && this.state.expanded) {
-      this.setState({ expanded: false, editMode: false });
-    }
-  }
-
-  toggleExpand = async () => {
-    const { expanded, fullData, editMode } = this.state;
-    const { row, tableName } = this.props;
-
-    if (editMode) return;
-
-    if (!expanded && !fullData) {
-      this.setState({ loading: true, expanded: true });
-
-      try {
-        const response = await fetch(`/_api/${tableName}/${row.id}?relation=all&compact=1`);
-        const data = await response.json();
-
-        if (data.success && data.rows && data.rows.length > 0) {
-          this.setState({
-            loading: false,
-            fullData: data.rows[0]
-          });
-        } else {
-          console.error('Failed to fetch full data:', data.error || 'No data returned');
-          this.setState({ loading: false });
-        }
-      } catch (error) {
-        console.error('Error fetching full data:', error);
-        this.setState({ loading: false });
-      }
-    } else {
-      this.setState({ expanded: !expanded });
-    }
-  }
-
-  enterEditMode = (focusFieldName = null) => {
-    const { permissions } = this.props;
-    if (permissions && permissions.canUpdate) {
-      this.setState({ editMode: true, expanded: true, focusFieldName });
-    }
-  }
-
-  exitEditMode = () => {
-    this.setState({ editMode: false, focusFieldName: null });
-  }
-
-  handleSave = (updatedData) => {
-    this.setState(prev => ({
-      fullData: {
-        ...prev.fullData,
-        ...updatedData
-      }
-    }));
-
-    if (this.props.onUpdate) {
-      this.props.onUpdate();
-    }
-  }
-
-  render() {
-    const { row, fields, structure, tableName, tableConfig, permissions } = this.props;
-    const { expanded, editMode, fullData, loading, focusFieldName } = this.state;
-
-    const displayData = fullData || row;
-
-    return e(React.Fragment, null,
-      // Always show the data row (no substitution)
-      e('tr', {
-        className: `data-row ${expanded ? 'expanded' : ''}`,
-        onClick: this.toggleExpand,
-        onDoubleClick: this.enterEditMode
-      },
-        fields.map(fieldName => {
-          const field = structure.fields[fieldName];
-          const value = row[fieldName];
-          const relationData = row._relations && row._relations[fieldName];
-          const label = field?.label || fieldName;
-
-          return e('td', {
-            key: fieldName,
-            'data-label': label  // Add data-label for responsive cards
-          },
-            relationData
-              ? e(RelationRenderer, {
-                  relation: relationData,
-                  fieldName,
-                  relatedTable: field?.relation
-                })
-              : e(FieldRenderer, {
-                  value,
-                  field: field || { type: 'text' },
-                  tableName
-                })
-          );
-        })
-      ),
-      // Modal overlay when expanded
-      expanded && e(RowDetailModal, {
-        row: displayData,
-        tableName,
-        tableConfig: tableConfig || {},
-        structure,
-        permissions: permissions || {},
-        editMode,
-        loading,
-        focusFieldName,
-        onClose: () => this.setState({ expanded: false, editMode: false }),
-        onEnterEditMode: this.enterEditMode,
-        onExitEditMode: this.exitEditMode,
-        onSave: this.handleSave,
-        onUpdate: this.props.onUpdate,
-        // Special props for sub-lists
-        parentTable: this.props.parentTable,
-        hideRelations1N: true
-      })
-    );
-  }
-}
-
-/**
- * Sub-List Row Detail View (without 1:N relations)
- */
-class SubListRowDetailView extends React.Component {
-  isParentField(fieldName) {
-    const { parentTable } = this.props;
-    if (!parentTable) return false;
-
-    const lowerField = fieldName.toLowerCase();
-    const lowerParent = parentTable.toLowerCase();
-    return lowerField.includes(lowerParent) || lowerField === `id${lowerParent}`;
-  }
-
-  render() {
-    const { row, structure, tableName, permissions, onEdit, parentTable } = this.props;
-
-    // Filter out system fields AND parent relation fields
-    const allFields = Object.keys(structure.fields).filter(f =>
-      !['id', 'ownerId', 'granted', 'createdAt', 'updatedAt'].includes(f) &&
-      !this.isParentField(f)
-    );
-
-    const handleFieldClick = (fieldName, e) => {
-      if (permissions && permissions.canUpdate) {
-        e.stopPropagation();
-        onEdit(fieldName);
-      }
-    };
-
-    return e('div', { className: 'row-detail' },
-      // Fields grid - clickable to edit
-      e('div', {
-        className: 'detail-fields',
-        title: permissions && permissions.canUpdate ? 'Cliquer sur un champ pour éditer' : ''
-      },
-        allFields.map(fieldName => {
-          const field = structure.fields[fieldName];
-          const value = row[fieldName];
-          const label = field?.label || fieldName;
-
-          const relationN1 = row._relations && row._relations[fieldName] && !Array.isArray(row._relations[fieldName])
-            ? row._relations[fieldName]
-            : null;
-
-          return e('div', {
-            key: fieldName,
-            className: 'detail-field',
-            style: permissions && permissions.canUpdate ? { cursor: 'pointer' } : {},
-            onClick: (e) => handleFieldClick(fieldName, e)
-          },
-            e('label', { className: 'detail-label' }, label),
-            e('div', { className: 'detail-value' },
-              relationN1
-                ? e(RelationRenderer, {
-                    relation: relationN1,
-                    fieldName: fieldName,
-                    relatedTable: field.relation
-                  })
-                : e(FieldRenderer, {
-                    value,
-                    field,
-                    tableName
-                  })
-            )
-          );
-        })
-      )
-      // NO 1:N relations in sub-lists
-    );
-  }
-}
-
-/**
  * Sub-List Component
  */
 class SubList extends React.Component {
@@ -1641,7 +1427,9 @@ class SubList extends React.Component {
     this.state = {
       structure: null,
       tableConfig: null,
-      permissions: null
+      permissions: null,
+      orderBy: 'updatedAt',
+      order: 'DESC'
     };
   }
 
@@ -1669,9 +1457,59 @@ class SubList extends React.Component {
     }
   }
 
+  handleSort = (fieldName) => {
+    this.setState(prev => {
+      if (prev.orderBy === fieldName) {
+        // Cycle through: ASC -> DESC -> default (updatedAt DESC)
+        if (prev.order === 'ASC') {
+          return {
+            orderBy: fieldName,
+            order: 'DESC'
+          };
+        } else {
+          // Third click: return to default sort
+          return {
+            orderBy: 'updatedAt',
+            order: 'DESC'
+          };
+        }
+      } else {
+        // First click on a new field: start with ASC
+        return {
+          orderBy: fieldName,
+          order: 'ASC'
+        };
+      }
+    });
+  }
+
+  sortRows(rows, orderBy, order) {
+    if (!rows || rows.length === 0) return rows;
+
+    return [...rows].sort((a, b) => {
+      let valA = a[orderBy];
+      let valB = b[orderBy];
+
+      // Handle null/undefined values
+      if (valA === null || valA === undefined) return 1;
+      if (valB === null || valB === undefined) return -1;
+
+      // Handle different types
+      if (typeof valA === 'string' && typeof valB === 'string') {
+        valA = valA.toLowerCase();
+        valB = valB.toLowerCase();
+      }
+
+      // Compare
+      if (valA < valB) return order === 'ASC' ? -1 : 1;
+      if (valA > valB) return order === 'ASC' ? 1 : -1;
+      return 0;
+    });
+  }
+
   render() {
     const { rows, tableName, parentTable } = this.props;
-    const { structure, tableConfig, permissions } = this.state;
+    const { structure, tableConfig, permissions, orderBy, order } = this.state;
 
     if (!rows || rows.length === 0) {
       return e('div', { className: 'sub-list-empty' }, 'Aucune donnée');
@@ -1688,19 +1526,21 @@ class SubList extends React.Component {
       !this.isParentField(f, parentTable)
     );
 
+    // Sort rows
+    const sortedRows = this.sortRows(rows, orderBy, order);
+
     return e('table', { className: 'sub-list-table' },
-      e('thead', null,
-        e('tr', null,
-          fields.map(f => {
-            const field = structure.fields[f];
-            const label = field?.label || f;
-            return e('th', { key: f }, label);
-          })
-        )
-      ),
+      e(TableHeader, {
+        fields,
+        structure,
+        orderBy,
+        order,
+        onSort: this.handleSort,
+        displayMode: 'default'
+      }),
       e('tbody', null,
-        rows.map((row, idx) =>
-          e(SubListRow, {
+        sortedRows.map((row, idx) =>
+          e(TableRow, {
             key: row.id || idx,
             row,
             fields,
