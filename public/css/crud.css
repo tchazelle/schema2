@@ -993,6 +993,8 @@ tr.detail-row td {
     border: none;
     white-space: normal;
     overflow: visible;
+    overflow-wrap: break-word;
+    word-break: break-word;
   }
 
   /* Label avant chaque valeur */
@@ -1064,6 +1066,8 @@ tr.detail-row td {
     max-height: none;
     white-space: normal;
     overflow: visible;
+    overflow-wrap: break-word;
+    word-break: break-word;
   }
 
   .sub-list-table tbody tr td::before {

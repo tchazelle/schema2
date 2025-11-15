@@ -965,9 +965,20 @@ class RelationRenderer extends React.Component {
   getDisplayValue(relation) {
     if (typeof relation === 'string') return relation;
 
+    // Priority 1: Use _label if available (built from displayFields by API)
+    if (relation._label) {
+      return relation._label;
+    }
+
+    // Priority 2: Use label if available (fallback)
+    if (relation.label) {
+      return relation.label;
+    }
+
+    // Priority 3: Collect non-system fields
     const values = [];
     for (const key in relation) {
-      if (key !== 'id' && key !== '_table' && relation[key]) {
+      if (key !== 'id' && key !== '_table' && !key.startsWith('_') && relation[key]) {
         values.push(relation[key]);
       }
     }
@@ -991,6 +1002,7 @@ class TableHeader extends React.Component {
       return e('thead', null,
         e('tr', null,
           showDeleteButton && permissions && permissions.canDelete && e('th', { key: 'delete-header', style: { width: '40px' } }, ''),
+          e('th', { key: 'granted-header', style: { width: '40px' } }, ''),
           fields.map(fieldName =>
             e('th', { key: fieldName }, fieldName)
           )
@@ -1001,6 +1013,7 @@ class TableHeader extends React.Component {
     return e('thead', null,
       e('tr', null,
         showDeleteButton && permissions && permissions.canDelete && e('th', { key: 'delete-header', style: { width: '40px' } }, ''),
+        e('th', { key: 'granted-header', style: { width: '40px', textAlign: 'center' }, title: 'Statut de publication' }, '📋'),
         fields.map(fieldName => {
           const field = structure.fields[fieldName];
           const label = field?.label || fieldName;
@@ -1180,6 +1193,12 @@ class TableRow extends React.Component {
             }
           }, '🗑️')
         ),
+        // Granted column (always shown)
+        e('td', {
+          key: 'granted-col',
+          'data-label': 'Statut',
+          style: { width: '40px', textAlign: 'center', fontSize: '16px' }
+        }, getGrantedIcon(row.granted)),
         // Regular field columns
         fields.map(fieldName => {
           const field = structure.fields[fieldName];
@@ -2960,7 +2979,7 @@ class CreateFormModal extends React.Component {
           e('div', { className: 'modal-title-section' },
             e('h3', { className: 'modal-title-detail' },
               `➕ Nouvelle fiche ${tableName}`,
-              parentTable && e('span', { key: 'parent', className: 'modal-subtitle' }, ` (liée à ${parentTable})`)
+              parentTable && typeof parentTable === 'string' && e('span', { key: 'parent', className: 'modal-subtitle' }, ` (liée à ${parentTable})`)
             )
           ),
           e('button', {
@@ -3046,6 +3065,23 @@ class CrudList extends React.Component {
     this.loadSchema();
     this.loadData();
     this.loadUserPreferences();
+    this.checkURLParameters();
+  }
+
+  checkURLParameters() {
+    // Parse URL query parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const parent = urlParams.get('parent');
+    const parentId = urlParams.get('parentId');
+
+    // If parent and parentId are provided, open create form automatically
+    if (parent && parentId) {
+      this.setState({
+        showCreateForm: true,
+        createFormParentTable: parent,
+        createFormParentId: parseInt(parentId)
+      });
+    }
   }
 
   loadSchema = async () => {
