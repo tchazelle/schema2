@@ -412,13 +412,15 @@ router.get('/:table/:id', async (req, res) => {
       }
     }
 
-    // Récupérer l'enregistrement
-    const [rows] = await pool.query(
-      `SELECT * FROM \`${table}\` WHERE id = ?`,
-      [id]
-    );
+    // Récupérer l'enregistrement avec TableDataService (gère les permissions row-level et field-level)
+    const result = await TableDataService.getTableData(user, table, {
+      id,
+      relation: 'all', // Load all relations for detail view
+      compact: true,
+      includeSchema: '1'
+    });
 
-    if (rows.length === 0) {
+    if (!result.success || !result.rows || result.rows.length === 0) {
       const acceptsJson = req.accepts(['html', 'json']) === 'json';
       if (acceptsJson) {
         return res.status(404).json({ error: 'Enregistrement non trouvé' });
@@ -430,52 +432,7 @@ router.get('/:table/:id', async (req, res) => {
       }
     }
 
-    const row = rows[0];
-
-    // Vérifier les permissions sur la row selon le champ granted
-    if (row.granted) {
-      // Si granted = draft, seul le propriétaire peut lire
-      if (row.granted === 'draft') {
-        if (!user || row.ownerId !== user.id) {
-          const acceptsJson = req.accepts(['html', 'json']) === 'json';
-          if (acceptsJson) {
-            return res.status(403).json({ error: 'Accès refusé : cet enregistrement est en brouillon' });
-          } else {
-            return res.status(403).send(`
-              <!DOCTYPE html>
-              <html><body><h1>Accès refusé</h1><p>Cet enregistrement est en brouillon.</p></body></html>
-            `);
-          }
-        }
-      }
-      // Si granted = published @role, vérifier le rôle
-      else if (row.granted.startsWith('published @')) {
-        const requiredRole = row.granted.replace('published @', '');
-        const userRoles = getUserAllRoles(user);
-        if (!userRoles.includes(requiredRole)) {
-          const acceptsJson = req.accepts(['html', 'json']) === 'json';
-          if (acceptsJson) {
-            return res.status(403).json({ error: `Accès refusé : nécessite le rôle ${requiredRole}` });
-          } else {
-            return res.status(403).send(`
-              <!DOCTYPE html>
-              <html><body><h1>Accès refusé</h1><p>Nécessite le rôle ${requiredRole}.</p></body></html>
-            `);
-          }
-        }
-      }
-      // Si granted = shared, adopter le granted de la table (déjà vérifié)
-    }
-
-    // Filtrer les champs selon les permissions
-    const structure = SchemaService.getTableStructure(user, table);
-    const filteredRow = {};
-
-    for (const fieldName in structure.fields) {
-      if (row[fieldName] !== undefined) {
-        filteredRow[fieldName] = row[fieldName];
-      }
-    }
+    const row = result.rows[0];
 
     // Check if JSON or HTML response is expected
     const acceptsJson = req.accepts(['html', 'json']) === 'json';
@@ -486,7 +443,7 @@ router.get('/:table/:id', async (req, res) => {
         success: true,
         table: table,
         id: id,
-        rows: filteredRow
+        rows: row
       });
     } else {
       // Return HTML fullscreen view

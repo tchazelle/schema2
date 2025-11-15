@@ -1003,12 +1003,28 @@ class EditForm extends React.Component {
           return e('div', { key: relName, className: 'relation-section' },
             e('div', {
               className: 'relation-header',
-              style: { display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' },
-              onClick: () => this.toggleRelation(relName)
+              style: { display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'space-between' }
             },
-              e('span', { className: 'relation-toggle' }, isOpen ? '▼' : '▶'),
-              e('strong', null, relName),
-              e('span', { className: 'relation-count' }, count)
+              // Left side: toggle, name, badge (clickable to toggle)
+              e('div', {
+                style: { display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', flex: 1 },
+                onClick: () => this.toggleRelation(relName)
+              },
+                e('span', { className: 'relation-toggle' }, isOpen ? '▼' : '▶'),
+                e('strong', null, relName),
+                e('span', { className: 'relation-count badge' }, count)
+              ),
+              // Right side: "+ ajouter" button
+              e('div', { style: { display: 'flex', alignItems: 'center', gap: '8px' } },
+                e('button', {
+                  className: 'btn-add-relation-item',
+                  onClick: (ev) => {
+                    ev.stopPropagation();
+                    window.open(`/_crud/${relatedTable}?parent=${tableName}&parentId=${row.id}`, '_blank');
+                  },
+                  title: count === 0 ? `Créer la première fiche ${relatedTable}` : `Ajouter un ${relatedTable}`
+                }, count === 0 ? '+ Créer la première fiche' : '+ Ajouter')
+              )
             ),
             isOpen && e('div', { className: 'relation-list' },
               e(SubList, {
@@ -1016,7 +1032,8 @@ class EditForm extends React.Component {
                 tableName: relatedTable,
                 parentTable: tableName,
                 parentId: row.id,
-                relationName: relName
+                relationName: relName,
+                hideHeader: true
               })
             )
           );
@@ -1400,12 +1417,39 @@ class RowDetailModal extends React.Component {
       e('div', { className: 'modal-content-detail' },
         // Fixed header
         e('div', { className: 'modal-header-detail' },
-          // Title section
+          // Title section with granted selector
           e('div', { className: 'modal-title-section' },
+            // Granted selector before title
+            structure.fields.granted && e('div', {
+              className: 'modal-granted-inline',
+              onClick: (ev) => ev.stopPropagation()
+            },
+              e(GrantedSelector, {
+                value: row.granted,
+                publishableTo: tableConfig.publishableTo || [],
+                tableGranted: tableConfig.granted || {},
+                onChange: async (val) => {
+                  try {
+                    const response = await fetch(`/_api/${tableName}/${row.id}`, {
+                      method: 'PUT',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ granted: val })
+                    });
+                    const data = await response.json();
+                    if (data.success && onUpdate) {
+                      onUpdate();
+                    }
+                  } catch (error) {
+                    console.error('Failed to save granted:', error);
+                  }
+                },
+                disabled: !permissions.canPublish,
+                compact: true
+              })
+            ),
             e('h3', {
               className: 'modal-title-detail'
             },
-              `${grantedIcon} `,
               cardTitle ? [
                 cardTitle,
                 e('span', {
@@ -1414,34 +1458,6 @@ class RowDetailModal extends React.Component {
                 }, ` ${tableName}/${row.id}`)
               ] : `${tableName}/${row.id}`
             )
-          ),
-          // Granted selector
-          structure.fields.granted && e('div', {
-            className: 'modal-granted-section',
-            onClick: (ev) => ev.stopPropagation()
-          },
-            e(GrantedSelector, {
-              value: row.granted,
-              publishableTo: tableConfig.publishableTo || [],
-              tableGranted: tableConfig.granted || {},
-              onChange: async (val) => {
-                try {
-                  const response = await fetch(`/_api/${tableName}/${row.id}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ granted: val })
-                  });
-                  const data = await response.json();
-                  if (data.success && onUpdate) {
-                    onUpdate();
-                  }
-                } catch (error) {
-                  console.error('Failed to save granted:', error);
-                }
-              },
-              disabled: !permissions.canPublish,
-              compact: true
-            })
           ),
           // Close button (X exits edit mode if in edit, otherwise closes modal)
           e('button', {
@@ -1651,12 +1667,28 @@ class RowDetailView extends React.Component {
           return e('div', { key: relName, className: 'relation-section' },
             e('div', {
               className: 'relation-header',
-              style: { display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' },
-              onClick: () => this.toggleRelation(relName)
+              style: { display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'space-between' }
             },
-              e('span', { className: 'relation-toggle' }, isOpen ? '▼' : '▶'),
-              e('strong', null, relName),
-              e('span', { className: 'relation-count' }, count)
+              // Left side: toggle, name, badge (clickable to toggle)
+              e('div', {
+                style: { display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', flex: 1 },
+                onClick: () => this.toggleRelation(relName)
+              },
+                e('span', { className: 'relation-toggle' }, isOpen ? '▼' : '▶'),
+                e('strong', null, relName),
+                e('span', { className: 'relation-count badge' }, count)
+              ),
+              // Right side: "+ ajouter" button and three-dots menu
+              e('div', { style: { display: 'flex', alignItems: 'center', gap: '8px' } },
+                e('button', {
+                  className: 'btn-add-relation-item',
+                  onClick: (ev) => {
+                    ev.stopPropagation();
+                    window.open(`/_crud/${relatedTable}?parent=${tableName}&parentId=${row.id}`, '_blank');
+                  },
+                  title: count === 0 ? `Créer la première fiche ${relatedTable}` : `Ajouter un ${relatedTable}`
+                }, count === 0 ? '+ Créer la première fiche' : '+ Ajouter')
+              )
             ),
             isOpen && e('div', { className: 'relation-list' },
               e(SubList, {
@@ -1664,7 +1696,8 @@ class RowDetailView extends React.Component {
                 tableName: relatedTable,
                 parentTable: tableName,
                 parentId: row.id,
-                relationName: relName
+                relationName: relName,
+                hideHeader: true
               })
             )
           );
@@ -1791,10 +1824,14 @@ class SubList extends React.Component {
   }
 
   render() {
-    const { rows, tableName, parentTable, parentId, relationName } = this.props;
+    const { rows, tableName, parentTable, parentId, relationName, hideHeader } = this.props;
     const { structure, tableConfig, permissions, orderBy, order, displayMode, showDeleteButtons, selectedFields, showFieldSelector } = this.state;
 
     if (!rows || rows.length === 0) {
+      // If hideHeader is true, don't show anything for empty lists
+      if (hideHeader) {
+        return null;
+      }
       return e('div', { className: 'sub-list-empty' }, 'Aucune donnée');
     }
 
@@ -1833,8 +1870,8 @@ class SubList extends React.Component {
       : null;
 
     return e('div', { className: 'sub-list-container', style: { position: 'relative' } },
-      // Header with "+ Nouveau" button and three-dots menu
-      e('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 0', marginBottom: '4px', gap: '8px' } },
+      // Header with "+ Nouveau" button and three-dots menu (only if not hideHeader)
+      !hideHeader && e('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 0', marginBottom: '4px', gap: '8px' } },
         // Left side: sort indicator
         e('div', { style: { fontSize: '12px', color: '#6c757d', fontStyle: 'italic', minHeight: '20px' } },
           sortIndicator || ''
@@ -3366,27 +3403,31 @@ class CreateFormModal extends React.Component {
         // Fixed header with granted selector
         e('div', { className: 'modal-header-detail' },
           e('div', { className: 'modal-title-section' },
+            // Granted selector before title
+            e('div', {
+              className: 'modal-granted-inline',
+              onClick: (ev) => ev.stopPropagation()
+            },
+              e(GrantedSelector, {
+                value: this.state.formData.granted,
+                publishableTo: tableConfig.publishableTo || [],
+                tableGranted: tableConfig.granted || {},
+                onChange: (val) => this.handleFieldChange('granted', val),
+                disabled: !permissions.canPublish,
+                compact: true
+              })
+            ),
             e('h3', { className: 'modal-title-detail' },
-              `➕ Nouvelle fiche ${tableName}`,
+              `Nouvelle fiche ${tableName}`,
               parentTable && typeof parentTable === 'string' && e('span', { key: 'parent', className: 'modal-subtitle' }, ` (liée à ${parentTable})`)
             )
           ),
-          // Granted selector in header
-          e('div', { style: { display: 'flex', alignItems: 'center', gap: '12px' } },
-            e(GrantedSelector, {
-              value: this.state.formData.granted,
-              publishableTo: tableConfig.publishableTo || [],
-              tableGranted: tableConfig.granted || {},
-              onChange: (val) => this.handleFieldChange('granted', val),
-              disabled: !permissions.canPublish,
-              compact: true
-            }),
-            e('button', {
-              className: 'modal-close-detail',
-              onClick: onClose,
-              title: 'Fermer (Echap)'
-            }, '✖')
-          )
+          // Close button
+          e('button', {
+            className: 'modal-close-detail',
+            onClick: onClose,
+            title: 'Fermer (Echap)'
+          }, '✖')
         ),
 
         // Scrollable body
