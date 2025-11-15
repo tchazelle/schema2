@@ -62,78 +62,6 @@ const UIService = require('../services/uiService');
  * =============================================================================
  */
 
-/**
- * GET /_crud/:table/data
- * Returns JSON data for the CRUD list interface
- */
-router.get('/:table/data', async (req, res) => {
-  try {
-    const { table: tableParam } = req.params;
-    const user = req.user; // Already enriched by userEnrichMiddleware
-
-    // Get query parameters
-    const {
-      limit = 100,
-      offset = 0,
-      orderBy = 'updatedAt',
-      order = 'DESC',
-      search = '',
-      showSystemFields = '0',
-      selectedFields = null,
-      advancedSearch = null,
-      advancedSort = null
-    } = req.query;
-
-    // Parse selectedFields if provided (comma-separated)
-    const parsedFields = selectedFields ? selectedFields.split(',').map(f => f.trim()) : null;
-
-    // Parse advanced search and sort JSON
-    let parsedAdvancedSearch = null;
-    let parsedAdvancedSort = null;
-
-    if (advancedSearch) {
-      try {
-        parsedAdvancedSearch = JSON.parse(advancedSearch);
-      } catch (e) {
-        console.error('Failed to parse advancedSearch:', e);
-      }
-    }
-
-    if (advancedSort) {
-      try {
-        parsedAdvancedSort = JSON.parse(advancedSort);
-      } catch (e) {
-        console.error('Failed to parse advancedSort:', e);
-      }
-    }
-
-    // Get list data using CrudService
-    const result = await CrudService.getListData(user, tableParam, {
-      limit: parseInt(limit),
-      offset: parseInt(offset),
-      orderBy,
-      order,
-      search,
-      showSystemFields: showSystemFields === '1',
-      selectedFields: parsedFields,
-      advancedSearch: parsedAdvancedSearch,
-      advancedSort: parsedAdvancedSort
-    });
-
-    if (!result.success) {
-      return res.status(result.error.includes('non trouvée') ? 404 : 403).json(result);
-    }
-
-    res.json(result);
-
-  } catch (error) {
-    console.error('Error fetching CRUD data:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Erreur serveur lors de la récupération des données'
-    });
-  }
-});
 
 /**
  * GET /_crud/:table
@@ -186,6 +114,45 @@ router.get('/:table', async (req, res) => {
   } catch (error) {
     console.error('Error rendering CRUD page:', error);
     res.status(500).send(UIService.error500Page(error));
+  }
+});
+
+/**
+ * GET /_crud/:table/structure
+ * Retourne la structure des champs accessibles de la table
+ * ainsi que les champs des relations si autorisés
+ * (Used by fieldSelectorUI)
+ */
+router.get('/:table/structure', async (req, res) => {
+  try {
+    const { table: tableParam } = req.params;
+    const user = req.user; // Déjà enrichi par userEnrichMiddleware
+
+    // Normaliser le nom de la table (case-insensitive)
+    const table = SchemaService.getTableName(tableParam);
+
+    if (!table) {
+      return res.status(404).json(UIService.jsonError(
+        UIService.messages.TABLE_NOT_FOUND,
+        { table: tableParam }
+      ));
+    }
+
+    // Récupérer la structure de la table
+    const structure = SchemaService.getTableStructure(user, table);
+
+    if (!structure) {
+      return res.status(403).json(UIService.jsonError(
+        UIService.messages.ACCESS_DENIED,
+        { table: table }
+      ));
+    }
+
+    res.json(UIService.jsonSuccess({ structure }));
+
+  } catch (error) {
+    console.error('Erreur lors de la récupération de la structure:', error);
+    res.status(500).json(UIService.jsonError(UIService.messages.ERROR_SERVER));
   }
 });
 
@@ -282,7 +249,7 @@ router.get('/:table/view', async (req, res) => {
         container: container,
         showSystemFields: false,
         onFieldSelect: (path, field) => {
-          console.log('Champ sélectionné:', path, field);
+          //console.log('Champ sélectionné:', path, field);
         }
       });
 
@@ -315,43 +282,78 @@ router.get('/:table/view', async (req, res) => {
 });
 
 /**
- * GET /_crud/:table/structure
- * Retourne la structure des champs accessibles de la table
- * ainsi que les champs des relations si autorisés
- * (Used by fieldSelectorUI)
+ * GET /_crud/:table/data
+ * Returns JSON data for the CRUD list interface
  */
-router.get('/:table/structure', async (req, res) => {
+router.get('/:table/data', async (req, res) => {
   try {
     const { table: tableParam } = req.params;
-    const user = req.user; // Déjà enrichi par userEnrichMiddleware
+    const user = req.user; // Already enriched by userEnrichMiddleware
 
-    // Normaliser le nom de la table (case-insensitive)
-    const table = SchemaService.getTableName(tableParam);
+    // Get query parameters
+    const {
+      limit = 100,
+      offset = 0,
+      orderBy = 'updatedAt',
+      order = 'DESC',
+      search = '',
+      showSystemFields = '0',
+      selectedFields = null,
+      advancedSearch = null,
+      advancedSort = null
+    } = req.query;
 
-    if (!table) {
-      return res.status(404).json(UIService.jsonError(
-        UIService.messages.TABLE_NOT_FOUND,
-        { table: tableParam }
-      ));
+    // Parse selectedFields if provided (comma-separated)
+    const parsedFields = selectedFields ? selectedFields.split(',').map(f => f.trim()) : null;
+
+    // Parse advanced search and sort JSON
+    let parsedAdvancedSearch = null;
+    let parsedAdvancedSort = null;
+
+    if (advancedSearch) {
+      try {
+        parsedAdvancedSearch = JSON.parse(advancedSearch);
+      } catch (e) {
+        console.error('Failed to parse advancedSearch:', e);
+      }
     }
 
-    // Récupérer la structure de la table
-    const structure = SchemaService.getTableStructure(user, table);
-
-    if (!structure) {
-      return res.status(403).json(UIService.jsonError(
-        UIService.messages.ACCESS_DENIED,
-        { table: table }
-      ));
+    if (advancedSort) {
+      try {
+        parsedAdvancedSort = JSON.parse(advancedSort);
+      } catch (e) {
+        console.error('Failed to parse advancedSort:', e);
+      }
     }
 
-    res.json(UIService.jsonSuccess({ structure }));
+    // Get list data using CrudService
+    const result = await CrudService.getListData(user, tableParam, {
+      limit: parseInt(limit),
+      offset: parseInt(offset),
+      orderBy,
+      order,
+      search,
+      showSystemFields: showSystemFields === '1',
+      selectedFields: parsedFields,
+      advancedSearch: parsedAdvancedSearch,
+      advancedSort: parsedAdvancedSort
+    });
+
+    if (!result.success) {
+      return res.status(result.error.includes('non trouvée') ? 404 : 403).json(result);
+    }
+
+    res.json(result);
 
   } catch (error) {
-    console.error('Erreur lors de la récupération de la structure:', error);
-    res.status(500).json(UIService.jsonError(UIService.messages.ERROR_SERVER));
+    console.error('Error fetching CRUD data:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erreur serveur lors de la récupération des données'
+    });
   }
 });
+
 
 /**
  * GET /_crud/:table/:id
@@ -362,18 +364,19 @@ router.get('/:table/:id', async (req, res) => {
   try {
     const { table: tableParam, id } = req.params;
     const user = req.user; // Déjà enrichi par userEnrichMiddleware
+    
 
-    console.log('\n============ [CRUD Route] GET /:table/:id ============');
-    console.log('[CRUD Route] Params:', { tableParam, id });
-    console.log('[CRUD Route] User:', user ? `id=${user.id}, email=${user.email}, roles=${JSON.stringify(user.roles)}` : 'null (public)');
+    //console.log('\n============ [CRUD Route] GET /:table/:id ============');
+    //console.log('[CRUD Route] Params:', { tableParam, id });
+    //console.log('[CRUD Route] User:', user ? `id=${user.id}, email=${user.email}, roles=${JSON.stringify(user.roles)}` : 'null (public)');
 
     // Normaliser le nom de la table (case-insensitive)
     const table = SchemaService.getTableName(tableParam);
-    console.log('[CRUD Route] Table normalisée:', table);
+    //console.log('[CRUD Route] Table normalisée:', table);
 
     // Vérifier si la table existe dans le schéma
     if (!table) {
-      console.log('[CRUD Route] ❌ Table non trouvée dans le schéma:', tableParam);
+      //console.log('[CRUD Route] ❌ Table non trouvée dans le schéma:', tableParam);
       // Check if HTML or JSON response is expected
       const acceptsJson = req.accepts(['html', 'json']) === 'json';
       if (acceptsJson) {
@@ -384,9 +387,9 @@ router.get('/:table/:id', async (req, res) => {
     }
 
     // Vérifier si l'utilisateur a accès à la table
-    console.log('[CRUD Route] Vérification permission table-level...');
+    //console.log('[CRUD Route] Vérification permission table-level...');
     if (!hasPermission(user, table, 'read')) {
-      console.log('[CRUD Route] ❌ Permission refusée au niveau table');
+      //console.log('[CRUD Route] ❌ Permission refusée au niveau table');
       const acceptsJson = req.accepts(['html', 'json']) === 'json';
       if (acceptsJson) {
         return res.status(403).json(UIService.jsonError(UIService.messages.ACCESS_DENIED));
@@ -394,17 +397,19 @@ router.get('/:table/:id', async (req, res) => {
         return res.status(403).send(UIService.error403Page());
       }
     }
-    console.log('[CRUD Route] ✅ Permission table-level OK');
+    //console.log('[CRUD Route] ✅ Permission table-level OK');
+
+    
 
     // Récupérer l'enregistrement avec TableDataService (gère les permissions row-level et field-level)
-    console.log('[CRUD Route] Appel TableDataService.getTableData avec:', { table, id, relation: 'all', compact: true, includeSchema: '1' });
+    //console.log('[CRUD Route] Appel TableDataService.getTableData avec:', { table, id, relation: 'all', compact: true, includeSchema: '1' });
     const result = await TableDataService.getTableData(user, table, {
-      id,
+      id: parseInt(id), // ajouté par TC pour correction du bug
       relation: 'all', // Load all relations for detail view
       compact: true,
       includeSchema: '1'
     });
-    console.log('[CRUD Route] Résultat TableDataService:', { success: result.success, rowCount: result.rows?.length || 0, error: result.error });
+    //console.log('[CRUD Route] Résultat TableDataService:', { success: result.success, rowCount: result.rows?.length || 0, error: result.error });
 
     // Check if JSON or HTML response is expected
     const acceptsJson = req.accepts(['html', 'json']) === 'json';
@@ -413,7 +418,7 @@ router.get('/:table/:id', async (req, res) => {
     if (!result.success) {
       const statusCode = result.statusCode || 500;
       const errorMessage = result.error || 'Erreur serveur';
-      console.log('[CRUD Route] ❌ Service retourné error:', { statusCode, errorMessage });
+      //console.log('[CRUD Route] ❌ Service retourné error:', { statusCode, errorMessage });
 
       if (acceptsJson) {
         return res.status(statusCode).json({ success: false, error: errorMessage });
@@ -430,7 +435,7 @@ router.get('/:table/:id', async (req, res) => {
 
     // Handle record not found (success but no rows)
     if (!result.rows || result.rows.length === 0) {
-      console.log('[CRUD Route] ❌ Aucun enregistrement trouvé pour id:', id);
+      //console.log('[CRUD Route] ❌ Aucun enregistrement trouvé pour id:', id);
       if (acceptsJson) {
         return res.status(404).json(UIService.jsonError(UIService.messages.RECORD_NOT_FOUND));
       } else {
@@ -443,11 +448,13 @@ router.get('/:table/:id', async (req, res) => {
     }
 
     const row = result.rows[0];
-    console.log('[CRUD Route] ✅ Enregistrement récupéré:', { id: row.id, hasRelations: !!row._relations });
+    //console.log('[CRUD Route] ✅ Enregistrement récupéré:', { id: row.id, hasRelations: !!row._relations });
+
+    
 
     if (acceptsJson) {
       // Return JSON for API calls
-      console.log('[CRUD Route] Retour JSON');
+      //console.log('[CRUD Route] Retour JSON');
       res.json({
         success: true,
         table: table,
@@ -455,7 +462,8 @@ router.get('/:table/:id', async (req, res) => {
         rows: row
       });
     } else {
-      console.log('[CRUD Route] Retour HTML - Génération de la page...');
+      
+      //console.log('[CRUD Route] Retour HTML - Génération de la page...');
       // Return HTML fullscreen view
       // Get accessible tables for menu
       const accessibleTables = user ? CrudService.getMenuTables(user) : [];
@@ -468,7 +476,8 @@ router.get('/:table/:id', async (req, res) => {
       } catch (error) {
         console.error('Error loading pages for menu:', error);
       }
-
+      
+    
       const html = TemplateService.htmlCrudDetailPage({
         user: user,
         pages: pages,
@@ -491,4 +500,16 @@ router.get('/:table/:id', async (req, res) => {
   }
 });
 
+
+/* A SUPPRIMER EN DESSOUS DE CETTE LIGNE ================== */
+
+
+
+
+
+
+
+
+
 module.exports = router;
+

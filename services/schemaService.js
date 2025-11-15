@@ -15,11 +15,11 @@ class SchemaService {
    * @returns {string|null} - Nom exact de la table ou null si non trouvée
    */
   static getTableName(tableName) {
-    console.log(`[SchemaService.getTableName] Recherche table: '${tableName}'`);
+    //console.log(`[SchemaService.getTableName] Recherche table: '${tableName}'`);
 
     // Vérifier si le nom exact existe
     if (schema.tables[tableName]) {
-      console.log(`[SchemaService.getTableName] ✅ Trouvé exact match: '${tableName}'`);
+      //console.log(`[SchemaService.getTableName] ✅ Trouvé exact match: '${tableName}'`);
       return tableName;
     }
 
@@ -27,12 +27,12 @@ class SchemaService {
     const tableNameLower = tableName.toLowerCase();
     for (const key in schema.tables) {
       if (key.toLowerCase() === tableNameLower) {
-        console.log(`[SchemaService.getTableName] ✅ Trouvé case-insensitive match: '${key}' pour '${tableName}'`);
+        //console.log(`[SchemaService.getTableName] ✅ Trouvé case-insensitive match: '${key}' pour '${tableName}'`);
         return key;
       }
     }
 
-    console.log(`[SchemaService.getTableName] ❌ Table non trouvée: '${tableName}'`);
+    //console.log(`[SchemaService.getTableName] ❌ Table non trouvée: '${tableName}'`);
     return null;
   }
 
@@ -51,10 +51,10 @@ class SchemaService {
    * @returns {Object|null} - Configuration de la table ou null
    */
   static getTableConfig(tableName) {
-    console.log(`[SchemaService.getTableConfig] Récupération config pour table: '${tableName}'`);
+    //console.log(`[SchemaService.getTableConfig] Récupération config pour table: '${tableName}'`);
     const exactName = this.getTableName(tableName);
     const config = exactName ? schema.tables[exactName] : null;
-    console.log(`[SchemaService.getTableConfig]`, config ? `✅ Config trouvée` : `❌ Config non trouvée`);
+    //console.log(`[SchemaService.getTableConfig]`, config ? `✅ Config trouvée` : `❌ Config non trouvée`);
     return config;
   }
 
@@ -67,11 +67,11 @@ class SchemaService {
    * @returns {Object} - { relationsN1: {}, relations1N: {} }
    */
   static getTableRelations(user, tableName) {
-    console.log(`[SchemaService.getTableRelations] Chargement relations pour table: '${tableName}'`);
+    //console.log(`[SchemaService.getTableRelations] Chargement relations pour table: '${tableName}'`);
 
     const tableConfig = schema.tables[tableName];
     if (!tableConfig) {
-      console.log(`[SchemaService.getTableRelations] ❌ Table config non trouvée`);
+      //console.log(`[SchemaService.getTableRelations] ❌ Table config non trouvée`);
       return { relationsN1: {}, relations1N: {} };
     }
 
@@ -113,7 +113,7 @@ class SchemaService {
       }
     }
 
-    console.log(`[SchemaService.getTableRelations] ✅ Relations trouvées - N:1: ${Object.keys(relationsN1).length}, 1:N: ${Object.keys(relations1N).length}`);
+    //console.log(`[SchemaService.getTableRelations] ✅ Relations trouvées - N:1: ${Object.keys(relationsN1).length}, 1:N: ${Object.keys(relations1N).length}`);
     return { relationsN1, relations1N };
   }
 
@@ -127,16 +127,16 @@ class SchemaService {
    * @returns {Object} - Schéma filtré
    */
   static buildFilteredSchema(user, tableName) {
-    console.log(`[SchemaService.buildFilteredSchema] Construction schéma filtré pour table: '${tableName}'`);
+    //console.log(`[SchemaService.buildFilteredSchema] Construction schéma filtré pour table: '${tableName}'`);
 
     const tableConfig = schema.tables[tableName];
     if (!tableConfig) {
-      console.log(`[SchemaService.buildFilteredSchema] ❌ Table config non trouvée`);
+      //console.log(`[SchemaService.buildFilteredSchema] ❌ Table config non trouvée`);
       return null;
     }
 
     const userRoles = getUserAllRoles(user);
-    console.log(`[SchemaService.buildFilteredSchema] User roles:`, userRoles);
+    //console.log(`[SchemaService.buildFilteredSchema] User roles:`, userRoles);
     const filteredSchema = {
       table: tableName,
       fields: {},
@@ -188,7 +188,7 @@ class SchemaService {
     filteredSchema.relations.n1 = relationsN1;
     filteredSchema.relations["1n"] = relations1N;
 
-    console.log(`[SchemaService.buildFilteredSchema] ✅ Schéma filtré construit - ${Object.keys(filteredSchema.fields).length} champs`);
+    //console.log(`[SchemaService.buildFilteredSchema] ✅ Schéma filtré construit - ${Object.keys(filteredSchema.fields).length} champs`);
     return filteredSchema;
   }
 

@@ -424,6 +424,8 @@ class TemplateService {
       accessibleTables,
     } = options;
 
+  console.log("htmlCrudDetailPage", options)
+
     return `
 <!DOCTYPE html>
 <html lang="fr">
