@@ -16,6 +16,7 @@ const { syncDatabase } = require('./services/dbSyncService');
 const authRouter = require('./routes/auth');
 const crudRouter = require('./routes/crud');
 const apiRouter = require('./routes/api');
+const calendarRouter = require('./routes/calendar');
 const pagesRouter = require('./routes/pages');
 
 // Création de l'application Express
@@ -41,6 +42,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/_user', authRouter);
 app.use('/_crud', crudRouter);
 app.use('/_api', apiRouter);
+app.use('/_calendar', calendarRouter);
 // Route /:page doit être en dernier car c'est un catch-all
 app.use('/', pagesRouter);
 
