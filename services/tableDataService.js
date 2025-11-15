@@ -38,7 +38,7 @@ async function loadRelationsForRow(user, tableName, row, options = {}) {
       if (foreignValue) {
         // Charger l'enregistrement lié
         const [relatedRows] = await pool.query(
-          `SELECT * FROM ${relConfig.relatedTable} WHERE ${relConfig.foreignKey} = ?`,
+          `SELECT * FROM \`${relConfig.relatedTable}\` WHERE ${relConfig.foreignKey} = ?`,
           [foreignValue]
         );
 
@@ -98,7 +98,7 @@ async function loadRelationsForRow(user, tableName, row, options = {}) {
       const relConfig = relations1N[relationName];
 
       // Construire la requête avec ORDER BY si défini
-      let query = `SELECT * FROM ${relConfig.relatedTable} WHERE ${relConfig.relatedField} = ?`;
+      let query = `SELECT * FROM \`${relConfig.relatedTable}\` WHERE ${relConfig.relatedField} = ?`;
       const params = [row.id];
 
       if (relConfig.defaultSort) {
@@ -140,7 +140,7 @@ async function loadRelationsForRow(user, tableName, row, options = {}) {
               if (subForeignValue) {
                 // Charger l'enregistrement lié
                 const [subRelatedRows] = await pool.query(
-                  `SELECT * FROM ${subRelConfig.relatedTable} WHERE ${subRelConfig.foreignKey} = ?`,
+                  `SELECT * FROM \`${subRelConfig.relatedTable}\` WHERE ${subRelConfig.foreignKey} = ?`,
                   [subForeignValue]
                 );
 
@@ -263,8 +263,8 @@ async function getTableData(user, tableName, options = {}) {
   let rows = []
   if(!id) {
     // Select with table prefix when there are JOINs
-    const selectClause = customJoins.length > 0 ? `${table}.*` : '*';
-    let query = `SELECT ${selectClause} FROM ${table}`;
+    const selectClause = customJoins.length > 0 ? `\`${table}\`.*` : '*';
+    let query = `SELECT ${selectClause} FROM \`${table}\``;
 
     // Add JOINs if provided (for advanced search/sort on relation fields)
     if (customJoins.length > 0) {
@@ -305,7 +305,7 @@ async function getTableData(user, tableName, options = {}) {
     [rows] = await pool.query(query, params);
   } else {
       [rows] = await pool.query(
-        `SELECT * FROM ${table} WHERE id = ?`,
+        `SELECT * FROM \`${table}\` WHERE id = ?`,
         [id]
       );
   }
@@ -384,7 +384,7 @@ async function getTableData(user, tableName, options = {}) {
   }
 
   // Compter le nombre total de résultats (sans limit)
-  const countQuery = `SELECT COUNT(*) as total FROM ${table} WHERE ${where}`;
+  const countQuery = `SELECT COUNT(*) as total FROM \`${table}\` WHERE ${where}`;
   const [countResult] = await pool.query(countQuery, params.slice(0, params.length - (limit ? 1 : 0) - (offset ? 1 : 0)));
   const total = countResult[0].total;
 
