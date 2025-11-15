@@ -259,8 +259,12 @@ async function getTableData(user, tableName, options = {}) {
 
     // Ajouter ORDER BY si spécifié
     if (orderBy) {
-      const orderDirection = order && order.toUpperCase() === 'DESC' ? 'DESC' : 'ASC';
-      query += ` ORDER BY ${orderBy} ${orderDirection}`;
+      query += ` ORDER BY ${orderBy}`;
+      // Only add direction if order is provided and not empty (for advanced sort, direction is already in orderBy)
+      if (order && order !== '') {
+        const orderDirection = order.toUpperCase() === 'DESC' ? 'DESC' : 'ASC';
+        query += ` ${orderDirection}`;
+      }
     }
 
     // Ajouter LIMIT et OFFSET si spécifiés
