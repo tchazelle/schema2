@@ -847,11 +847,20 @@ class EditForm extends React.Component {
 
   formatDateForInput = (value, type) => {
     if (!value) return '';
+
     const date = new Date(value);
+
+    // Use local timezone instead of UTC to avoid timezone shifts
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+
     if (type === 'datetime') {
-      return date.toISOString().slice(0, 16);
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      return `${year}-${month}-${day}T${hours}:${minutes}`;
     } else {
-      return date.toISOString().slice(0, 10);
+      return `${year}-${month}-${day}`;
     }
   }
 
@@ -953,9 +962,25 @@ class EditForm extends React.Component {
       // General error
       errors._general && e('div', { className: 'error' }, errors._general),
 
-      // Save indicator (if not idle)
+      // Save indicator (if not idle) - positioned in top-right corner
       saveStatus !== 'idle' && e('div', {
-        style: { padding: '8px 12px', marginBottom: '12px', textAlign: 'center', background: saveStatus === 'saved' ? '#d4edda' : (saveStatus === 'error' ? '#f8d7da' : '#d1ecf1'), borderRadius: '4px' }
+        style: {
+          position: 'fixed',
+          top: '80px',
+          right: '20px',
+          padding: '10px 16px',
+          background: saveStatus === 'saved' ? '#d4edda' : (saveStatus === 'error' ? '#f8d7da' : '#d1ecf1'),
+          color: saveStatus === 'saved' ? '#155724' : (saveStatus === 'error' ? '#721c24' : '#0c5460'),
+          borderRadius: '6px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+          fontSize: '14px',
+          fontWeight: '500',
+          zIndex: 9999,
+          animation: 'fadeInSlide 0.3s ease-out',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px'
+        }
       }, this.getSaveIndicatorText()),
 
       // Form fields grid
@@ -2110,7 +2135,7 @@ class AdvancedSortModal extends React.Component {
   }
 
   async componentDidMount() {
-    // Fetch structures for all related tables
+    // Fetch structures for all related tables (level 1 and level 2)
     const { structure } = this.props;
     const relatedTables = new Set();
 
@@ -2130,7 +2155,7 @@ class AdvancedSortModal extends React.Component {
       }
     });
 
-    // Fetch structure for each related table
+    // Fetch structure for each related table (LEVEL 1)
     const relatedStructures = {};
     for (const tableName of relatedTables) {
       try {
@@ -2141,6 +2166,46 @@ class AdvancedSortModal extends React.Component {
         }
       } catch (error) {
         console.error(`Failed to fetch structure for ${tableName}:`, error);
+      }
+    }
+
+    // NOW FETCH LEVEL 2: For each level 1 table, fetch its N:1 relations
+    const level2Tables = new Set();
+    for (const [tableName, tableStructure] of Object.entries(relatedStructures)) {
+      // Find N:1 relations in this level 1 table
+      if (tableStructure.relations) {
+        Object.entries(tableStructure.relations).forEach(([relationName, relationConfig]) => {
+          if (relationConfig.type === 'many-to-one') {
+            const level2TableName = relationConfig.relatedTable;
+            // Store with prefix to track the path
+            if (!relatedStructures[level2TableName]) {
+              level2Tables.add(level2TableName);
+            }
+          }
+        });
+      }
+
+      // Fallback: Find N:1 relations from fields
+      Object.entries(tableStructure.fields || {}).forEach(([fieldName, field]) => {
+        if (field.relation && !field.arrayName) {
+          const level2TableName = field.relation;
+          if (!relatedStructures[level2TableName]) {
+            level2Tables.add(level2TableName);
+          }
+        }
+      });
+    }
+
+    // Fetch level 2 structures
+    for (const tableName of level2Tables) {
+      try {
+        const response = await fetch(`/_crud/${tableName}/structure`);
+        const data = await response.json();
+        if (data.success && data.structure) {
+          relatedStructures[tableName] = data.structure;
+        }
+      } catch (error) {
+        console.error(`Failed to fetch level 2 structure for ${tableName}:`, error);
       }
     }
 
@@ -2186,7 +2251,7 @@ class AdvancedSortModal extends React.Component {
     const { structure, onClose } = this.props;
     const { criteria, relatedStructures } = this.state;
 
-    // Get all sortable fields (table fields + n:1 relation fields)
+    // Get all sortable fields (table fields + n:1 relation fields + level 2 n:1 fields)
     const sortableFields = [];
 
     // Add table fields
@@ -2199,7 +2264,7 @@ class AdvancedSortModal extends React.Component {
           group: 'Champs de la table'
         });
 
-        // If this is an n:1 relation, add fields from the related table
+        // If this is an n:1 relation, add fields from the related table (LEVEL 1)
         if (field.relation && !field.arrayName) {
           const relatedTable = field.relation;
           const relatedStructure = relatedStructures[relatedTable];
@@ -2216,6 +2281,27 @@ class AdvancedSortModal extends React.Component {
                   isRelation: true,
                   group: `Relations N:1 (${relatedTable})`
                 });
+
+                // LEVEL 2: If this field is itself a N:1 relation, add its fields
+                if (relField.relation && !relField.arrayName) {
+                  const level2Table = relField.relation;
+                  const level2Structure = relatedStructures[level2Table];
+
+                  if (level2Structure && level2Structure.fields) {
+                    Object.entries(level2Structure.fields).forEach(([level2FieldName, level2Field]) => {
+                      // Exclude computed fields, arrayNames (1:N relations), and system fields
+                      if (!level2Field.as && !level2Field.calculate && !level2Field.arrayName &&
+                          !['id', 'ownerId', 'granted'].includes(level2FieldName)) {
+                        sortableFields.push({
+                          value: `${relatedTable}.${level2Table}.${level2FieldName}`,
+                          label: `${relatedTable} › ${level2Table} › ${level2Field.label || level2FieldName}`,
+                          isRelation: true,
+                          group: `Relations N:1 niveau 2 (${relatedTable} › ${level2Table})`
+                        });
+                      }
+                    });
+                  }
+                }
               }
             });
           }
@@ -2366,7 +2452,7 @@ class AdvancedSearchModal extends React.Component {
   }
 
   async componentDidMount() {
-    // Fetch structures for all related tables
+    // Fetch structures for all related tables (level 1 and level 2)
     const { structure } = this.props;
     const relatedTables = new Set();
 
@@ -2386,7 +2472,7 @@ class AdvancedSearchModal extends React.Component {
       }
     });
 
-    // Fetch structure for each related table
+    // Fetch structure for each related table (LEVEL 1)
     const relatedStructures = {};
     for (const tableName of relatedTables) {
       try {
@@ -2397,6 +2483,46 @@ class AdvancedSearchModal extends React.Component {
         }
       } catch (error) {
         console.error(`Failed to fetch structure for ${tableName}:`, error);
+      }
+    }
+
+    // NOW FETCH LEVEL 2: For each level 1 table, fetch its N:1 relations
+    const level2Tables = new Set();
+    for (const [tableName, tableStructure] of Object.entries(relatedStructures)) {
+      // Find N:1 relations in this level 1 table
+      if (tableStructure.relations) {
+        Object.entries(tableStructure.relations).forEach(([relationName, relationConfig]) => {
+          if (relationConfig.type === 'many-to-one') {
+            const level2TableName = relationConfig.relatedTable;
+            // Store with prefix to track the path
+            if (!relatedStructures[level2TableName]) {
+              level2Tables.add(level2TableName);
+            }
+          }
+        });
+      }
+
+      // Fallback: Find N:1 relations from fields
+      Object.entries(tableStructure.fields || {}).forEach(([fieldName, field]) => {
+        if (field.relation && !field.arrayName) {
+          const level2TableName = field.relation;
+          if (!relatedStructures[level2TableName]) {
+            level2Tables.add(level2TableName);
+          }
+        }
+      });
+    }
+
+    // Fetch level 2 structures
+    for (const tableName of level2Tables) {
+      try {
+        const response = await fetch(`/_crud/${tableName}/structure`);
+        const data = await response.json();
+        if (data.success && data.structure) {
+          relatedStructures[tableName] = data.structure;
+        }
+      } catch (error) {
+        console.error(`Failed to fetch level 2 structure for ${tableName}:`, error);
       }
     }
 
@@ -2535,7 +2661,7 @@ class AdvancedSearchModal extends React.Component {
     const { structure, onClose } = this.props;
     const { searchGroups, relatedStructures } = this.state;
 
-    // Get all searchable fields (table fields + n:1 relation fields)
+    // Get all searchable fields (table fields + n:1 relation fields + level 2 n:1 fields)
     const searchableFields = [];
 
     // Add table fields
@@ -2549,7 +2675,7 @@ class AdvancedSearchModal extends React.Component {
           group: 'Champs de la table'
         });
 
-        // If this is an n:1 relation, add fields from the related table
+        // If this is an n:1 relation, add fields from the related table (LEVEL 1)
         if (field.relation && !field.arrayName) {
           const relatedTable = field.relation;
           const relatedStructure = relatedStructures[relatedTable];
@@ -2567,6 +2693,28 @@ class AdvancedSearchModal extends React.Component {
                   isRelation: true,
                   group: `Relations N:1 (${relatedTable})`
                 });
+
+                // LEVEL 2: If this field is itself a N:1 relation, add its fields
+                if (relField.relation && !relField.arrayName) {
+                  const level2Table = relField.relation;
+                  const level2Structure = relatedStructures[level2Table];
+
+                  if (level2Structure && level2Structure.fields) {
+                    Object.entries(level2Structure.fields).forEach(([level2FieldName, level2Field]) => {
+                      // Exclude computed fields, arrayNames (1:N relations), and system fields
+                      if (!level2Field.as && !level2Field.calculate && !level2Field.arrayName &&
+                          !['id', 'ownerId', 'granted'].includes(level2FieldName)) {
+                        searchableFields.push({
+                          value: `${relatedTable}.${level2Table}.${level2FieldName}`,
+                          label: `${relatedTable} › ${level2Table} › ${level2Field.label || level2FieldName}`,
+                          type: level2Field.type || 'varchar',
+                          isRelation: true,
+                          group: `Relations N:1 niveau 2 (${relatedTable} › ${level2Table})`
+                        });
+                      }
+                    });
+                  }
+                }
               }
             });
           }
