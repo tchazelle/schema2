@@ -253,62 +253,64 @@ async function getTableData(user, tableName, options = {}) {
   }
 
   // Construire la requête SQL
+  // Si id est fourni, ajouter une condition id = ? au customWhere
+  let effectiveCustomWhere = customWhere;
+  let effectiveCustomWhereParams = [...customWhereParams];
+
+  if (id) {
+    effectiveCustomWhere = customWhere ? `(${customWhere}) AND id = ?` : 'id = ?';
+    effectiveCustomWhereParams.push(id);
+  }
+
   // Passer le nom de table si des JOINs sont présents pour éviter l'ambiguïté des colonnes granted/ownerId
   const { where, params } = EntityService.buildWhereClause(
     user,
-    customWhere,
-    customWhereParams,
+    effectiveCustomWhere,
+    effectiveCustomWhereParams,
     customJoins.length > 0 ? table : null
   );
-  let rows = []
-  if(!id) {
-    // Select with table prefix when there are JOINs
-    const selectClause = customJoins.length > 0 ? `\`${table}\`.*` : '*';
-    let query = `SELECT ${selectClause} FROM \`${table}\``;
 
-    // Add JOINs if provided (for advanced search/sort on relation fields)
-    if (customJoins.length > 0) {
-      query += ' ' + customJoins.join(' ');
-    }
+  // Select with table prefix when there are JOINs
+  const selectClause = customJoins.length > 0 ? `\`${table}\`.*` : '*';
+  let query = `SELECT ${selectClause} FROM \`${table}\``;
 
-    // Add WHERE clause
-    query += ` WHERE ${where}`;
-
-    // Ajouter ORDER BY si spécifié
-    if (orderBy) {
-      query += ` ORDER BY ${orderBy}`;
-      // Only add direction if order is provided and not empty (for advanced sort, direction is already in orderBy)
-      if (order && order !== '') {
-        const orderDirection = order.toUpperCase() === 'DESC' ? 'DESC' : 'ASC';
-        query += ` ${orderDirection}`;
-      }
-    }
-
-    // Ajouter LIMIT et OFFSET si spécifiés
-    if (limit) {
-      query += ` LIMIT ?`;
-      params.push(parseInt(limit));
-    }
-
-    if (offset) {
-      query += ` OFFSET ?`;
-      params.push(parseInt(offset));
-    }
-
-    // Console log the query for debugging
-    if (customJoins.length > 0) {
-      console.log('Query with JOINs:', query);
-      console.log('Params:', params);
-    }
-
-    // Exécuter la requête
-    [rows] = await pool.query(query, params);
-  } else {
-      [rows] = await pool.query(
-        `SELECT * FROM \`${table}\` WHERE id = ?`,
-        [id]
-      );
+  // Add JOINs if provided (for advanced search/sort on relation fields)
+  if (customJoins.length > 0) {
+    query += ' ' + customJoins.join(' ');
   }
+
+  // Add WHERE clause
+  query += ` WHERE ${where}`;
+
+  // Ajouter ORDER BY si spécifié
+  if (orderBy) {
+    query += ` ORDER BY ${orderBy}`;
+    // Only add direction if order is provided and not empty (for advanced sort, direction is already in orderBy)
+    if (order && order !== '') {
+      const orderDirection = order.toUpperCase() === 'DESC' ? 'DESC' : 'ASC';
+      query += ` ${orderDirection}`;
+    }
+  }
+
+  // Ajouter LIMIT et OFFSET si spécifiés
+  if (limit) {
+    query += ` LIMIT ?`;
+    params.push(parseInt(limit));
+  }
+
+  if (offset) {
+    query += ` OFFSET ?`;
+    params.push(parseInt(offset));
+  }
+
+  // Console log the query for debugging
+  if (customJoins.length > 0 || id) {
+    console.log('Query with JOINs or ID:', query);
+    console.log('Params:', params);
+  }
+
+  // Exécuter la requête
+  const [rows] = await pool.query(query, params);
 
 
   // Filtrer les rows selon granted et les champs selon les permissions
