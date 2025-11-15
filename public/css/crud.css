@@ -1161,6 +1161,9 @@ tr.detail-row td {
 .modal-title-section {
   flex: 1;
   min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .modal-title-detail {
@@ -1179,7 +1182,12 @@ tr.detail-row td {
   font-weight: 400;
 }
 
-/* Granted section */
+/* Granted section - inline with title */
+.modal-granted-inline {
+  flex-shrink: 0;
+}
+
+/* Granted section - legacy (keep for backward compatibility) */
 .modal-granted-section {
   flex-shrink: 0;
 }
