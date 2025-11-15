@@ -3562,11 +3562,12 @@ class CrudList extends React.Component {
       }
 
       // Use TableDataService endpoint to get full record with relations
+      
       const response = await fetch(`/_api/${this.props.table}/${recordId}?relation=all&compact=1`);
       const recordData = await response.json();
-
-      // L'API retourne maintenant { row } au lieu de { rows } pour un ID spécifique
-      if (recordData.success && recordData.row) {
+      
+      recordData.row = recordData?.rows[0] // BUG trouvé
+      if (recordData.success && recordData.row) {  // BUG row n'était pas défini
         // Set data with structure, tableConfig, and permissions for the modal
         this.setState({
           fullscreenRecord: recordData.row,

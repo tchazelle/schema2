@@ -119,22 +119,6 @@ router.get('/:tableName/:id', async (req, res) => {
     const user = req.user;
     const { relation, includeSchema, compact } = req.query;
     const response = await getTableData(user, tableName, {id, relation, includeSchema, compact})
-
-    // Pour un ID spécifique, retourner { row } au lieu de { rows }
-    // Cela correspond à la documentation et évite les confusions dans le code client
-    if (id && response.success && response.rows) {
-      if (response.rows.length > 0) {
-        response.row = response.rows[0];
-      } else {
-        response.row = null;
-      }
-      delete response.rows;
-      // Ajuster aussi la pagination pour refléter qu'on ne retourne qu'une seule row
-      if (response.pagination) {
-        response.pagination.count = response.row ? 1 : 0;
-      }
-    }
-
     res.json(response);
 
   } catch (error) {
