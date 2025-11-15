@@ -403,5 +403,64 @@ class TemplateService {
 </html>
     `;
   }
+
+  /**
+   * Generate HTML page for CRUD detail view (single record in fullscreen)
+   * Uses the same CrudList component but with recordId parameter to show fullscreen modal
+   * @param {Object} options - Template options
+   * @param {Object} options.user - Current user object
+   * @param {Array} options.pages - Available pages for menu
+   * @param {string} options.table - Table name
+   * @param {number} options.recordId - Record ID to display
+   * @param {Array} options.accessibleTables - Tables accessible to user
+   * @returns {string} - HTML page
+   */
+  static htmlCrudDetailPage(options) {
+    const {
+      user,
+      pages,
+      table,
+      recordId,
+      accessibleTables,
+    } = options;
+
+    return `
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${table} #${recordId} - ${schema.appName}</title>
+  ${this.htmlCssFiles()}
+  <link rel="stylesheet" href="/css/crud.css">
+
+  <!-- React from CDN (production) -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+</head>
+<body>
+
+  ${this.htmlHeader(user, pages, accessibleTables)}
+  ${this.htmlLogin()}
+
+  <div id="root"></div>
+
+  <!-- CRUD List Component (reused for detail view) -->
+  <script src="/js/crudList.js"></script>
+
+  <script>
+    // Mount the React component with recordId to trigger fullscreen modal
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(React.createElement(CrudList, {
+      table: '${table}',
+      initialRecordId: ${recordId}
+    }));
+  </script>
+
+  ${this.scriptHumanize()}
+</body>
+</html>
+    `;
+  }
 }
 module.exports = TemplateService;

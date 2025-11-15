@@ -3461,15 +3461,101 @@ class CrudList extends React.Component {
       showAdvancedSort: false,
       advancedSortCriteria: [],
       page: 0,
-      limit: 100
+      limit: 100,
+      // Fullscreen modal for single record view (when initialRecordId is provided)
+      fullscreenRecordId: props.initialRecordId || null,
+      fullscreenRecord: null,
+      fullscreenRecordLoading: false,
+      fullscreenRecordEditMode: false
     };
   }
 
   componentDidMount() {
     this.loadSchema();
-    this.loadData();
+
+    // If initialRecordId is provided, load only that record for fullscreen view
+    if (this.props.initialRecordId) {
+      this.loadFullscreenRecord(this.props.initialRecordId);
+    } else {
+      this.loadData();
+    }
+
     this.loadUserPreferences();
     this.checkURLParameters();
+  }
+
+  /**
+   * Load a single record for fullscreen modal view
+   * Used when initialRecordId prop is provided
+   */
+  loadFullscreenRecord = async (recordId) => {
+    this.setState({ fullscreenRecordLoading: true });
+
+    try {
+      // First, load schema and structure (needed for modal)
+      const structureResponse = await fetch(`/_crud/${this.props.table}/structure`);
+      const structureData = await structureResponse.json();
+
+      if (!structureData.success) {
+        throw new Error('Failed to load table structure');
+      }
+
+      // Load a minimal dataset to get tableConfig and permissions
+      const configResponse = await fetch(`/_crud/${this.props.table}/data?limit=1`);
+      const configData = await configResponse.json();
+
+      if (!configData.success) {
+        throw new Error('Failed to load table config');
+      }
+
+      // Use TableDataService endpoint to get full record with relations
+      const response = await fetch(`/_api/${this.props.table}/${recordId}?relation=all&compact=1`);
+      const recordData = await response.json();
+
+      if (recordData.success && recordData.row) {
+        // Set data with structure, tableConfig, and permissions for the modal
+        this.setState({
+          fullscreenRecord: recordData.row,
+          fullscreenRecordLoading: false,
+          loading: false,
+          data: {
+            structure: structureData.structure,
+            tableConfig: configData.tableConfig,
+            permissions: configData.permissions
+          }
+        });
+      } else {
+        this.setState({
+          error: recordData.error || 'Enregistrement non trouvé',
+          fullscreenRecordLoading: false,
+          loading: false
+        });
+      }
+    } catch (error) {
+      console.error('Failed to load fullscreen record:', error);
+      this.setState({
+        error: 'Erreur lors du chargement de l\'enregistrement',
+        fullscreenRecordLoading: false,
+        loading: false
+      });
+    }
+  }
+
+  /**
+   * Close fullscreen modal and navigate back to list view
+   */
+  closeFullscreenModal = () => {
+    // Navigate back to table list view
+    window.location.href = `/_crud/${this.props.table}`;
+  }
+
+  /**
+   * Update fullscreen record after edit
+   */
+  updateFullscreenRecord = () => {
+    if (this.state.fullscreenRecordId) {
+      this.loadFullscreenRecord(this.state.fullscreenRecordId);
+    }
   }
 
   checkURLParameters() {
@@ -3784,7 +3870,70 @@ class CrudList extends React.Component {
 
   render() {
     const { table } = this.props;
-    const { loading, error, data, search, orderBy, order, displayMode, showFieldSelector, selectedFields, showDeleteButtons, showCreateForm, createFormParentTable, createFormParentId, showAdvancedSearch, advancedSearchCriteria, showAdvancedSort, advancedSortCriteria } = this.state;
+    const {
+      loading,
+      error,
+      data,
+      search,
+      orderBy,
+      order,
+      displayMode,
+      showFieldSelector,
+      selectedFields,
+      showDeleteButtons,
+      showCreateForm,
+      createFormParentTable,
+      createFormParentId,
+      showAdvancedSearch,
+      advancedSearchCriteria,
+      showAdvancedSort,
+      advancedSortCriteria,
+      fullscreenRecordId,
+      fullscreenRecord,
+      fullscreenRecordLoading,
+      fullscreenRecordEditMode
+    } = this.state;
+
+    // If initialRecordId is provided, show only fullscreen modal
+    if (fullscreenRecordId) {
+      if (fullscreenRecordLoading) {
+        return e('div', { className: 'loading' }, 'Chargement de l\'enregistrement...');
+      }
+
+      if (error) {
+        return e('div', { className: 'error-fullscreen' },
+          e('h2', null, 'Erreur'),
+          e('p', null, error),
+          e('button', {
+            onClick: this.closeFullscreenModal,
+            className: 'btn-back'
+          }, '← Retour à la liste')
+        );
+      }
+
+      if (!fullscreenRecord || !data) {
+        return e('div', { className: 'loading' }, 'Chargement...');
+      }
+
+      // Display fullscreen modal with the record
+      return e(RowDetailModal, {
+        row: fullscreenRecord,
+        tableName: table,
+        tableConfig: data.tableConfig || {},
+        structure: data.structure || {},
+        permissions: data.permissions || {},
+        editMode: fullscreenRecordEditMode,
+        loading: false,
+        focusFieldName: null,
+        onClose: this.closeFullscreenModal,
+        onEnterEditMode: () => this.setState({ fullscreenRecordEditMode: true }),
+        onExitEditMode: () => this.setState({ fullscreenRecordEditMode: false }),
+        onSave: this.updateFullscreenRecord,
+        onUpdate: this.updateFullscreenRecord,
+        parentTable: null,
+        hideRelations1N: false
+      });
+    }
 
     const sortRepresentation = this.getSortRepresentation();
     const hasAdvancedSort = advancedSortCriteria && advancedSortCriteria.length > 0;
