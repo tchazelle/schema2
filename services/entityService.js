@@ -112,12 +112,17 @@ class EntityService {
    * @param {Object} user - L'utilisateur
    * @param {string} baseWhere - Clause WHERE de base (optionnelle)
    * @param {Array} baseParams - Paramètres pour la clause WHERE de base (optionnelle)
+   * @param {string} tableName - Nom de la table (optionnel, pour préfixer les colonnes en cas de JOIN)
    * @returns {Object} - { where: string, params: Array }
    */
-  static buildWhereClause(user, baseWhere = null, baseParams = []) {
+  static buildWhereClause(user, baseWhere = null, baseParams = [], tableName = null) {
     const userRoles = getUserAllRoles(user);
     const conditions = [];
     const params = [];
+
+    // Préfixe pour les colonnes granted et ownerId (utilisé si tableName est fourni pour éviter ambiguïté en cas de JOIN)
+    const grantedCol = tableName ? `${tableName}.granted` : 'granted';
+    const ownerIdCol = tableName ? `${tableName}.ownerId` : 'ownerId';
 
     // Ajouter la clause WHERE de base si fournie
     if (baseWhere) {
@@ -131,23 +136,23 @@ class EntityService {
 
     // 1. Draft accessible uniquement par le propriétaire
     if (user) {
-      grantedConditions.push('(granted = ? AND ownerId = ?)');
+      grantedConditions.push(`(${grantedCol} = ? AND ${ownerIdCol} = ?)`);
       params.push(GRANTED_VALUES.DRAFT, user.id);
     }
 
     // 2. Shared accessible selon les permissions de la table (déjà vérifié)
-    grantedConditions.push('granted = ?');
+    grantedConditions.push(`${grantedCol} = ?`);
     params.push(GRANTED_VALUES.SHARED);
 
     // 3. Published @role accessible selon les rôles
     for (const role of userRoles) {
-      grantedConditions.push('granted = ?');
+      grantedConditions.push(`${grantedCol} = ?`);
       params.push(`${GRANTED_VALUES.PUBLISHED_PREFIX}${role}`);
     }
 
     // 4. Rows sans granted (NULL ou vide)
-    grantedConditions.push('granted IS NULL');
-    grantedConditions.push('granted = ?');
+    grantedConditions.push(`${grantedCol} IS NULL`);
+    grantedConditions.push(`${grantedCol} = ?`);
     params.push(GRANTED_VALUES.EMPTY);
 
     if (grantedConditions.length > 0) {

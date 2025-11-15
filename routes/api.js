@@ -237,17 +237,17 @@ router.put('/:tableName/:id', async (req, res) => {
           // Convert ISO datetime to MySQL format
           if ((field.type === 'datetime' || field.type === 'date') && value) {
             if (typeof value === 'string' && value.includes('T')) {
-              // Convert ISO format (2025-11-02T10:32:00.000Z) to MySQL format (2025-11-02 10:32:00)
+              // Convert ISO format (2025-11-02T10:32:00) to MySQL format (2025-11-02 10:32:00)
               const date = new Date(value);
               if (!isNaN(date.getTime())) {
-                // Use UTC methods to extract components so that the UTC time is stored in MySQL
-                // This ensures consistency: local input → UTC storage → local display
-                const year = date.getUTCFullYear();
-                const month = String(date.getUTCMonth() + 1).padStart(2, '0');
-                const day = String(date.getUTCDate()).padStart(2, '0');
-                const hours = String(date.getUTCHours()).padStart(2, '0');
-                const minutes = String(date.getUTCMinutes()).padStart(2, '0');
-                const seconds = String(date.getUTCSeconds()).padStart(2, '0');
+                // Use LOCAL methods to preserve the user's timezone
+                // This ensures the date/time displayed matches what was entered
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                const hours = String(date.getHours()).padStart(2, '0');
+                const minutes = String(date.getMinutes()).padStart(2, '0');
+                const seconds = String(date.getSeconds()).padStart(2, '0');
 
                 if (field.type === 'datetime') {
                   validFields[key] = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;

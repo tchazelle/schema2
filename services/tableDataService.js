@@ -253,7 +253,13 @@ async function getTableData(user, tableName, options = {}) {
   }
 
   // Construire la requête SQL
-  const { where, params } = EntityService.buildWhereClause(user, customWhere, customWhereParams);
+  // Passer le nom de table si des JOINs sont présents pour éviter l'ambiguïté des colonnes granted/ownerId
+  const { where, params } = EntityService.buildWhereClause(
+    user,
+    customWhere,
+    customWhereParams,
+    customJoins.length > 0 ? table : null
+  );
   let rows = []
   if(!id) {
     // Select with table prefix when there are JOINs
