@@ -226,6 +226,7 @@ async function getTableData(user, tableName, options = {}) {
     order,
     customWhere,
     customWhereParams = [],
+    customJoins = [], // Array of JOIN clauses for advanced search/sort on relations
     relation,
     includeSchema,
     compact,
@@ -255,7 +256,17 @@ async function getTableData(user, tableName, options = {}) {
   const { where, params } = EntityService.buildWhereClause(user, customWhere, customWhereParams);
   let rows = []
   if(!id) {
-    let query = `SELECT * FROM ${table} WHERE ${where}`;
+    // Select with table prefix when there are JOINs
+    const selectClause = customJoins.length > 0 ? `${table}.*` : '*';
+    let query = `SELECT ${selectClause} FROM ${table}`;
+
+    // Add JOINs if provided (for advanced search/sort on relation fields)
+    if (customJoins.length > 0) {
+      query += ' ' + customJoins.join(' ');
+    }
+
+    // Add WHERE clause
+    query += ` WHERE ${where}`;
 
     // Ajouter ORDER BY si spécifié
     if (orderBy) {
@@ -276,6 +287,12 @@ async function getTableData(user, tableName, options = {}) {
     if (offset) {
       query += ` OFFSET ?`;
       params.push(parseInt(offset));
+    }
+
+    // Console log the query for debugging
+    if (customJoins.length > 0) {
+      console.log('Query with JOINs:', query);
+      console.log('Params:', params);
     }
 
     // Exécuter la requête
