@@ -910,10 +910,10 @@ class EditForm extends React.Component {
               style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }
             },
               e('div', {
-                style: { display: 'flex', alignItems: 'center', gap: '6px', cursor: count > 0 ? 'pointer' : 'default' },
-                onClick: count > 0 ? () => this.toggleRelation(relName) : null
+                style: { display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' },
+                onClick: () => this.toggleRelation(relName)
               },
-                count > 0 && e('span', { className: 'relation-toggle' }, isOpen ? '▼' : '▶'),
+                e('span', { className: 'relation-toggle' }, isOpen ? '▼' : '▶'),
                 e('strong', null, relName),
                 e('span', { className: 'relation-count' }, count)
               ),
@@ -926,7 +926,7 @@ class EditForm extends React.Component {
                 title: `Créer un nouveau ${relatedTable}`
               }, '+ Nouveau')
             ),
-            isOpen && count > 0 && e('div', { className: 'relation-list' },
+            isOpen && e('div', { className: 'relation-list' },
               e(SubList, {
                 rows: relRows,
                 tableName: relatedTable,
@@ -1531,12 +1531,12 @@ class RowDetailView extends React.Component {
               style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }
             },
               e('div', {
-                style: { display: 'flex', alignItems: 'center', gap: '6px', cursor: count > 0 ? 'pointer' : 'default' },
-                onClick: count > 0 ? () => this.toggleRelation(relName) : null
+                style: { display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' },
+                onClick: () => this.toggleRelation(relName)
               },
-                count > 0 && e('span', { className: 'relation-toggle' }, isOpen ? '▼' : '▶'),
+                e('span', { className: 'relation-toggle' }, isOpen ? '▼' : '▶'),
                 e('strong', null, relName),
-                count > 0 && e('span', { className: 'relation-count' }, count)
+                e('span', { className: 'relation-count' }, count)
               ),
               e('button', {
                 className: 'btn-add-relation-item',
@@ -1547,7 +1547,7 @@ class RowDetailView extends React.Component {
                 title: `Créer un nouveau ${relatedTable}`
               }, '+ Nouveau')
             ),
-            isOpen && count > 0 && e('div', { className: 'relation-list' },
+            isOpen && e('div', { className: 'relation-list' },
               e(SubList, {
                 rows: relRows,
                 tableName: relatedTable,
@@ -1767,9 +1767,10 @@ class SubList extends React.Component {
   }
 
   isParentField(fieldName, parentTable) {
+    if (!parentTable || typeof parentTable !== 'string') return false;
     const lowerField = fieldName.toLowerCase();
     const lowerParent = parentTable.toLowerCase();
-    return lowerField.includes(lowerParent) || lowerField === `id${parentTable}`;
+    return lowerField.includes(lowerParent) || lowerField === `id${lowerParent}`;
   }
 }
 
@@ -2056,8 +2057,15 @@ class AdvancedSortModal extends React.Component {
         if (field.relation && !field.arrayName) {
           const relatedTable = field.relation;
           // Add common sortable fields from related table
-          // TODO: Could fetch full structure, but for now use common fields
-          const commonRelatedFields = ['name', 'title', 'givenName', 'familyName', 'email', 'createdAt', 'updatedAt'];
+          const commonRelatedFields = [
+            'name', 'title', 'givenName', 'familyName', 'middleName',
+            'email', 'phone', 'slug', 'code', 'reference',
+            'status', 'type', 'category', 'priority',
+            'startDate', 'endDate', 'date',
+            'amount', 'price', 'quantity',
+            'description', 'label',
+            'createdAt', 'updatedAt'
+          ];
           commonRelatedFields.forEach(relField => {
             sortableFields.push({
               value: `${relatedTable}.${relField}`,
@@ -2366,8 +2374,26 @@ class AdvancedSearchModal extends React.Component {
             { name: 'title', type: 'varchar' },
             { name: 'givenName', type: 'varchar' },
             { name: 'familyName', type: 'varchar' },
+            { name: 'middleName', type: 'varchar' },
             { name: 'email', type: 'varchar' },
-            { name: 'description', type: 'text' }
+            { name: 'phone', type: 'varchar' },
+            { name: 'slug', type: 'varchar' },
+            { name: 'code', type: 'varchar' },
+            { name: 'reference', type: 'varchar' },
+            { name: 'status', type: 'varchar' },
+            { name: 'type', type: 'varchar' },
+            { name: 'category', type: 'varchar' },
+            { name: 'priority', type: 'varchar' },
+            { name: 'startDate', type: 'date' },
+            { name: 'endDate', type: 'date' },
+            { name: 'date', type: 'date' },
+            { name: 'amount', type: 'decimal' },
+            { name: 'price', type: 'decimal' },
+            { name: 'quantity', type: 'integer' },
+            { name: 'description', type: 'text' },
+            { name: 'label', type: 'varchar' },
+            { name: 'createdAt', type: 'datetime' },
+            { name: 'updatedAt', type: 'datetime' }
           ];
           commonRelatedFields.forEach(relField => {
             searchableFields.push({

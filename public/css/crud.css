@@ -238,7 +238,7 @@
   padding: 6px 8px;
   vertical-align: top;
   max-width: 20em;
-  max-height: 1.4em;
+  max-height: var(--max-col-height, 1.4em);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -989,7 +989,10 @@ tr.detail-row td {
     display: block;
     padding: 0;
     max-width: none;
+    max-height: none;
     border: none;
+    white-space: normal;
+    overflow: visible;
   }
 
   /* Label avant chaque valeur */
