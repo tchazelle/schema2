@@ -218,22 +218,59 @@ router.put('/:tableName/:id', async (req, res) => {
     delete data.updatedAt;
     delete data._relations; // Remove computed relations field
 
-    // Get table schema to filter only valid fields
+    // Get table schema to filter only valid fields and convert dates
     const tableSchema = schema.tables[table];
     if (tableSchema && tableSchema.fields) {
       // Filter to only include fields that exist in the schema
       const validFields = {};
       for (const [key, value] of Object.entries(data)) {
         if (tableSchema.fields[key] && !tableSchema.fields[key].as && !tableSchema.fields[key].calculate) {
-          validFields[key] = value;
+          const field = tableSchema.fields[key];
+
+          // Convert ISO datetime to MySQL format
+          if ((field.type === 'datetime' || field.type === 'date') && value) {
+            if (typeof value === 'string' && value.includes('T')) {
+              // Convert ISO format (2025-11-02T10:32:00.000Z) to MySQL format (2025-11-02 10:32:00)
+              const date = new Date(value);
+              if (!isNaN(date.getTime())) {
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                const hours = String(date.getHours()).padStart(2, '0');
+                const minutes = String(date.getMinutes()).padStart(2, '0');
+                const seconds = String(date.getSeconds()).padStart(2, '0');
+
+                if (field.type === 'datetime') {
+                  validFields[key] = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+                } else {
+                  validFields[key] = `${year}-${month}-${day}`;
+                }
+              } else {
+                validFields[key] = value;
+              }
+            } else {
+              validFields[key] = value;
+            }
+          } else {
+            validFields[key] = value;
+          }
         }
       }
       Object.assign(data, {}); // Clear data
       Object.assign(data, validFields); // Replace with valid fields only
     }
 
+    // Build UPDATE query manually to handle dates properly and log it
+    const updateFields = Object.keys(data).map(key => `\`${key}\` = ?`).join(', ');
+    const updateValues = Object.values(data);
+    const updateQuery = `UPDATE ${table} SET ${updateFields} WHERE id = ?`;
+
+    // Console.log the UPDATE query
+    console.log('UPDATE Query:', updateQuery);
+    console.log('UPDATE Values:', [...updateValues, id]);
+
     // Update record
-    await pool.query(`UPDATE ${table} SET ? WHERE id = ?`, [data, id]);
+    await pool.query(updateQuery, [...updateValues, id]);
 
     res.json({
       success: true,

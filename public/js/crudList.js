@@ -220,8 +220,24 @@ class RelationAutocomplete extends React.Component {
   }
 
   handleClickOutside = (event) => {
+    // Ignore if click is on the input itself or within the dropdown container
     if (this.dropdownRef.current && !this.dropdownRef.current.contains(event.target)) {
-      this.setState({ showDropdown: false });
+      // Use a small delay to prevent closing when clicking to focus
+      setTimeout(() => {
+        this.setState({ showDropdown: false });
+      }, 100);
+    }
+  }
+
+  handleFocus = () => {
+    const { searchText } = this.state;
+    // Show dropdown and trigger search if there's text
+    this.setState({ showDropdown: true });
+
+    if (searchText.length >= 1) {
+      // Trigger search when focusing with existing text
+      if (this.searchTimeout) clearTimeout(this.searchTimeout);
+      this.searchTimeout = setTimeout(() => this.performSearch(searchText), 100);
     }
   }
 
@@ -317,7 +333,7 @@ class RelationAutocomplete extends React.Component {
           value: searchText,
           onChange: this.handleSearchChange,
           onKeyDown: this.handleKeyDown,
-          onFocus: () => this.setState({ showDropdown: true }),
+          onFocus: this.handleFocus,
           disabled: disabled || initialLoading,
           placeholder: initialLoading ? 'Chargement...' : 'Rechercher...',
           ref: this.inputRef
@@ -551,12 +567,14 @@ class EditForm extends React.Component {
       originalRow: row,
       saveStatus: 'idle', // idle, saving, saved, error
       errors: {},
-      openRelations: new Set() // Track which 1:n relations are expanded
+      openRelations: new Set(), // Track which 1:n relations are expanded
+      dirtyFields: new Set() // Track which fields have been modified
     };
 
     this.saveTimeout = null;
     this.autosaveDelay = SCHEMA_CONFIG?.autosave || 500;
     this.fieldRefs = {};
+    this.pendingSaves = new Map(); // Track pending saves per field
   }
 
   componentDidMount() {
@@ -604,33 +622,44 @@ class EditForm extends React.Component {
   }
 
   handleFieldChange = (fieldName, value) => {
-    this.setState(prev => ({
-      formData: {
-        ...prev.formData,
-        [fieldName]: value
-      },
-      saveStatus: 'idle'
-    }));
+    this.setState(prev => {
+      const newDirtyFields = new Set(prev.dirtyFields);
+      newDirtyFields.add(fieldName);
 
-    // Auto-save with debounce
-    if (this.saveTimeout) {
-      clearTimeout(this.saveTimeout);
+      return {
+        formData: {
+          ...prev.formData,
+          [fieldName]: value
+        },
+        saveStatus: 'idle',
+        dirtyFields: newDirtyFields
+      };
+    });
+
+    // Auto-save this specific field with debounce
+    // Cancel any pending save for this field
+    if (this.pendingSaves.has(fieldName)) {
+      clearTimeout(this.pendingSaves.get(fieldName));
     }
 
-    this.saveTimeout = setTimeout(() => {
-      this.saveChanges();
+    // Schedule save for this field
+    const timeoutId = setTimeout(() => {
+      this.saveField(fieldName, value);
     }, this.autosaveDelay);
+
+    this.pendingSaves.set(fieldName, timeoutId);
   }
 
-  saveChanges = async () => {
+  saveField = async (fieldName, value) => {
     const { tableName, row } = this.props;
-    const { formData } = this.state;
 
     this.setState({ saveStatus: 'saving' });
 
     try {
-      // Remove _relations before sending (it's a computed field, not a database field)
-      const { _relations, ...dataToSend } = formData;
+      // Send only the changed field
+      const dataToSend = { [fieldName]: value };
+
+      console.log(`Saving field ${fieldName}:`, value);
 
       const response = await fetch(`/_api/${tableName}/${row.id}`, {
         method: 'PUT',
@@ -641,7 +670,16 @@ class EditForm extends React.Component {
       const data = await response.json();
 
       if (data.success) {
-        this.setState({ saveStatus: 'saved' });
+        this.setState(prev => {
+          const newDirtyFields = new Set(prev.dirtyFields);
+          newDirtyFields.delete(fieldName);
+
+          return {
+            saveStatus: 'saved',
+            dirtyFields: newDirtyFields
+          };
+        });
+
         // Reset to idle after 2 seconds
         setTimeout(() => {
           this.setState({ saveStatus: 'idle' });
@@ -649,14 +687,27 @@ class EditForm extends React.Component {
 
         // Notify parent of successful save
         if (this.props.onSave) {
-          this.props.onSave(formData);
+          this.props.onSave(this.state.formData);
         }
+
+        // Clear pending save
+        this.pendingSaves.delete(fieldName);
       } else {
-        this.setState({ saveStatus: 'error', errors: { _general: data.error } });
+        this.setState({ saveStatus: 'error', errors: { [fieldName]: data.error } });
       }
     } catch (error) {
-      console.error('Save error:', error);
-      this.setState({ saveStatus: 'error', errors: { _general: error.message } });
+      console.error(`Save error for field ${fieldName}:`, error);
+      this.setState({ saveStatus: 'error', errors: { [fieldName]: error.message } });
+    }
+  }
+
+  // Legacy method for compatibility (in case it's called elsewhere)
+  saveChanges = async () => {
+    const { dirtyFields } = this.state;
+
+    // Save all dirty fields
+    for (const fieldName of dirtyFields) {
+      await this.saveField(fieldName, this.state.formData[fieldName]);
     }
   }
 
@@ -2959,19 +3010,9 @@ class CreateFormModal extends React.Component {
       );
     }
 
-    // Special handling for granted field
+    // Skip granted field (now in header)
     if (fieldName === 'granted') {
-      return e('div', { key: fieldName, className: 'edit-field' },
-        e('label', { className: 'edit-field-label' }, label),
-        e(GrantedSelector, {
-          value: value,
-          publishableTo: tableConfig.publishableTo || [],
-          tableGranted: tableConfig.granted || {},
-          onChange: (val) => this.handleFieldChange(fieldName, val),
-          disabled: !permissions.canPublish,
-          compact: true
-        })
-      );
+      return null;
     }
 
     // Render based on field type
@@ -3056,12 +3097,11 @@ class CreateFormModal extends React.Component {
     const { tableName, structure, tableConfig, permissions, onClose, parentTable } = this.props;
     const { saveStatus, errors } = this.state;
 
-    // Get editable fields (exclude system fields and parent field in sub-lists)
+    // Get editable fields (exclude system fields, granted, and parent field in sub-lists)
     const editableFields = Object.keys(structure.fields).filter(f => {
-      if (['id', 'ownerId', 'createdAt', 'updatedAt'].includes(f)) return false;
+      if (['id', 'ownerId', 'granted', 'createdAt', 'updatedAt'].includes(f)) return false;
       const field = structure.fields[f];
       if (field.as || field.calculate) return false;
-      // Don't exclude granted - it should be editable
       // Hide parent field if this is a 1:N creation
       if (parentTable && typeof parentTable === 'string') {
         const lowerField = f.toLowerCase();
@@ -3078,7 +3118,7 @@ class CreateFormModal extends React.Component {
       onClick: this.handleOverlayClick
     },
       e('div', { className: 'modal-content-detail' },
-        // Fixed header
+        // Fixed header with granted selector
         e('div', { className: 'modal-header-detail' },
           e('div', { className: 'modal-title-section' },
             e('h3', { className: 'modal-title-detail' },
@@ -3086,11 +3126,22 @@ class CreateFormModal extends React.Component {
               parentTable && typeof parentTable === 'string' && e('span', { key: 'parent', className: 'modal-subtitle' }, ` (liée à ${parentTable})`)
             )
           ),
-          e('button', {
-            className: 'modal-close-detail',
-            onClick: onClose,
-            title: 'Fermer (Echap)'
-          }, '✖')
+          // Granted selector in header
+          e('div', { style: { display: 'flex', alignItems: 'center', gap: '12px' } },
+            e(GrantedSelector, {
+              value: this.state.formData.granted,
+              publishableTo: tableConfig.publishableTo || [],
+              tableGranted: tableConfig.granted || {},
+              onChange: (val) => this.handleFieldChange('granted', val),
+              disabled: !permissions.canPublish,
+              compact: true
+            }),
+            e('button', {
+              className: 'modal-close-detail',
+              onClick: onClose,
+              title: 'Fermer (Echap)'
+            }, '✖')
+          )
         ),
 
         // Scrollable body

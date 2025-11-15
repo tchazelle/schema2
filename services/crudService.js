@@ -66,12 +66,19 @@ class CrudService {
     let customWhere = '1=1';
     const searchParams = [];
 
+    // Track JOIN clauses for relations (used by both search and sort)
+    let joins = [];
+
     // Use advanced search if provided, otherwise use simple search
     if (advancedSearch) {
       const advancedResult = this.buildAdvancedSearchWhere(advancedSearch, table);
       if (advancedResult.where) {
         customWhere += ` AND (${advancedResult.where})`;
         searchParams.push(...advancedResult.params);
+        // Add JOINs from search
+        if (advancedResult.joins) {
+          joins.push(...advancedResult.joins);
+        }
       }
     } else if (search && search.length >= 2) {
       const searchFields = this.getSearchableFields(user, table);
@@ -91,10 +98,26 @@ class CrudService {
     let finalOrder = order;
 
     if (advancedSort && advancedSort.length > 0) {
-      // Build multi-criteria ORDER BY clause
+      // Build multi-criteria ORDER BY clause with JOIN support for relations
       const sortClauses = advancedSort
         .filter(criterion => criterion.field)
-        .map(criterion => `${criterion.field} ${criterion.order || 'ASC'}`)
+        .map(criterion => {
+          // Check if field references a relation (format: Table.field)
+          if (criterion.field.includes('.')) {
+            const [relatedTable, relatedField] = criterion.field.split('.');
+            // Find the foreign key field in the main table
+            const foreignKeyField = this.findForeignKeyField(table, relatedTable);
+            if (foreignKeyField) {
+              // Add JOIN if not already added
+              const joinAlias = `rel_${relatedTable}`;
+              if (!joins.some(j => j.includes(joinAlias))) {
+                joins.push(`LEFT JOIN ${relatedTable} AS ${joinAlias} ON ${table}.${foreignKeyField} = ${joinAlias}.id`);
+              }
+              return `${joinAlias}.${relatedField} ${criterion.order || 'ASC'}`;
+            }
+          }
+          return `${table}.${criterion.field} ${criterion.order || 'ASC'}`;
+        })
         .join(', ');
       if (sortClauses) {
         finalOrderBy = sortClauses; // Override with advanced sort
@@ -113,6 +136,7 @@ class CrudService {
       order: finalOrder,
       customWhere,
       customWhereParams: searchParams,
+      customJoins: joins, // Pass JOINs for advanced search/sort on relations
       compact,
       includeSchema: '1'
     });
@@ -327,11 +351,13 @@ class CrudService {
    * Build WHERE clause from advanced search criteria
    * @param {Object} searchGroups - Advanced search criteria (groups with AND/OR logic)
    * @param {string} table - Table name
-   * @returns {Object} - { where: string, params: array }
+   * @returns {Object} - { where: string, params: array, joins: array }
    */
   static buildAdvancedSearchWhere(searchGroups, table) {
     const groupClauses = [];
     const allParams = [];
+    const joins = [];
+    const joinedTables = new Set(); // Track which tables we've already joined
 
     // Each group is an OR condition
     for (const group of searchGroups) {
@@ -343,7 +369,27 @@ class CrudService {
       for (const condition of group.conditions) {
         if (!condition.field || !condition.operator) continue;
 
-        const { field, operator, value, value2 } = condition;
+        let { field, operator, value, value2 } = condition;
+
+        // Check if field references a relation (format: Table.field)
+        if (field.includes('.')) {
+          const [relatedTable, relatedField] = field.split('.');
+          // Find the foreign key field in the main table
+          const foreignKeyField = this.findForeignKeyField(table, relatedTable);
+          if (foreignKeyField) {
+            // Add JOIN if not already added
+            const joinAlias = `rel_${relatedTable}`;
+            if (!joinedTables.has(relatedTable)) {
+              joins.push(`LEFT JOIN ${relatedTable} AS ${joinAlias} ON ${table}.${foreignKeyField} = ${joinAlias}.id`);
+              joinedTables.add(relatedTable);
+            }
+            // Replace field with joined table alias
+            field = `${joinAlias}.${relatedField}`;
+          }
+        } else {
+          // Prefix table name for non-relation fields
+          field = `${table}.${field}`;
+        }
 
         // Build SQL based on operator
         switch (operator) {
@@ -444,11 +490,32 @@ class CrudService {
     if (groupClauses.length > 0) {
       return {
         where: groupClauses.join(' OR '),
-        params: allParams
+        params: allParams,
+        joins: joins
       };
     }
 
-    return { where: '', params: [] };
+    return { where: '', params: [], joins: [] };
+  }
+
+  /**
+   * Find the foreign key field that links to a related table
+   * @param {string} table - Main table name
+   * @param {string} relatedTable - Related table name
+   * @returns {string|null} - Foreign key field name or null
+   */
+  static findForeignKeyField(table, relatedTable) {
+    const tableSchema = schema.tables[table];
+    if (!tableSchema || !tableSchema.fields) return null;
+
+    // Look for a field with a relation to the target table
+    for (const [fieldName, field] of Object.entries(tableSchema.fields)) {
+      if (field.relation === relatedTable && !field.arrayName) {
+        return fieldName;
+      }
+    }
+
+    return null;
   }
 }
 
