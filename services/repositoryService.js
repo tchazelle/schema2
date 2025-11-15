@@ -14,7 +14,7 @@ class RepositoryService {
    */
   static async findById(tableName, id) {
     const [rows] = await pool.query(
-      `SELECT * FROM ${tableName} WHERE id = ?`,
+      `SELECT * FROM \`${tableName}\` WHERE id = ?`,
       [id]
     );
     return rows.length > 0 ? rows[0] : null;
@@ -31,7 +31,7 @@ class RepositoryService {
 
     const placeholders = ids.map(() => '?').join(',');
     const [rows] = await pool.query(
-      `SELECT * FROM ${tableName} WHERE id IN (${placeholders})`,
+      `SELECT * FROM \`${tableName}\` WHERE id IN (${placeholders})`,
       ids
     );
     return rows;
@@ -59,7 +59,7 @@ class RepositoryService {
       offset
     } = options;
 
-    let query = `SELECT * FROM ${tableName} WHERE ${where}`;
+    let query = `SELECT * FROM \`${tableName}\` WHERE ${where}`;
 
     if (orderBy) {
       const orderDirection = order.toUpperCase() === 'DESC' ? 'DESC' : 'ASC';
@@ -89,7 +89,7 @@ class RepositoryService {
    */
   static async findOne(tableName, where, params = []) {
     const [rows] = await pool.query(
-      `SELECT * FROM ${tableName} WHERE ${where} LIMIT 1`,
+      `SELECT * FROM \`${tableName}\` WHERE ${where} LIMIT 1`,
       params
     );
     return rows.length > 0 ? rows[0] : null;
@@ -104,7 +104,7 @@ class RepositoryService {
    */
   static async count(tableName, where = '1=1', params = []) {
     const [rows] = await pool.query(
-      `SELECT COUNT(*) as total FROM ${tableName} WHERE ${where}`,
+      `SELECT COUNT(*) as total FROM \`${tableName}\` WHERE ${where}`,
       params
     );
     return rows[0].total;
@@ -122,7 +122,7 @@ class RepositoryService {
     const placeholders = fields.map(() => '?').join(',');
 
     const [result] = await pool.query(
-      `INSERT INTO ${tableName} (${fields.join(',')}) VALUES (${placeholders})`,
+      `INSERT INTO \`${tableName}\` (${fields.join(',')}) VALUES (${placeholders})`,
       values
     );
 
@@ -145,7 +145,7 @@ class RepositoryService {
     const setClause = fields.map(field => `${field} = ?`).join(', ');
 
     const [result] = await pool.query(
-      `UPDATE ${tableName} SET ${setClause} WHERE id = ?`,
+      `UPDATE \`${tableName}\` SET ${setClause} WHERE id = ?`,
       [...values, id]
     );
 
@@ -169,7 +169,7 @@ class RepositoryService {
     const setClause = fields.map(field => `${field} = ?`).join(', ');
 
     const [result] = await pool.query(
-      `UPDATE ${tableName} SET ${setClause} WHERE ${where}`,
+      `UPDATE \`${tableName}\` SET ${setClause} WHERE ${where}`,
       [...values, ...whereParams]
     );
 
@@ -187,7 +187,7 @@ class RepositoryService {
    */
   static async delete(tableName, id) {
     const [result] = await pool.query(
-      `DELETE FROM ${tableName} WHERE id = ?`,
+      `DELETE FROM \`${tableName}\` WHERE id = ?`,
       [id]
     );
     return result.affectedRows;
@@ -202,7 +202,7 @@ class RepositoryService {
    */
   static async deleteWhere(tableName, where, params = []) {
     const [result] = await pool.query(
-      `DELETE FROM ${tableName} WHERE ${where}`,
+      `DELETE FROM \`${tableName}\` WHERE ${where}`,
       params
     );
     return result.affectedRows;
@@ -219,7 +219,7 @@ class RepositoryService {
   static async findByForeignKey(tableName, foreignKey, foreignValue, options = {}) {
     const { orderBy, order = 'ASC', limit } = options;
 
-    let query = `SELECT * FROM ${tableName} WHERE ${foreignKey} = ?`;
+    let query = `SELECT * FROM \`${tableName}\` WHERE ${foreignKey} = ?`;
     const params = [foreignValue];
 
     if (orderBy) {
@@ -255,7 +255,7 @@ class RepositoryService {
    */
   static async exists(tableName, id) {
     const [rows] = await pool.query(
-      `SELECT 1 FROM ${tableName} WHERE id = ? LIMIT 1`,
+      `SELECT 1 FROM \`${tableName}\` WHERE id = ? LIMIT 1`,
       [id]
     );
     return rows.length > 0;

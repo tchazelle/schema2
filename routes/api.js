@@ -56,7 +56,7 @@ router.get('/search/:tableName', async (req, res) => {
 
     // Query records
     const [rows] = await pool.query(
-      `SELECT ${selectFields} FROM ${table} WHERE ${whereClause} ORDER BY ${displayFields[0]} ASC LIMIT ?`,
+      `SELECT ${selectFields} FROM \`${table}\` WHERE ${whereClause} ORDER BY ${displayFields[0]} ASC LIMIT ?`,
       [...params, parseInt(limit)]
     );
 
@@ -162,7 +162,7 @@ router.post('/:tableName', async (req, res) => {
     }
 
     // Insert record
-    const [result] = await pool.query(`INSERT INTO ${table} SET ?`, [data]);
+    const [result] = await pool.query(`INSERT INTO \`${table}\` SET ?`, [data]);
 
     res.json({
       success: true,
@@ -204,7 +204,7 @@ router.put('/:tableName/:id', async (req, res) => {
     }
 
     // Get existing record
-    const [existingRows] = await pool.query(`SELECT * FROM ${table} WHERE id = ?`, [id]);
+    const [existingRows] = await pool.query(`SELECT * FROM \`${table}\` WHERE id = ?`, [id]);
     if (existingRows.length === 0) {
       return res.status(404).json({ success: false, error: 'Enregistrement non trouvé' });
     }
@@ -272,7 +272,7 @@ router.put('/:tableName/:id', async (req, res) => {
     // Build UPDATE query manually to handle dates properly and log it
     const updateFields = Object.keys(data).map(key => `\`${key}\` = ?`).join(', ');
     const updateValues = Object.values(data);
-    const updateQuery = `UPDATE ${table} SET ${updateFields} WHERE id = ?`;
+    const updateQuery = `UPDATE \`${table}\` SET ${updateFields} WHERE id = ?`;
 
     // Console.log the UPDATE query
     console.log('UPDATE Query:', updateQuery);
@@ -320,7 +320,7 @@ router.delete('/:tableName/:id', async (req, res) => {
     }
 
     // Get existing record
-    const [existingRows] = await pool.query(`SELECT * FROM ${table} WHERE id = ?`, [id]);
+    const [existingRows] = await pool.query(`SELECT * FROM \`${table}\` WHERE id = ?`, [id]);
     if (existingRows.length === 0) {
       return res.status(404).json({ success: false, error: 'Enregistrement non trouvé' });
     }
@@ -334,7 +334,7 @@ router.delete('/:tableName/:id', async (req, res) => {
     }
 
     // Delete record
-    await pool.query(`DELETE FROM ${table} WHERE id = ?`, [id]);
+    await pool.query(`DELETE FROM \`${table}\` WHERE id = ?`, [id]);
 
     res.json({
       success: true,

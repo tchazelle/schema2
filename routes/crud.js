@@ -414,7 +414,7 @@ router.get('/:table/:id', async (req, res) => {
 
     // Récupérer l'enregistrement
     const [rows] = await pool.query(
-      `SELECT * FROM ${table} WHERE id = ?`,
+      `SELECT * FROM \`${table}\` WHERE id = ?`,
       [id]
     );
 
