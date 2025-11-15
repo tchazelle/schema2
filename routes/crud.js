@@ -12,6 +12,56 @@ const TableDataService = require('../services/tableDataService');
 // getTableStructure() a été déplacée dans SchemaService.getTableStructure()
 
 /**
+ * =============================================================================
+ * ROUTES CRUD - Documentation et Analyse d'utilisation
+ * =============================================================================
+ *
+ * Ce fichier définit les routes pour l'interface CRUD dynamique.
+ * Toutes les routes sont préfixées par /_crud (défini dans server.js)
+ *
+ * ROUTES ACTIVES (utilisées par le frontend):
+ * ============================================
+ *
+ * 1. GET /_crud/:table/data
+ *    - Retourne les données JSON pour l'interface CRUD list
+ *    - Utilisée par: crudList.js (ligne 3570)
+ *    - Paramètres: limit, offset, orderBy, order, search, showSystemFields, selectedFields, advancedSearch, advancedSort
+ *    - Service: CrudService.getListData()
+ *    - Status: ✅ ACTIVE
+ *
+ * 2. GET /_crud/:table
+ *    - Sert l'interface HTML CRUD React-based avec navigation
+ *    - Utilisée par: Navigation utilisateur (liens menu, etc.)
+ *    - Template: TemplateService.htmlCrudPage()
+ *    - Service: CrudService.getMenuTables()
+ *    - Status: ✅ ACTIVE
+ *
+ * 3. GET /_crud/:table/structure
+ *    - Retourne la structure des champs accessibles avec les relations
+ *    - Utilisée par: fieldSelectorUI.js (ligne 30), crudList.js (lignes 1719, 2162, 2202, 2526, 2566)
+ *    - Service: SchemaService.getTableStructure()
+ *    - Status: ✅ ACTIVE
+ *
+ * 4. GET /_crud/:table/:id
+ *    - Récupère un enregistrement spécifique avec vérification des permissions
+ *    - Utilisée par: crudList.js (ligne 1054) - lien vers la fiche détail
+ *    - Actuellement: Retourne JSON uniquement
+ *    - TODO: Supporter HTML pour affichage plein écran de la fiche
+ *    - Status: ⚠️ EN COURS DE MODIFICATION (JSON + HTML à implémenter)
+ *
+ * ROUTES LEGACY (non utilisées ou obsolètes):
+ * ===========================================
+ *
+ * 5. GET /_crud/:table/view
+ *    - Interface HTML legacy pour visualiser la structure avec fieldSelectorUI
+ *    - Utilisée par: Aucune référence dans le code frontend actuel
+ *    - Status: ⚠️ LEGACY - À considérer pour suppression
+ *    - Note: Pourrait être utile pour debug/développement
+ *
+ * =============================================================================
+ */
+
+/**
  * GET /_crud/:table/data
  * Returns JSON data for the CRUD list interface
  */
@@ -150,7 +200,10 @@ router.get('/:table', async (req, res) => {
 /**
  * GET /_crud/:table/view
  * Affiche une interface HTML pour visualiser la structure de la table avec fieldSelectorUI
- * (Legacy route)
+ *
+ * ⚠️ LEGACY ROUTE - Non utilisée dans le frontend actuel
+ * Cette route pourrait être supprimée ou conservée uniquement pour debug/développement
+ * Aucune référence trouvée dans crudList.js ou autres composants frontend
  */
 router.get('/:table/view', async (req, res) => {
   try {
@@ -322,6 +375,7 @@ router.get('/:table/structure', async (req, res) => {
 /**
  * GET /_crud/:table/:id
  * Récupère un enregistrement spécifique avec vérification des permissions
+ * Retourne JSON si Accept: application/json, sinon HTML fullscreen
  */
 router.get('/:table/:id', async (req, res) => {
   try {
@@ -333,16 +387,29 @@ router.get('/:table/:id', async (req, res) => {
 
     // Vérifier si la table existe dans le schéma
     if (!table) {
-      return res.status(404).json({
-        error: 'Table non trouvée'
-      });
+      // Check if HTML or JSON response is expected
+      const acceptsJson = req.accepts(['html', 'json']) === 'json';
+      if (acceptsJson) {
+        return res.status(404).json({ error: 'Table non trouvée' });
+      } else {
+        return res.status(404).send(`
+          <!DOCTYPE html>
+          <html><body><h1>Table non trouvée</h1><p>La table "${tableParam}" n'existe pas.</p></body></html>
+        `);
+      }
     }
 
     // Vérifier si l'utilisateur a accès à la table
     if (!hasPermission(user, table, 'read')) {
-      return res.status(403).json({
-        error: 'Accès refusé à cette table'
-      });
+      const acceptsJson = req.accepts(['html', 'json']) === 'json';
+      if (acceptsJson) {
+        return res.status(403).json({ error: 'Accès refusé à cette table' });
+      } else {
+        return res.status(403).send(`
+          <!DOCTYPE html>
+          <html><body><h1>Accès refusé</h1><p>Vous n'avez pas la permission d'accéder à cette table.</p></body></html>
+        `);
+      }
     }
 
     // Récupérer l'enregistrement
@@ -352,9 +419,15 @@ router.get('/:table/:id', async (req, res) => {
     );
 
     if (rows.length === 0) {
-      return res.status(404).json({
-        error: 'Enregistrement non trouvé'
-      });
+      const acceptsJson = req.accepts(['html', 'json']) === 'json';
+      if (acceptsJson) {
+        return res.status(404).json({ error: 'Enregistrement non trouvé' });
+      } else {
+        return res.status(404).send(`
+          <!DOCTYPE html>
+          <html><body><h1>Enregistrement non trouvé</h1><p>L'enregistrement #${id} n'existe pas dans la table ${table}.</p></body></html>
+        `);
+      }
     }
 
     const row = rows[0];
@@ -364,9 +437,15 @@ router.get('/:table/:id', async (req, res) => {
       // Si granted = draft, seul le propriétaire peut lire
       if (row.granted === 'draft') {
         if (!user || row.ownerId !== user.id) {
-          return res.status(403).json({
-            error: 'Accès refusé : cet enregistrement est en brouillon'
-          });
+          const acceptsJson = req.accepts(['html', 'json']) === 'json';
+          if (acceptsJson) {
+            return res.status(403).json({ error: 'Accès refusé : cet enregistrement est en brouillon' });
+          } else {
+            return res.status(403).send(`
+              <!DOCTYPE html>
+              <html><body><h1>Accès refusé</h1><p>Cet enregistrement est en brouillon.</p></body></html>
+            `);
+          }
         }
       }
       // Si granted = published @role, vérifier le rôle
@@ -374,9 +453,15 @@ router.get('/:table/:id', async (req, res) => {
         const requiredRole = row.granted.replace('published @', '');
         const userRoles = getUserAllRoles(user);
         if (!userRoles.includes(requiredRole)) {
-          return res.status(403).json({
-            error: `Accès refusé : nécessite le rôle ${requiredRole}`
-          });
+          const acceptsJson = req.accepts(['html', 'json']) === 'json';
+          if (acceptsJson) {
+            return res.status(403).json({ error: `Accès refusé : nécessite le rôle ${requiredRole}` });
+          } else {
+            return res.status(403).send(`
+              <!DOCTYPE html>
+              <html><body><h1>Accès refusé</h1><p>Nécessite le rôle ${requiredRole}.</p></body></html>
+            `);
+          }
         }
       }
       // Si granted = shared, adopter le granted de la table (déjà vérifié)
@@ -392,18 +477,53 @@ router.get('/:table/:id', async (req, res) => {
       }
     }
 
-    res.json({
-      success: true,
-      table: table,
-      id: id,
-      rows: filteredRow
-    });
+    // Check if JSON or HTML response is expected
+    const acceptsJson = req.accepts(['html', 'json']) === 'json';
+
+    if (acceptsJson) {
+      // Return JSON for API calls
+      res.json({
+        success: true,
+        table: table,
+        id: id,
+        rows: filteredRow
+      });
+    } else {
+      // Return HTML fullscreen view
+      // Get accessible tables for menu
+      const accessibleTables = user ? CrudService.getMenuTables(user) : [];
+
+      // Get pages for menu
+      let pages = [];
+      try {
+        const pagesFromTablePage = await TableDataService.getTableData(user, schema.menu.page, {});
+        pages = pagesFromTablePage.rows || [];
+      } catch (error) {
+        console.error('Error loading pages for menu:', error);
+      }
+
+      const html = TemplateService.htmlCrudDetailPage({
+        user: user,
+        pages: pages,
+        table: table,
+        recordId: id,
+        accessibleTables: accessibleTables
+      });
+
+      res.send(html);
+    }
 
   } catch (error) {
     console.error('Erreur lors de la récupération de l\'enregistrement:', error);
-    res.status(500).json({
-      error: 'Erreur serveur lors de la récupération de l\'enregistrement'
-    });
+    const acceptsJson = req.accepts(['html', 'json']) === 'json';
+    if (acceptsJson) {
+      res.status(500).json({ error: 'Erreur serveur lors de la récupération de l\'enregistrement' });
+    } else {
+      res.status(500).send(`
+        <!DOCTYPE html>
+        <html><body><h1>Erreur serveur</h1><p>${error.message}</p></body></html>
+      `);
+    }
   }
 });
 
