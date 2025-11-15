@@ -710,7 +710,8 @@ class EditForm extends React.Component {
           publishableTo: tableConfig.publishableTo || [],
           tableGranted: tableConfig.granted || {},
           onChange: (val) => this.handleFieldChange(fieldName, val),
-          disabled: !permissions.canPublish
+          disabled: !permissions.canPublish,
+          compact: true
         })
       );
     }
@@ -2804,10 +2805,58 @@ class CreateFormModal extends React.Component {
       const data = await response.json();
 
       if (data.success) {
-        this.setState({ saveStatus: 'idle', newRecordId: data.id });
+        // Show success message and keep modal open for creating another record
+        this.setState({ saveStatus: 'success', newRecordId: data.id });
+
+        // Call onSuccess to refresh parent list
         if (onSuccess) {
           onSuccess(data.id);
         }
+
+        // Reset form after 1 second
+        setTimeout(() => {
+          // Reset form data but keep parent field if it exists
+          const { structure, parentTable, parentId } = this.props;
+          const formData = {};
+
+          Object.keys(structure.fields).forEach((fieldName) => {
+            const field = structure.fields[fieldName];
+
+            if (['id', 'ownerId', 'granted', 'createdAt', 'updatedAt'].includes(fieldName)) {
+              return;
+            }
+            if (field.as || field.calculate) {
+              return;
+            }
+
+            // Re-set parent field if this is a 1:N creation
+            if (parentTable && typeof parentTable === 'string' && parentId) {
+              const lowerField = fieldName.toLowerCase();
+              const lowerParent = parentTable.toLowerCase();
+              if (lowerField.includes(lowerParent) || lowerField === `${lowerParent}id` || lowerField === `id${lowerParent}`) {
+                formData[fieldName] = parseInt(parentId);
+                return;
+              }
+            }
+
+            // Reset to default values
+            if (field.type === 'boolean') {
+              formData[fieldName] = false;
+            } else {
+              formData[fieldName] = '';
+            }
+          });
+
+          // Reset granted to draft
+          formData.granted = 'draft';
+
+          this.setState({
+            formData,
+            saveStatus: 'idle',
+            errors: {},
+            newRecordId: null
+          });
+        }, 1000);
       } else {
         this.setState({ saveStatus: 'error', errors: { _general: data.error } });
       }
@@ -2865,7 +2914,8 @@ class CreateFormModal extends React.Component {
           publishableTo: tableConfig.publishableTo || [],
           tableGranted: tableConfig.granted || {},
           onChange: (val) => this.handleFieldChange(fieldName, val),
-          disabled: !permissions.canPublish
+          disabled: !permissions.canPublish,
+          compact: true
         })
       );
     }
@@ -3002,6 +3052,9 @@ class CreateFormModal extends React.Component {
             saveStatus === 'saving' && e('div', {
               style: { padding: '8px 12px', marginBottom: '12px', textAlign: 'center', background: '#d1ecf1', borderRadius: '4px' }
             }, '💾 Création en cours...'),
+            saveStatus === 'success' && e('div', {
+              style: { padding: '8px 12px', marginBottom: '12px', textAlign: 'center', background: '#d4edda', borderRadius: '4px', color: '#155724' }
+            }, '✅ Fiche créée avec succès ! Le formulaire a été réinitialisé.'),
 
             // Form fields grid
             e('div', { className: 'edit-form-grid' },
