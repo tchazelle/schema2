@@ -3565,7 +3565,7 @@ class CrudList extends React.Component {
       
       const response = await fetch(`/_api/${this.props.table}/${recordId}?relation=all&compact=1`);
       const recordData = await response.json();
-      //console.log("// Use TableDataService endpoint to get full record with relations",recordData)  
+      
       recordData.row = recordData?.rows[0] // BUG trouvé
       if (recordData.success && recordData.row) {  // BUG row n'était pas défini
         // Set data with structure, tableConfig, and permissions for the modal

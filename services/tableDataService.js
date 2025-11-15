@@ -132,12 +132,12 @@ async function loadRelationsForRow(user, tableName, row, options = {}) {
             for (const subFieldName in subRelationsN1) {
               const subRelConfig = subRelationsN1[subFieldName];
 
-              console.log("subRelConfig", subRelConfig, " subFieldName",subFieldName, "relationName", relationName)
+              //console.log("subRelConfig", subRelConfig, " subFieldName",subFieldName, "relationName", relationName)
 
               // CORRECTION: Exclure la relation qui pointe vers la table parent (éviter le doublon)
               // Ex: dans OrganizationPerson, ne pas charger Organization car c'est déjà la fiche master
-              if (subRelConfig.relatedTable === tableName) { // FAUX on peut avoir deux relations sur une même table
-              if (subRelConfig.arrayName === relationName  )
+              //if (subRelConfig.relatedTable === tableName) { // FAUX on peut avoir deux relations sur une même table
+              if (subRelConfig.arrayName === relationName  ) {
                 continue; // Skip cette relation
               }
               
