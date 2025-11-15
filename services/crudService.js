@@ -123,6 +123,34 @@ class CrudService {
         finalOrderBy = sortClauses; // Override with advanced sort
         finalOrder = ''; // Clear order as it's already in finalOrderBy
       }
+    } else if (finalOrderBy && finalOrderBy.includes('.')) {
+      // Handle simple sort on relation fields (format: Table.field or MainTable.Table.field)
+      let sortField = finalOrderBy;
+
+      // Remove main table prefix if present (e.g., "CommunicateAction.Person.familyName" → "Person.familyName")
+      const parts = sortField.split('.');
+      if (parts.length === 3 && parts[0] === table) {
+        sortField = `${parts[1]}.${parts[2]}`;
+      }
+
+      if (sortField.includes('.')) {
+        const [relatedTable, relatedField] = sortField.split('.');
+        // Find the foreign key field in the main table
+        const foreignKeyField = this.findForeignKeyField(table, relatedTable);
+        if (foreignKeyField) {
+          // Add JOIN if not already added
+          const joinAlias = `rel_${relatedTable}`;
+          if (!joins.some(j => j.includes(joinAlias))) {
+            joins.push(`LEFT JOIN ${relatedTable} AS ${joinAlias} ON ${table}.${foreignKeyField} = ${joinAlias}.id`);
+          }
+          finalOrderBy = `${joinAlias}.${relatedField}`;
+        }
+      }
+    } else if (finalOrderBy) {
+      // Prefix table name for non-relation fields to avoid ambiguity when JOINs are present
+      if (joins.length > 0 && !finalOrderBy.includes('.')) {
+        finalOrderBy = `${table}.${finalOrderBy}`;
+      }
     }
 
     // Get data with relations
@@ -509,8 +537,10 @@ class CrudService {
     if (!tableSchema || !tableSchema.fields) return null;
 
     // Look for a field with a relation to the target table
+    // Note: arrayName defines the reverse 1:N relation property name,
+    // but doesn't prevent this field from being used as a N:1 foreign key
     for (const [fieldName, field] of Object.entries(tableSchema.fields)) {
-      if (field.relation === relatedTable && !field.arrayName) {
+      if (field.relation === relatedTable && field.type === 'integer') {
         return fieldName;
       }
     }
