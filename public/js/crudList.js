@@ -550,7 +550,8 @@ class EditForm extends React.Component {
       formData: formData,
       originalRow: row,
       saveStatus: 'idle', // idle, saving, saved, error
-      errors: {}
+      errors: {},
+      openRelations: new Set() // Track which 1:n relations are expanded
     };
 
     this.saveTimeout = null;
@@ -559,8 +560,22 @@ class EditForm extends React.Component {
   }
 
   componentDidMount() {
+    // Open "Strong" relations by default, keep "Weak" relations closed
+    const { structure } = this.props;
+    const strongRelations = new Set();
+
+    if (structure && structure.fields) {
+      Object.entries(structure.fields).forEach(([fieldName, field]) => {
+        if (field.arrayName && field.relationshipStrength === 'Strong') {
+          strongRelations.add(field.arrayName);
+        }
+      });
+    }
+
+    this.setState({ openRelations: strongRelations });
+
     // Auto-focus the specified field or first editable field
-    const { focusFieldName, structure } = this.props;
+    const { focusFieldName } = this.props;
 
     if (focusFieldName && this.fieldRefs[focusFieldName]) {
       setTimeout(() => {
@@ -807,9 +822,21 @@ class EditForm extends React.Component {
     return lowerField.includes(lowerParent) || lowerField === `id${lowerParent}`;
   }
 
+  toggleRelation = (relName) => {
+    this.setState(prev => {
+      const newSet = new Set(prev.openRelations);
+      if (newSet.has(relName)) {
+        newSet.delete(relName);
+      } else {
+        newSet.add(relName);
+      }
+      return { openRelations: newSet };
+    });
+  }
+
   render() {
     const { structure, onClose, row, tableName, tableConfig, permissions, hideRelations1N = false, parentTable } = this.props;
-    const { saveStatus, errors, formData } = this.state;
+    const { saveStatus, errors, formData, openRelations } = this.state;
 
     // Get editable fields (exclude system fields, id, granted, relations arrays, and parent fields in sub-lists)
     const editableFields = Object.keys(structure.fields).filter(f =>
@@ -874,14 +901,22 @@ class EditForm extends React.Component {
           const relName = relation.name;
           const relRows = relation.data;
           const relatedTable = relation.relatedTable;
+          const isOpen = openRelations.has(relName);
+          const count = relRows.length;
 
           return e('div', { key: relName, className: 'relation-section' },
             e('div', {
               className: 'relation-header',
               style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }
             },
-              e('strong', null, relName),
-              e('span', { className: 'relation-count' }, relRows.length),
+              e('div', {
+                style: { display: 'flex', alignItems: 'center', gap: '6px', cursor: count > 0 ? 'pointer' : 'default' },
+                onClick: count > 0 ? () => this.toggleRelation(relName) : null
+              },
+                count > 0 && e('span', { className: 'relation-toggle' }, isOpen ? '▼' : '▶'),
+                e('strong', null, relName),
+                e('span', { className: 'relation-count' }, count)
+              ),
               e('button', {
                 className: 'btn-add-relation-item',
                 onClick: (ev) => {
@@ -891,7 +926,7 @@ class EditForm extends React.Component {
                 title: `Créer un nouveau ${relatedTable}`
               }, '+ Nouveau')
             ),
-            e('div', { className: 'relation-list' },
+            isOpen && count > 0 && e('div', { className: 'relation-list' },
               e(SubList, {
                 rows: relRows,
                 tableName: relatedTable,
@@ -2013,8 +2048,25 @@ class AdvancedSortModal extends React.Component {
         sortableFields.push({
           value: fieldName,
           label: field.label || fieldName,
-          isRelation: false
+          isRelation: !!field.relation,
+          group: 'Champs de la table'
         });
+
+        // If this is an n:1 relation, add common fields from the related table
+        if (field.relation && !field.arrayName) {
+          const relatedTable = field.relation;
+          // Add common sortable fields from related table
+          // TODO: Could fetch full structure, but for now use common fields
+          const commonRelatedFields = ['name', 'title', 'givenName', 'familyName', 'email', 'createdAt', 'updatedAt'];
+          commonRelatedFields.forEach(relField => {
+            sortableFields.push({
+              value: `${relatedTable}.${relField}`,
+              label: `${relatedTable} › ${relField}`,
+              isRelation: true,
+              group: `Relations N:1 (${relatedTable})`
+            });
+          });
+        }
       }
     });
 
@@ -2301,8 +2353,32 @@ class AdvancedSearchModal extends React.Component {
           value: fieldName,
           label: field.label || fieldName,
           type: field.type || 'varchar',
-          isRelation: !!field.relation
+          isRelation: !!field.relation,
+          group: 'Champs de la table'
         });
+
+        // If this is an n:1 relation, add common fields from the related table
+        if (field.relation && !field.arrayName) {
+          const relatedTable = field.relation;
+          // Add common searchable fields from related table
+          const commonRelatedFields = [
+            { name: 'name', type: 'varchar' },
+            { name: 'title', type: 'varchar' },
+            { name: 'givenName', type: 'varchar' },
+            { name: 'familyName', type: 'varchar' },
+            { name: 'email', type: 'varchar' },
+            { name: 'description', type: 'text' }
+          ];
+          commonRelatedFields.forEach(relField => {
+            searchableFields.push({
+              value: `${relatedTable}.${relField.name}`,
+              label: `${relatedTable} › ${relField.name}`,
+              type: relField.type,
+              isRelation: true,
+              group: `Relations N:1 (${relatedTable})`
+            });
+          });
+        }
       }
     });
 
@@ -2543,7 +2619,7 @@ class CreateFormModal extends React.Component {
       }
 
       // Set parent field if this is a 1:N creation
-      if (parentTable && parentId) {
+      if (parentTable && typeof parentTable === 'string' && parentId) {
         const lowerField = fieldName.toLowerCase();
         const lowerParent = parentTable.toLowerCase();
         if (lowerField.includes(lowerParent) || lowerField === `${lowerParent}id` || lowerField === `id${lowerParent}`) {
@@ -2587,7 +2663,7 @@ class CreateFormModal extends React.Component {
       if (['id', 'ownerId', 'granted', 'createdAt', 'updatedAt'].includes(f)) return false;
       if (field.as || field.calculate) return false;
       // Skip parent field if this is a 1:N creation
-      if (parentTable) {
+      if (parentTable && typeof parentTable === 'string') {
         const lowerField = f.toLowerCase();
         const lowerParent = parentTable.toLowerCase();
         if (lowerField.includes(lowerParent) || lowerField === `${lowerParent}id` || lowerField === `id${lowerParent}`) {
@@ -2667,7 +2743,7 @@ class CreateFormModal extends React.Component {
     }
 
     // Hide parent field if this is a 1:N creation (it's pre-filled and hidden)
-    if (parentTable) {
+    if (parentTable && typeof parentTable === 'string') {
       const lowerField = fieldName.toLowerCase();
       const lowerParent = parentTable.toLowerCase();
       if (lowerField.includes(lowerParent) || lowerField === `${lowerParent}id` || lowerField === `id${lowerParent}`) {
@@ -2797,7 +2873,7 @@ class CreateFormModal extends React.Component {
       if (field.as || field.calculate) return false;
       // Don't exclude granted - it should be editable
       // Hide parent field if this is a 1:N creation
-      if (parentTable) {
+      if (parentTable && typeof parentTable === 'string') {
         const lowerField = f.toLowerCase();
         const lowerParent = parentTable.toLowerCase();
         if (lowerField.includes(lowerParent) || lowerField === `${lowerParent}id` || lowerField === `id${lowerParent}`) {
