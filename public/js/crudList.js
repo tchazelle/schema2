@@ -848,21 +848,40 @@ class EditForm extends React.Component {
     // Extract 1:N relations (only if not hidden)
     const relations1N = [];
     if (!hideRelations1N) {
-      // Get all defined 1:N relations from schema IN ORDER
-      Object.entries(structure.fields).forEach(([fieldName, field]) => {
-        if (field.arrayName) {
-          const relName = field.arrayName;
-          const relData = (row._relations && row._relations[relName]) || [];
-          const relatedTable = field.relation;
+      // Get all defined 1:N relations from structure.relations (preferred method)
+      if (structure.relations) {
+        Object.entries(structure.relations).forEach(([relationName, relationConfig]) => {
+          if (relationConfig.type === 'one-to-many') {
+            // Check if data exists in row._relations, otherwise use empty array
+            const relData = (row._relations && row._relations[relationName]) || [];
 
-          relations1N.push({
-            name: relName,
-            data: Array.isArray(relData) ? relData : [],
-            relatedTable: relatedTable,
-            relationshipStrength: field.relationshipStrength
-          });
-        }
-      });
+            relations1N.push({
+              name: relationName,
+              data: Array.isArray(relData) ? relData : [],
+              relatedTable: relationConfig.relatedTable,
+              relationshipStrength: relationConfig.relationshipStrength
+            });
+          }
+        });
+      }
+
+      // Fallback: Get 1:N relations from fields with arrayName (old method)
+      if (relations1N.length === 0) {
+        Object.entries(structure.fields).forEach(([fieldName, field]) => {
+          if (field.arrayName) {
+            const relName = field.arrayName;
+            const relData = (row._relations && row._relations[relName]) || [];
+            const relatedTable = field.relation;
+
+            relations1N.push({
+              name: relName,
+              data: Array.isArray(relData) ? relData : [],
+              relatedTable: relatedTable,
+              relationshipStrength: field.relationshipStrength
+            });
+          }
+        });
+      }
 
       // Also include any 1:N relations from row._relations not yet in relations1N
       if (row._relations) {
@@ -1457,23 +1476,40 @@ class RowDetailView extends React.Component {
     // Maintain order from schema definition
     const relations1N = [];
 
-    // Get all defined 1:N relations from schema IN ORDER
-    Object.entries(structure.fields).forEach(([fieldName, field]) => {
-      if (field.arrayName) {
-        // This field has a reverse relation (1:N)
-        const relName = field.arrayName;
-        // Check if data exists in row._relations, otherwise use empty array
-        const relData = (row._relations && row._relations[relName]) || [];
-        const relatedTable = field.relation;
+    // Get all defined 1:N relations from structure.relations (preferred method)
+    if (structure.relations) {
+      Object.entries(structure.relations).forEach(([relationName, relationConfig]) => {
+        if (relationConfig.type === 'one-to-many') {
+          // Check if data exists in row._relations, otherwise use empty array
+          const relData = (row._relations && row._relations[relationName]) || [];
 
-        relations1N.push({
-          name: relName,
-          data: Array.isArray(relData) ? relData : [],
-          relatedTable: relatedTable,
-          relationshipStrength: field.relationshipStrength
-        });
-      }
-    });
+          relations1N.push({
+            name: relationName,
+            data: Array.isArray(relData) ? relData : [],
+            relatedTable: relationConfig.relatedTable,
+            relationshipStrength: relationConfig.relationshipStrength
+          });
+        }
+      });
+    }
+
+    // Fallback: Get 1:N relations from fields with arrayName (old method)
+    if (relations1N.length === 0) {
+      Object.entries(structure.fields).forEach(([fieldName, field]) => {
+        if (field.arrayName) {
+          const relName = field.arrayName;
+          const relData = (row._relations && row._relations[relName]) || [];
+          const relatedTable = field.relation;
+
+          relations1N.push({
+            name: relName,
+            data: Array.isArray(relData) ? relData : [],
+            relatedTable: relatedTable,
+            relationshipStrength: field.relationshipStrength
+          });
+        }
+      });
+    }
 
     // Also include any 1:N relations from row._relations not yet in relations1N
     // (for backwards compatibility)
