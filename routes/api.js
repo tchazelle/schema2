@@ -30,8 +30,15 @@ router.get('/search/:tableName', async (req, res) => {
 
     // Get table config to find displayFields
     const tableConfig = SchemaService.getTableConfig(table);
-    const displayField = tableConfig.displayField || 'name';
-    const displayFields = Array.isArray(displayField) ? displayField : [displayField];
+    const defaultConfig = schema.defaultConfigTable || {};
+
+    // Use table-specific displayFields, fallback to default config, then to ['name']
+    let displayFields = tableConfig.displayFields || defaultConfig.displayFields || ['name'];
+
+    // Ensure displayFields is always an array
+    if (!Array.isArray(displayFields)) {
+      displayFields = [displayFields];
+    }
 
     // Build search condition
     let whereClause = '1=1';
