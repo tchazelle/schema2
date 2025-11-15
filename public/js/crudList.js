@@ -1092,7 +1092,8 @@ class RelationRenderer extends React.Component {
  */
 class TableHeader extends React.Component {
   render() {
-    const { fields, structure, orderBy, order, onSort, displayMode, showDeleteButton, permissions } = this.props;
+    const { fields, structure, orderBy, order, onSort, displayMode, showDeleteButton, permissions, advancedSortCriteria } = this.props;
+    const hasAdvancedSort = advancedSortCriteria && advancedSortCriteria.length > 0;
 
     if (displayMode === 'raw') {
       return e('thead', null,
@@ -1114,11 +1115,12 @@ class TableHeader extends React.Component {
           const field = structure.fields[fieldName];
           const label = field?.label || fieldName;
           const isSorted = orderBy === fieldName;
-          const sortIcon = isSorted ? (order === 'ASC' ? ' ▲' : ' ▼') : '';
+          // Hide sort icon when advanced sort is active
+          const sortIcon = (!hasAdvancedSort && isSorted) ? (order === 'ASC' ? ' ▲' : ' ▼') : '';
 
           return e('th', {
             key: fieldName,
-            className: `sortable ${isSorted ? 'sorted' : ''}`,
+            className: `sortable ${isSorted && !hasAdvancedSort ? 'sorted' : ''}`,
             onClick: () => onSort(fieldName)
           }, label, sortIcon);
         })
@@ -3595,7 +3597,10 @@ class CrudList extends React.Component {
         const parsed = JSON.parse(prefs);
         this.setState({
           displayMode: parsed.displayMode || 'default',
-          selectedFields: parsed.selectedFields || null
+          selectedFields: parsed.selectedFields || null,
+          orderBy: parsed.orderBy || 'updatedAt',
+          order: parsed.order || 'DESC',
+          advancedSortCriteria: parsed.advancedSortCriteria || []
         });
       } catch (e) {
         console.error('Failed to parse preferences:', e);
@@ -3604,8 +3609,8 @@ class CrudList extends React.Component {
   }
 
   saveUserPreferences = () => {
-    const { displayMode, selectedFields } = this.state;
-    const prefs = JSON.stringify({ displayMode, selectedFields });
+    const { displayMode, selectedFields, orderBy, order, advancedSortCriteria } = this.state;
+    const prefs = JSON.stringify({ displayMode, selectedFields, orderBy, order, advancedSortCriteria });
     this.setCookie(`crud_prefs_${this.props.table}`, prefs, 365);
   }
 
@@ -3679,23 +3684,29 @@ class CrudList extends React.Component {
         if (prev.order === 'ASC') {
           return {
             orderBy: fieldName,
-            order: 'DESC'
+            order: 'DESC',
+            advancedSortCriteria: [] // Clear advanced sort when using simple sort
           };
         } else {
           // Third click: return to default sort
           return {
             orderBy: 'updatedAt',
-            order: 'DESC'
+            order: 'DESC',
+            advancedSortCriteria: []
           };
         }
       } else {
         // First click on a new field: start with ASC
         return {
           orderBy: fieldName,
-          order: 'ASC'
+          order: 'ASC',
+          advancedSortCriteria: [] // Clear advanced sort when using simple sort
         };
       }
-    }, this.loadData);
+    }, () => {
+      this.saveUserPreferences();
+      this.loadData();
+    });
   }
 
   handleSearch = (value) => {
@@ -3787,8 +3798,74 @@ class CrudList extends React.Component {
 
   handleApplyAdvancedSort = (sortCriteria) => {
     this.setState({
-      advancedSortCriteria: sortCriteria
-    }, this.loadData);
+      advancedSortCriteria: sortCriteria,
+      showAdvancedSort: false
+    }, () => {
+      this.saveUserPreferences();
+      this.loadData();
+    });
+  }
+
+  handleCancelSort = () => {
+    this.setState({
+      orderBy: 'updatedAt',
+      order: 'DESC',
+      advancedSortCriteria: []
+    }, () => {
+      this.saveUserPreferences();
+      this.loadData();
+    });
+  }
+
+  getSortRepresentation = () => {
+    const { advancedSortCriteria, orderBy, order, data } = this.state;
+
+    // If advanced sort is active
+    if (advancedSortCriteria && advancedSortCriteria.length > 0) {
+      return advancedSortCriteria
+        .filter(criterion => criterion.field)
+        .map(criterion => {
+          const arrow = criterion.order === 'DESC' ? '▼' : '▲';
+          // Get field label from structure
+          let fieldLabel = criterion.field;
+          if (data && data.structure) {
+            // Handle relation fields (format: Table.field)
+            if (criterion.field.includes('.')) {
+              const [tableName, fieldName] = criterion.field.split('.');
+              fieldLabel = `${tableName}.${fieldName}`;
+            } else {
+              const field = data.structure.fields[criterion.field];
+              fieldLabel = field?.label || criterion.field;
+            }
+          }
+          return `${fieldLabel} ${arrow}`;
+        })
+        .join(', ');
+    }
+
+    // Simple sort (but not default)
+    if (orderBy !== 'updatedAt' || order !== 'DESC') {
+      const arrow = order === 'DESC' ? '▼' : '▲';
+      let fieldLabel = orderBy;
+      if (data && data.structure) {
+        // Handle relation fields (format: Table.field)
+        if (orderBy.includes('.')) {
+          const parts = orderBy.split('.');
+          // Remove main table prefix if present (e.g., "MusicAlbum.Organization.name" → "Organization.name")
+          if (parts.length === 3) {
+            fieldLabel = `${parts[1]}.${parts[2]}`;
+          } else {
+            fieldLabel = orderBy;
+          }
+        } else {
+          const field = data.structure.fields[orderBy];
+          fieldLabel = field?.label || orderBy;
+        }
+      }
+      return `${fieldLabel} ${arrow}`;
+    }
+
+    return null;
   }
 
   render() {
@@ -3858,11 +3935,42 @@ class CrudList extends React.Component {
       });
     }
 
-    // Normal list view
+    const sortRepresentation = this.getSortRepresentation();
+    const hasAdvancedSort = advancedSortCriteria && advancedSortCriteria.length > 0;
+
     return e('div', { className: 'crud-list-container' },
       // Header
       e('div', { className: 'crud-header' },
-        e('h1', { className: 'crud-title' }, '📋 ', table),
+        e('div', { className: 'crud-title-container' },
+          e('h1', { className: 'crud-title' }, '📋 ', table),
+          sortRepresentation && e('span', {
+            className: 'sort-indicator',
+            onClick: hasAdvancedSort ? this.handleShowAdvancedSort : null,
+            style: {
+              fontSize: '0.8em',
+              marginLeft: '10px',
+              color: '#666',
+              cursor: hasAdvancedSort ? 'pointer' : 'default',
+              fontWeight: 'normal'
+            },
+            title: hasAdvancedSort ? 'Cliquer pour modifier le tri avancé' : 'Tri actif'
+          },
+            hasAdvancedSort && e('span', {
+              onClick: (ev) => {
+                ev.stopPropagation();
+                this.handleCancelSort();
+              },
+              style: {
+                color: 'red',
+                marginRight: '5px',
+                cursor: 'pointer',
+                fontWeight: 'bold'
+              },
+              title: 'Annuler le tri et revenir au défaut'
+            }, '✕ '),
+            'Tri : ', sortRepresentation
+          )
+        ),
         e('div', { className: 'crud-actions' },
           data && data.permissions && data.permissions.canCreate && e('button', {
             className: 'btn-add-record',
@@ -3903,7 +4011,8 @@ class CrudList extends React.Component {
             onSort: this.handleSort,
             displayMode,
             showDeleteButton: showDeleteButtons,
-            permissions: data.permissions
+            permissions: data.permissions,
+            advancedSortCriteria: advancedSortCriteria
           }),
           e('tbody', null,
             data.rows.map((row, idx) =>
