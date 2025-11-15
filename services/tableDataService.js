@@ -244,12 +244,12 @@ async function getTableData(user, tableName, options = {}) {
 
   // Vérifier si la table existe dans le schéma
   if (!table) {
-    return { status:404, error: 'Table non trouvée' };
+    return { success: false, error: 'Table non trouvée', statusCode: 404, rows: [] };
   }
 
   // Vérifier si l'utilisateur a accès à la table
   if (!hasPermission(user, table, 'read')) {
-    return {status:403, error: 'Accès refusé à cette table'};
+    return { success: false, error: 'Accès refusé à cette table', statusCode: 403, rows: [] };
   }
 
   // Construire la requête SQL
