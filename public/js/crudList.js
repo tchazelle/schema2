@@ -2309,6 +2309,53 @@ class AdvancedSortModal extends React.Component {
       }
     });
 
+    // ALSO add fields from relations defined in structure.relations (modern method)
+    if (structure.relations) {
+      Object.entries(structure.relations).forEach(([relationName, relationConfig]) => {
+        if (relationConfig.type === 'many-to-one' && relationConfig.accessible) {
+          const relatedTable = relationConfig.relatedTable;
+          const relatedStructure = relatedStructures[relatedTable];
+
+          if (relatedStructure && relatedStructure.fields) {
+            // Use actual fields from related table structure
+            Object.entries(relatedStructure.fields).forEach(([relFieldName, relField]) => {
+              // Exclude computed fields, arrayNames (1:N relations), and system fields
+              if (!relField.as && !relField.calculate && !relField.arrayName &&
+                  !['id', 'ownerId', 'granted'].includes(relFieldName)) {
+                sortableFields.push({
+                  value: `${relatedTable}.${relFieldName}`,
+                  label: `${relationName} › ${relField.label || relFieldName}`,
+                  isRelation: true,
+                  group: `Relations N:1 (${relationName})`
+                });
+
+                // LEVEL 2: If this field is itself a N:1 relation, add its fields
+                if (relField.relation && !relField.arrayName) {
+                  const level2Table = relField.relation;
+                  const level2Structure = relatedStructures[level2Table];
+
+                  if (level2Structure && level2Structure.fields) {
+                    Object.entries(level2Structure.fields).forEach(([level2FieldName, level2Field]) => {
+                      // Exclude computed fields, arrayNames (1:N relations), and system fields
+                      if (!level2Field.as && !level2Field.calculate && !level2Field.arrayName &&
+                          !['id', 'ownerId', 'granted'].includes(level2FieldName)) {
+                        sortableFields.push({
+                          value: `${relatedTable}.${level2Table}.${level2FieldName}`,
+                          label: `${relationName} › ${level2Table} › ${level2Field.label || level2FieldName}`,
+                          isRelation: true,
+                          group: `Relations N:1 niveau 2 (${relationName} › ${level2Table})`
+                        });
+                      }
+                    });
+                  }
+                }
+              }
+            });
+          }
+        }
+      });
+    }
+
     return e('div', {
       className: 'modal-overlay',
       onClick: (e) => { if (e.target === e.currentTarget) onClose(); }
@@ -2721,6 +2768,55 @@ class AdvancedSearchModal extends React.Component {
         }
       }
     });
+
+    // ALSO add fields from relations defined in structure.relations (modern method)
+    if (structure.relations) {
+      Object.entries(structure.relations).forEach(([relationName, relationConfig]) => {
+        if (relationConfig.type === 'many-to-one' && relationConfig.accessible) {
+          const relatedTable = relationConfig.relatedTable;
+          const relatedStructure = relatedStructures[relatedTable];
+
+          if (relatedStructure && relatedStructure.fields) {
+            // Use actual fields from related table structure
+            Object.entries(relatedStructure.fields).forEach(([relFieldName, relField]) => {
+              // Exclude computed fields, arrayNames (1:N relations), and system fields
+              if (!relField.as && !relField.calculate && !relField.arrayName &&
+                  !['id', 'ownerId', 'granted'].includes(relFieldName)) {
+                searchableFields.push({
+                  value: `${relatedTable}.${relFieldName}`,
+                  label: `${relationName} › ${relField.label || relFieldName}`,
+                  type: relField.type || 'varchar',
+                  isRelation: true,
+                  group: `Relations N:1 (${relationName})`
+                });
+
+                // LEVEL 2: If this field is itself a N:1 relation, add its fields
+                if (relField.relation && !relField.arrayName) {
+                  const level2Table = relField.relation;
+                  const level2Structure = relatedStructures[level2Table];
+
+                  if (level2Structure && level2Structure.fields) {
+                    Object.entries(level2Structure.fields).forEach(([level2FieldName, level2Field]) => {
+                      // Exclude computed fields, arrayNames (1:N relations), and system fields
+                      if (!level2Field.as && !level2Field.calculate && !level2Field.arrayName &&
+                          !['id', 'ownerId', 'granted'].includes(level2FieldName)) {
+                        searchableFields.push({
+                          value: `${relatedTable}.${level2Table}.${level2FieldName}`,
+                          label: `${relationName} › ${level2Table} › ${level2Field.label || level2FieldName}`,
+                          type: level2Field.type || 'varchar',
+                          isRelation: true,
+                          group: `Relations N:1 niveau 2 (${relationName} › ${level2Table})`
+                        });
+                      }
+                    });
+                  }
+                }
+              }
+            });
+          }
+        }
+      });
+    }
 
     return e('div', {
       className: 'modal-overlay',
