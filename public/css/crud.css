@@ -30,11 +30,28 @@
   flex-shrink: 0;
 }
 
+.crud-title-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .crud-title {
   margin: 0;
   font-size: 18px;
   font-weight: 600;
   color: #212529;
+}
+
+.sort-indicator {
+  font-size: 0.8em;
+  color: #666;
+  font-weight: normal;
+  white-space: nowrap;
+}
+
+.sort-indicator:hover {
+  color: #333;
 }
 
 .crud-actions {

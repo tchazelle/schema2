@@ -85,7 +85,8 @@ class CrudService {
       if (searchFields.length > 0) {
         const searchConditions = searchFields.map(field => {
           // Remove accents for French text search
-          return `LOWER(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(${field}, 'é', 'e'), 'è', 'e'), 'ê', 'e'), 'à', 'a'), 'ù', 'u')) LIKE ?`;
+          // Prefix field with table name to avoid ambiguity when JOINs are present
+          return `LOWER(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(${table}.${field}, 'é', 'e'), 'è', 'e'), 'ê', 'e'), 'à', 'a'), 'ù', 'u')) LIKE ?`;
         });
         customWhere += ` AND (${searchConditions.join(' OR ')})`;
         const searchPattern = `%${this.removeAccents(search.toLowerCase())}%`;
