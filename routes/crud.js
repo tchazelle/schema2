@@ -395,8 +395,29 @@ router.get('/:table/:id', async (req, res) => {
       includeSchema: '1'
     });
 
-    if (!result.success || !result.rows || result.rows.length === 0) {
-      const acceptsJson = req.accepts(['html', 'json']) === 'json';
+    // Check if JSON or HTML response is expected
+    const acceptsJson = req.accepts(['html', 'json']) === 'json';
+
+    // Handle service errors (table not found, access denied, etc.)
+    if (!result.success) {
+      const statusCode = result.statusCode || 500;
+      const errorMessage = result.error || 'Erreur serveur';
+
+      if (acceptsJson) {
+        return res.status(statusCode).json({ success: false, error: errorMessage });
+      } else {
+        if (statusCode === 403) {
+          return res.status(403).send(UIService.error403Page());
+        } else if (statusCode === 404) {
+          return res.status(404).send(UIService.error404Page('Table', table));
+        } else {
+          return res.status(500).send(UIService.error500Page(new Error(errorMessage)));
+        }
+      }
+    }
+
+    // Handle record not found (success but no rows)
+    if (!result.rows || result.rows.length === 0) {
       if (acceptsJson) {
         return res.status(404).json(UIService.jsonError(UIService.messages.RECORD_NOT_FOUND));
       } else {
@@ -409,9 +430,6 @@ router.get('/:table/:id', async (req, res) => {
     }
 
     const row = result.rows[0];
-
-    // Check if JSON or HTML response is expected
-    const acceptsJson = req.accepts(['html', 'json']) === 'json';
 
     if (acceptsJson) {
       // Return JSON for API calls
