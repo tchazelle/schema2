@@ -2063,7 +2063,16 @@ class AdvancedSortModal extends React.Component {
     const { structure } = this.props;
     const relatedTables = new Set();
 
-    // Find all N:1 relations
+    // Find all N:1 relations from structure.relations (preferred method)
+    if (structure.relations) {
+      Object.entries(structure.relations).forEach(([relationName, relationConfig]) => {
+        if (relationConfig.type === 'many-to-one') {
+          relatedTables.add(relationConfig.relatedTable);
+        }
+      });
+    }
+
+    // Fallback: Find N:1 relations from structure.fields
     Object.entries(structure.fields).forEach(([fieldName, field]) => {
       if (field.relation && !field.arrayName) {
         relatedTables.add(field.relation);
@@ -2310,7 +2319,16 @@ class AdvancedSearchModal extends React.Component {
     const { structure } = this.props;
     const relatedTables = new Set();
 
-    // Find all N:1 relations
+    // Find all N:1 relations from structure.relations (preferred method)
+    if (structure.relations) {
+      Object.entries(structure.relations).forEach(([relationName, relationConfig]) => {
+        if (relationConfig.type === 'many-to-one') {
+          relatedTables.add(relationConfig.relatedTable);
+        }
+      });
+    }
+
+    // Fallback: Find N:1 relations from structure.fields
     Object.entries(structure.fields).forEach(([fieldName, field]) => {
       if (field.relation && !field.arrayName) {
         relatedTables.add(field.relation);
