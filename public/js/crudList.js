@@ -1204,11 +1204,11 @@ class RowDetailModal extends React.Component {
               compact: true
             })
           ),
-          // Close button
+          // Close button (X exits edit mode if in edit, otherwise closes modal)
           e('button', {
             className: 'modal-close-detail',
-            onClick: onClose,
-            title: 'Fermer (Echap)'
+            onClick: editMode ? onExitEditMode : onClose,
+            title: editMode ? 'Retour à la fiche' : 'Fermer (Echap)'
           }, '✖')
         ),
         // Scrollable body
@@ -1295,10 +1295,30 @@ class RowDetailView extends React.Component {
       !['id', 'ownerId', 'granted', 'createdAt', 'updatedAt'].includes(f)
     );
 
+    // Collect all 1:N relations defined in schema (even if empty)
     const relations1N = {};
+
+    // First, get all defined 1:N relations from schema
+    Object.entries(structure.fields).forEach(([fieldName, field]) => {
+      if (field.arrayName) {
+        // This field has a reverse relation (1:N)
+        const relName = field.arrayName;
+        // Check if data exists in row._relations, otherwise use empty array
+        const relData = (row._relations && row._relations[relName]) || [];
+        if (Array.isArray(relData) || relData.length === 0) {
+          relations1N[relName] = Array.isArray(relData) ? relData : [];
+          // Store the related table name for empty relations
+          if (!relations1N[relName]._table && field.relation) {
+            relations1N[relName]._relatedTable = field.relation;
+          }
+        }
+      }
+    });
+
+    // Also include any 1:N relations from row._relations not yet in relations1N
     if (row._relations) {
       Object.entries(row._relations).forEach(([key, value]) => {
-        if (Array.isArray(value)) {
+        if (Array.isArray(value) && !relations1N[key]) {
           relations1N[key] = value;
         }
       });
@@ -1350,11 +1370,12 @@ class RowDetailView extends React.Component {
         })
       ),
 
-      // 1:N Relations
+      // 1:N Relations (show all, even empty ones)
       Object.keys(relations1N).length > 0 && e('div', { className: 'detail-relations-1n' },
         Object.entries(relations1N).map(([relName, relRows]) => {
           const isOpen = openRelations.has(relName);
-          const relatedTable = relRows[0]?._table || relName;
+          const relatedTable = relRows[0]?._table || relRows._relatedTable || relName;
+          const count = relRows.length;
 
           return e('div', { key: relName, className: 'relation-section' },
             e('div', {
@@ -1362,13 +1383,13 @@ class RowDetailView extends React.Component {
               style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }
             },
               e('div', {
-                style: { display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' },
-                onClick: () => this.toggleRelation(relName)
+                style: { display: 'flex', alignItems: 'center', gap: '6px', cursor: count > 0 ? 'pointer' : 'default' },
+                onClick: count > 0 ? () => this.toggleRelation(relName) : null
               },
-                e('span', { className: 'relation-toggle' }, isOpen ? '▼' : '▶'),
-                e('strong', null, relName)
+                count > 0 && e('span', { className: 'relation-toggle' }, isOpen ? '▼' : '▶'),
+                e('strong', null, relName),
+                count > 0 && e('span', { className: 'relation-count' }, count)
               ),
-              e('span', { className: 'relation-count' }, relRows.length),
               e('button', {
                 className: 'btn-add-relation-item',
                 onClick: (ev) => {
@@ -1378,7 +1399,7 @@ class RowDetailView extends React.Component {
                 title: `Créer un nouveau ${relatedTable}`
               }, '+ Nouveau')
             ),
-            isOpen && e('div', { className: 'relation-list' },
+            isOpen && count > 0 && e('div', { className: 'relation-list' },
               e(SubList, {
                 rows: relRows,
                 tableName: relatedTable,
@@ -1434,7 +1455,7 @@ class SubListRow extends React.Component {
       this.setState({ loading: true, expanded: true });
 
       try {
-        const response = await fetch(`/_api/${tableName}/${row.id}?relation=default&compact=1`);
+        const response = await fetch(`/_api/${tableName}/${row.id}?relation=all&compact=1`);
         const data = await response.json();
 
         if (data.success && data.rows && data.rows.length > 0) {
@@ -2014,11 +2035,19 @@ class CrudList extends React.Component {
   handleSort = (fieldName) => {
     this.setState(prev => {
       if (prev.orderBy === fieldName) {
-        // Toggle between ASC and DESC on same field
-        return {
-          orderBy: fieldName,
-          order: prev.order === 'ASC' ? 'DESC' : 'ASC'
-        };
+        // Cycle through: ASC -> DESC -> default (updatedAt DESC)
+        if (prev.order === 'ASC') {
+          return {
+            orderBy: fieldName,
+            order: 'DESC'
+          };
+        } else {
+          // Third click: return to default sort
+          return {
+            orderBy: 'updatedAt',
+            order: 'DESC'
+          };
+        }
       } else {
         // First click on a new field: start with ASC
         return {

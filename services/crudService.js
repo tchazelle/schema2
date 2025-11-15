@@ -116,9 +116,8 @@ class CrudService {
       canPublish: PermissionService.hasPermission(user, table, 'publish')
     };
 
-    // Get all fields excluding system fields (for field selector)
-    const systemFields = ['id', 'ownerId', 'granted', 'createdAt', 'updatedAt'];
-    const allFieldsForSelector = Object.keys(structure.fields).filter(f => !systemFields.includes(f));
+    // Get all fields INCLUDING system fields (for field selector)
+    const allFieldsForSelector = Object.keys(structure.fields);
 
     return {
       success: true,
