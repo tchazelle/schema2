@@ -1003,30 +1003,20 @@ class EditForm extends React.Component {
           return e('div', { key: relName, className: 'relation-section' },
             e('div', {
               className: 'relation-header',
-              style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }
+              style: { display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' },
+              onClick: () => this.toggleRelation(relName)
             },
-              e('div', {
-                style: { display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' },
-                onClick: () => this.toggleRelation(relName)
-              },
-                e('span', { className: 'relation-toggle' }, isOpen ? '▼' : '▶'),
-                e('strong', null, relName),
-                e('span', { className: 'relation-count' }, count)
-              ),
-              e('button', {
-                className: 'btn-add-relation-item',
-                onClick: (ev) => {
-                  ev.stopPropagation();
-                  window.open(`/_crud/${relatedTable}?parent=${tableName}&parentId=${row.id}`, '_blank');
-                },
-                title: `Créer un nouveau ${relatedTable}`
-              }, '+ Nouveau')
+              e('span', { className: 'relation-toggle' }, isOpen ? '▼' : '▶'),
+              e('strong', null, relName),
+              e('span', { className: 'relation-count' }, count)
             ),
             isOpen && e('div', { className: 'relation-list' },
               e(SubList, {
                 rows: relRows,
                 tableName: relatedTable,
-                parentTable: tableName
+                parentTable: tableName,
+                parentId: row.id,
+                relationName: relName
               })
             )
           );
@@ -1099,7 +1089,6 @@ class TableHeader extends React.Component {
       return e('thead', null,
         e('tr', null,
           showDeleteButton && permissions && permissions.canDelete && e('th', { key: 'delete-header', style: { width: '40px' } }, ''),
-          e('th', { key: 'granted-header', style: { width: '40px' } }, ''),
           fields.map(fieldName =>
             e('th', { key: fieldName }, fieldName)
           )
@@ -1662,30 +1651,20 @@ class RowDetailView extends React.Component {
           return e('div', { key: relName, className: 'relation-section' },
             e('div', {
               className: 'relation-header',
-              style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }
+              style: { display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' },
+              onClick: () => this.toggleRelation(relName)
             },
-              e('div', {
-                style: { display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' },
-                onClick: () => this.toggleRelation(relName)
-              },
-                e('span', { className: 'relation-toggle' }, isOpen ? '▼' : '▶'),
-                e('strong', null, relName),
-                e('span', { className: 'relation-count' }, count)
-              ),
-              e('button', {
-                className: 'btn-add-relation-item',
-                onClick: (ev) => {
-                  ev.stopPropagation();
-                  window.open(`/_crud/${relatedTable}?parent=${tableName}&parentId=${row.id}`, '_blank');
-                },
-                title: `Créer un nouveau ${relatedTable}`
-              }, '+ Nouveau')
+              e('span', { className: 'relation-toggle' }, isOpen ? '▼' : '▶'),
+              e('strong', null, relName),
+              e('span', { className: 'relation-count' }, count)
             ),
             isOpen && e('div', { className: 'relation-list' },
               e(SubList, {
                 rows: relRows,
                 tableName: relatedTable,
-                parentTable: tableName
+                parentTable: tableName,
+                parentId: row.id,
+                relationName: relName
               })
             )
           );
@@ -1812,7 +1791,7 @@ class SubList extends React.Component {
   }
 
   render() {
-    const { rows, tableName, parentTable } = this.props;
+    const { rows, tableName, parentTable, parentId, relationName } = this.props;
     const { structure, tableConfig, permissions, orderBy, order, displayMode, showDeleteButtons, selectedFields, showFieldSelector } = this.state;
 
     if (!rows || rows.length === 0) {
@@ -1848,16 +1827,36 @@ class SubList extends React.Component {
     // Sort rows
     const sortedRows = this.sortRows(rows, orderBy, order);
 
+    // Get sort indicator text
+    const sortIndicator = orderBy !== 'updatedAt' || order !== 'DESC'
+      ? `Tri: ${orderBy} ${order === 'ASC' ? '▲' : '▼'}`
+      : null;
+
     return e('div', { className: 'sub-list-container', style: { position: 'relative' } },
-      // Header with three-dots menu
-      e('div', { style: { display: 'flex', justifyContent: 'flex-end', padding: '4px 0', marginBottom: '4px' } },
-        e(ThreeDotsMenu, {
-          displayMode,
-          onDisplayModeChange: this.handleDisplayModeChange,
-          onFieldSelect: this.handleShowFieldSelector,
-          onToggleDelete: this.handleToggleDeleteButtons,
-          showDeleteButtons
-        })
+      // Header with "+ Nouveau" button and three-dots menu
+      e('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 0', marginBottom: '4px', gap: '8px' } },
+        // Left side: sort indicator
+        e('div', { style: { fontSize: '12px', color: '#6c757d', fontStyle: 'italic', minHeight: '20px' } },
+          sortIndicator || ''
+        ),
+        // Right side: buttons
+        e('div', { style: { display: 'flex', alignItems: 'center', gap: '8px' } },
+          parentId && e('button', {
+            className: 'btn-add-relation-item',
+            onClick: (ev) => {
+              ev.stopPropagation();
+              window.open(`/_crud/${tableName}?parent=${parentTable}&parentId=${parentId}`, '_blank');
+            },
+            title: `Créer un nouveau ${tableName}`
+          }, '+ Nouveau'),
+          e(ThreeDotsMenu, {
+            displayMode,
+            onDisplayModeChange: this.handleDisplayModeChange,
+            onFieldSelect: this.handleShowFieldSelector,
+            onToggleDelete: this.handleToggleDeleteButtons,
+            showDeleteButtons
+          })
+        )
       ),
 
       // Table

@@ -275,12 +275,13 @@ class CrudService {
 
     let fields = Object.keys(structure.fields);
 
-    // If specific fields selected, use those first
+    // If specific fields selected, use those and respect the user's choice (don't filter system fields)
     if (selectedFields && Array.isArray(selectedFields) && selectedFields.length > 0) {
       fields = fields.filter(f => selectedFields.includes(f));
+      return fields;
     }
 
-    // Then filter system fields if not requested (this ensures system fields are always filtered unless explicitly requested)
+    // Only filter system fields if no specific fields were selected
     const systemFields = ['id', 'ownerId', 'granted', 'createdAt', 'updatedAt'];
     if (!showSystemFields) {
       fields = fields.filter(f => !systemFields.includes(f));
