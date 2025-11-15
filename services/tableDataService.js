@@ -258,8 +258,10 @@ async function getTableData(user, tableName, options = {}) {
   let effectiveCustomWhereParams = [...customWhereParams];
 
   if (id) {
+    // Convert id to integer to avoid type mismatch issues
+    const idAsInt = parseInt(id, 10);
     effectiveCustomWhere = customWhere ? `(${customWhere}) AND id = ?` : 'id = ?';
-    effectiveCustomWhereParams.push(id);
+    effectiveCustomWhereParams.push(idAsInt);
   }
 
   // Passer le nom de table si des JOINs sont présents pour éviter l'ambiguïté des colonnes granted/ownerId
@@ -305,16 +307,29 @@ async function getTableData(user, tableName, options = {}) {
 
   // Console log the query for debugging
   if (customJoins.length > 0 || id) {
-    console.log('Query with JOINs or ID:', query);
-    console.log('Params:', params);
+    console.log('TableDataService - Query with JOINs or ID:', query);
+    console.log('TableDataService - Params:', params);
   }
 
   // Exécuter la requête
   const [rows] = await pool.query(query, params);
 
+  // Debug: Log row count when searching by ID
+  if (id) {
+    console.log(`TableDataService - Found ${rows.length} row(s) for table=${table}, id=${id}`);
+  }
+
 
   // Filtrer les rows selon granted et les champs selon les permissions
   const accessibleRows = rows.filter(row => EntityService.canAccessEntity(user, table, row));
+
+  // Debug: Log if rows were filtered out by granted check
+  if (id && rows.length > 0 && accessibleRows.length === 0) {
+    console.log(`TableDataService - WARNING: Record id=${id} found but filtered out by granted check`);
+    console.log(`TableDataService - Record granted value:`, rows[0].granted);
+    console.log(`TableDataService - Record ownerId:`, rows[0].ownerId);
+    console.log(`TableDataService - User:`, user ? `id=${user.id}, roles=${JSON.stringify(user.roles)}` : 'null (public)');
+  }
 
   // Charger les relations si demandées
   const { relationsN1, relations1N } = SchemaService.getTableRelations(user, table);

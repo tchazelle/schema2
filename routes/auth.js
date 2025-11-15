@@ -3,6 +3,7 @@ const router = express.Router();
 const pool = require('../config/database');
 const { generateToken, setAuthCookie, clearAuthCookie } = require('../services/authService');
 const schema = require('../schema.js');
+const UIService = require('../services/uiService');
 
 /**
  * POST /auth/login
@@ -13,7 +14,7 @@ router.post('/login', async (req, res) => {
     const { email, password } = req.body;
 
     if (!email || !password) {
-      return res.status(400).json({ error: 'Email et mot de passe requis' });
+      return res.status(400).json(UIService.jsonError('Email et mot de passe requis'));
     }
 
     // Récupérer l'utilisateur depuis la table Person
@@ -23,7 +24,7 @@ router.post('/login', async (req, res) => {
     );
 
     if (users.length === 0) {
-      return res.status(401).json({ error: 'Email ou mot de passe incorrect' });
+      return res.status(401).json(UIService.jsonError('Email ou mot de passe incorrect'));
     }
 
     const user = users[0];
@@ -31,7 +32,7 @@ router.post('/login', async (req, res) => {
     // Vérifier le mot de passe (en clair pour le développement)
     // TODO: Utiliser bcrypt en production
     if (user.password !== password) {
-      return res.status(401).json({ error: 'Email ou mot de passe incorrect' });
+      return res.status(401).json(UIService.jsonError('Email ou mot de passe incorrect'));
     }
 
     // Générer le token JWT
@@ -49,15 +50,11 @@ router.post('/login', async (req, res) => {
       roles: user.roles
     };
 
-    res.json({
-      success: true,
-      message: 'Connexion réussie',
-      user: userResponse
-    });
+    res.json(UIService.jsonSuccess({ user: userResponse }, 'Connexion réussie'));
 
   } catch (error) {
     console.error('Erreur lors de la connexion:', error);
-    res.status(500).json({ error: 'Erreur serveur lors de la connexion' });
+    res.status(500).json(UIService.jsonError('Erreur serveur lors de la connexion'));
   }
 });
 
@@ -67,7 +64,7 @@ router.post('/login', async (req, res) => {
  */
 router.post('/logout', (req, res) => {
   clearAuthCookie(res);
-  res.json({ success: true, message: 'Déconnexion réussie' });
+  res.json(UIService.jsonSuccess({}, 'Déconnexion réussie'));
 });
 
 /**
@@ -76,12 +73,10 @@ router.post('/logout', (req, res) => {
  */
 router.get('/me', (req, res) => {
   if (!req.user) {
-    return res.status(401).json({ error: 'Non authentifié' });
+    return res.status(401).json(UIService.jsonError('Non authentifié'));
   }
 
-  res.json({
-    user: req.user
-  });
+  res.json(UIService.jsonSuccess({ user: req.user }));
 });
 
 module.exports = router;
