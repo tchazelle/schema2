@@ -203,10 +203,9 @@
   text-align: left;
   border-bottom: 2px solid #dee2e6;
   font-weight: 600;
-  color: #495057;
+  color: #8b8a9e;
   font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
   position: sticky;
   top: 0;
   z-index: 10;
@@ -239,8 +238,10 @@
   padding: 6px 8px;
   vertical-align: top;
   max-width: 20em;
+  max-height: 1.4em;
   overflow: hidden;
-  word-wrap: break-word;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   line-height: 1.4;
 }
 
@@ -332,14 +333,15 @@ tr.detail-row td {
 .detail-label {
   font-weight: 600;
   font-size: 11px;
-  color: #6c757d;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  color: #8b8a9e;
+  letter-spacing: 0.3px;
 }
 
 .detail-value {
   font-size: 14px;
   color: #212529;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 /* ========================================
@@ -349,7 +351,6 @@ tr.detail-row td {
 .detail-relations-1n {
   margin-top: 12px;
   padding-top: 12px;
-  border-top: 1px solid #dee2e6;
 }
 
 .detail-relations-1n h4 {
@@ -423,13 +424,14 @@ tr.detail-row td {
 }
 
 .sub-list-table thead th {
-  background: #e9ecef;
+  background: white;
   padding: 6px 8px;
   text-align: left;
   border-bottom: 1px solid #dee2e6;
   font-weight: 600;
   font-size: 11px;
-  text-transform: uppercase;
+  color: #8b8a9e;
+  letter-spacing: 0.3px;
 }
 
 .sub-list-table tbody td {
@@ -527,9 +529,8 @@ tr.detail-row td {
 .edit-field-label {
   font-weight: 600;
   font-size: 12px;
-  color: #495057;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  color: #8b8a9e;
+  letter-spacing: 0.3px;
 }
 
 .edit-field-input,
@@ -996,11 +997,10 @@ tr.detail-row td {
     content: attr(data-label);
     display: block;
     font-size: 11px;
-    color: #6c757d;
+    color: #8b8a9e;
     font-weight: 600;
     margin-bottom: 4px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.3px;
   }
 
   .crud-table tbody tr.data-row td .field-value {
@@ -1064,10 +1064,10 @@ tr.detail-row td {
     content: attr(data-label);
     display: block;
     font-size: 10px;
-    color: #6c757d;
+    color: #8b8a9e;
     font-weight: 600;
     margin-bottom: 3px;
-    text-transform: uppercase;
+    letter-spacing: 0.3px;
   }
 }
 
