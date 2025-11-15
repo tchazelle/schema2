@@ -28,11 +28,33 @@ router.get('/:table/data', async (req, res) => {
       order = 'DESC',
       search = '',
       showSystemFields = '0',
-      selectedFields = null
+      selectedFields = null,
+      advancedSearch = null,
+      advancedSort = null
     } = req.query;
 
     // Parse selectedFields if provided (comma-separated)
     const parsedFields = selectedFields ? selectedFields.split(',').map(f => f.trim()) : null;
+
+    // Parse advanced search and sort JSON
+    let parsedAdvancedSearch = null;
+    let parsedAdvancedSort = null;
+
+    if (advancedSearch) {
+      try {
+        parsedAdvancedSearch = JSON.parse(advancedSearch);
+      } catch (e) {
+        console.error('Failed to parse advancedSearch:', e);
+      }
+    }
+
+    if (advancedSort) {
+      try {
+        parsedAdvancedSort = JSON.parse(advancedSort);
+      } catch (e) {
+        console.error('Failed to parse advancedSort:', e);
+      }
+    }
 
     // Get list data using CrudService
     const result = await CrudService.getListData(user, tableParam, {
@@ -42,7 +64,9 @@ router.get('/:table/data', async (req, res) => {
       order,
       search,
       showSystemFields: showSystemFields === '1',
-      selectedFields: parsedFields
+      selectedFields: parsedFields,
+      advancedSearch: parsedAdvancedSearch,
+      advancedSort: parsedAdvancedSort
     });
 
     if (!result.success) {
