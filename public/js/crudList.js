@@ -1879,7 +1879,7 @@ class ThreeDotsMenu extends React.Component {
   }
 
   render() {
-    const { displayMode, onDisplayModeChange, onFieldSelect, onToggleDelete, showDeleteButtons } = this.props;
+    const { displayMode, onDisplayModeChange, onFieldSelect, onToggleDelete, showDeleteButtons, onAdvancedSearch, onAdvancedSort, hasAdvancedSearch, hasAdvancedSort } = this.props;
     const { isOpen } = this.state;
 
     return e('div', { className: 'menu-dots', ref: this.menuRef },
@@ -1925,6 +1925,15 @@ class ThreeDotsMenu extends React.Component {
           className: 'menu-item',
           onClick: () => this.handleOptionClick('onFieldSelect')
         }, '🎯 Sélectionner les champs'),
+        e('div', { className: 'menu-divider' }),
+        onAdvancedSearch && e('button', {
+          className: `menu-item ${hasAdvancedSearch ? 'active' : ''}`,
+          onClick: () => this.handleOptionClick('onAdvancedSearch')
+        }, hasAdvancedSearch ? '✓ ' : '', '🔍 Recherche avancée...'),
+        onAdvancedSort && e('button', {
+          className: `menu-item ${hasAdvancedSort ? 'active' : ''}`,
+          onClick: () => this.handleOptionClick('onAdvancedSort')
+        }, hasAdvancedSort ? '✓ ' : '', '📊 Tri avancé...'),
         onToggleDelete && [
           e('div', { key: 'divider-delete', className: 'menu-divider' }),
           e('button', {
@@ -1933,6 +1942,928 @@ class ThreeDotsMenu extends React.Component {
             onClick: () => this.handleOptionClick('onToggleDelete')
           }, showDeleteButtons ? '✓ ' : '', '🗑️ Mode suppression')
         ]
+      )
+    );
+  }
+}
+
+/**
+ * Advanced Sort Modal Component
+ * Modal for configuring multiple sort criteria
+ */
+class AdvancedSortModal extends React.Component {
+  constructor(props) {
+    super(props);
+    // Initialize with current sort or default
+    const { currentOrderBy, currentOrder } = props;
+    const initialCriteria = currentOrderBy && currentOrderBy !== 'updatedAt'
+      ? [{ field: currentOrderBy, order: currentOrder || 'ASC' }]
+      : [];
+
+    this.state = {
+      criteria: initialCriteria
+    };
+  }
+
+  handleAddCriterion = () => {
+    this.setState(prev => ({
+      criteria: [...prev.criteria, { field: '', order: 'ASC' }]
+    }));
+  }
+
+  handleRemoveCriterion = (index) => {
+    this.setState(prev => ({
+      criteria: prev.criteria.filter((_, i) => i !== index)
+    }));
+  }
+
+  handleCriterionChange = (index, key, value) => {
+    this.setState(prev => {
+      const newCriteria = [...prev.criteria];
+      newCriteria[index] = { ...newCriteria[index], [key]: value };
+      return { criteria: newCriteria };
+    });
+  }
+
+  handleApply = () => {
+    const { criteria } = this.state;
+    if (this.props.onApply) {
+      this.props.onApply(criteria);
+    }
+    this.props.onClose();
+  }
+
+  handleReset = () => {
+    if (this.props.onApply) {
+      this.props.onApply([]); // Empty criteria = default sort
+    }
+    this.props.onClose();
+  }
+
+  render() {
+    const { structure, onClose } = this.props;
+    const { criteria } = this.state;
+
+    // Get all sortable fields (table fields + n:1 relation fields)
+    const sortableFields = [];
+
+    // Add table fields
+    Object.entries(structure.fields).forEach(([fieldName, field]) => {
+      if (!field.arrayName) { // Exclude 1:N relations
+        sortableFields.push({
+          value: fieldName,
+          label: field.label || fieldName,
+          isRelation: false
+        });
+      }
+    });
+
+    return e('div', {
+      className: 'modal-overlay',
+      onClick: (e) => { if (e.target === e.currentTarget) onClose(); }
+    },
+      e('div', {
+        className: 'modal-content',
+        onClick: (e) => e.stopPropagation(),
+        style: { maxWidth: '600px' }
+      },
+        e('div', { className: 'modal-header' },
+          e('h3', null, '📊 Tri avancé'),
+          e('button', {
+            className: 'modal-close',
+            onClick: onClose
+          }, '✖')
+        ),
+        e('div', { className: 'modal-body' },
+          e('div', { style: { marginBottom: '16px' } },
+            e('p', { style: { color: '#6c757d', fontSize: '14px', margin: '0 0 12px 0' } },
+              'Définissez plusieurs critères de tri. Le premier critère est prioritaire.'
+            )
+          ),
+
+          // Criteria list
+          criteria.length === 0 && e('div', {
+            style: {
+              padding: '20px',
+              textAlign: 'center',
+              color: '#6c757d',
+              background: '#f8f9fa',
+              borderRadius: '4px'
+            }
+          }, 'Aucun critère de tri. Utilisez le tri par défaut (dernière modification).'),
+
+          criteria.map((criterion, index) =>
+            e('div', {
+              key: index,
+              style: {
+                display: 'flex',
+                gap: '8px',
+                marginBottom: '8px',
+                alignItems: 'center'
+              }
+            },
+              e('span', {
+                style: {
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  color: '#6c757d',
+                  minWidth: '30px'
+                }
+              }, `${index + 1}.`),
+              e('select', {
+                className: 'edit-field-select',
+                style: { flex: 1 },
+                value: criterion.field,
+                onChange: (e) => this.handleCriterionChange(index, 'field', e.target.value)
+              },
+                e('option', { value: '' }, '-- Sélectionner un champ --'),
+                sortableFields.map(field =>
+                  e('option', { key: field.value, value: field.value },
+                    field.label
+                  )
+                )
+              ),
+              e('select', {
+                className: 'edit-field-select',
+                style: { width: '120px' },
+                value: criterion.order,
+                onChange: (e) => this.handleCriterionChange(index, 'order', e.target.value)
+              },
+                e('option', { value: 'ASC' }, '▲ Croissant'),
+                e('option', { value: 'DESC' }, '▼ Décroissant')
+              ),
+              e('button', {
+                onClick: () => this.handleRemoveCriterion(index),
+                style: {
+                  background: '#dc3545',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  padding: '6px 10px',
+                  cursor: 'pointer',
+                  fontSize: '13px'
+                }
+              }, '🗑️')
+            )
+          ),
+
+          // Add button
+          e('button', {
+            onClick: this.handleAddCriterion,
+            style: {
+              marginTop: '12px',
+              padding: '8px 12px',
+              background: '#28a745',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '14px'
+            }
+          }, '+ Ajouter un critère')
+        ),
+        e('div', { className: 'modal-footer' },
+          e('button', {
+            className: 'btn-cancel',
+            onClick: this.handleReset
+          }, 'Réinitialiser'),
+          e('button', {
+            className: 'btn-cancel',
+            onClick: onClose
+          }, 'Annuler'),
+          e('button', {
+            className: 'btn-apply',
+            onClick: this.handleApply
+          }, 'Appliquer')
+        )
+      )
+    );
+  }
+}
+
+/**
+ * Advanced Search Modal Component
+ * Modal for configuring complex search conditions with AND/OR logic
+ */
+class AdvancedSearchModal extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      searchGroups: [
+        {
+          conditions: [
+            { field: '', operator: 'contains', value: '' }
+          ]
+        }
+      ]
+    };
+  }
+
+  // Get operators based on field type
+  getOperatorsForField(fieldType) {
+    const operators = {
+      'varchar': [
+        { value: 'contains', label: 'Contient' },
+        { value: 'not_contains', label: 'Ne contient pas' },
+        { value: 'equals', label: 'Égal à' },
+        { value: 'not_equals', label: 'Différent de' },
+        { value: 'starts_with', label: 'Commence par' },
+        { value: 'ends_with', label: 'Se termine par' },
+        { value: 'is_empty', label: 'Est vide' },
+        { value: 'is_not_empty', label: 'N\'est pas vide' }
+      ],
+      'text': [
+        { value: 'contains', label: 'Contient' },
+        { value: 'not_contains', label: 'Ne contient pas' },
+        { value: 'is_empty', label: 'Est vide' },
+        { value: 'is_not_empty', label: 'N\'est pas vide' }
+      ],
+      'integer': [
+        { value: 'equals', label: 'Égal à' },
+        { value: 'not_equals', label: 'Différent de' },
+        { value: 'greater_than', label: 'Supérieur à' },
+        { value: 'less_than', label: 'Inférieur à' },
+        { value: 'between', label: 'Entre' },
+        { value: 'is_zero', label: 'Égal à zéro' },
+        { value: 'is_not_zero', label: 'Différent de zéro' }
+      ],
+      'date': [
+        { value: 'equals', label: 'Égal à' },
+        { value: 'before', label: 'Avant' },
+        { value: 'after', label: 'Après' },
+        { value: 'between', label: 'Entre' }
+      ],
+      'datetime': [
+        { value: 'equals', label: 'Égal à' },
+        { value: 'before', label: 'Avant' },
+        { value: 'after', label: 'Après' },
+        { value: 'between', label: 'Entre' }
+      ],
+      'boolean': [
+        { value: 'is_true', label: 'Est vrai' },
+        { value: 'is_false', label: 'Est faux' }
+      ]
+    };
+
+    return operators[fieldType] || operators['varchar'];
+  }
+
+  // Check if operator needs value input
+  needsValue(operator) {
+    return !['is_empty', 'is_not_empty', 'is_zero', 'is_not_zero', 'is_true', 'is_false'].includes(operator);
+  }
+
+  // Check if operator needs two values (between)
+  needsTwoValues(operator) {
+    return operator === 'between';
+  }
+
+  handleAddCondition = (groupIndex) => {
+    this.setState(prev => {
+      const newGroups = [...prev.searchGroups];
+      newGroups[groupIndex].conditions.push({ field: '', operator: 'contains', value: '' });
+      return { searchGroups: newGroups };
+    });
+  }
+
+  handleRemoveCondition = (groupIndex, conditionIndex) => {
+    this.setState(prev => {
+      const newGroups = [...prev.searchGroups];
+      if (newGroups[groupIndex].conditions.length > 1) {
+        newGroups[groupIndex].conditions.splice(conditionIndex, 1);
+      }
+      return { searchGroups: newGroups };
+    });
+  }
+
+  handleAddGroup = () => {
+    this.setState(prev => ({
+      searchGroups: [
+        ...prev.searchGroups,
+        { conditions: [{ field: '', operator: 'contains', value: '' }] }
+      ]
+    }));
+  }
+
+  handleRemoveGroup = (groupIndex) => {
+    this.setState(prev => {
+      if (prev.searchGroups.length > 1) {
+        return {
+          searchGroups: prev.searchGroups.filter((_, i) => i !== groupIndex)
+        };
+      }
+      return prev;
+    });
+  }
+
+  handleConditionChange = (groupIndex, conditionIndex, key, value) => {
+    this.setState(prev => {
+      const newGroups = [...prev.searchGroups];
+      newGroups[groupIndex].conditions[conditionIndex] = {
+        ...newGroups[groupIndex].conditions[conditionIndex],
+        [key]: value
+      };
+      // If field changed, reset operator
+      if (key === 'field') {
+        newGroups[groupIndex].conditions[conditionIndex].operator = 'contains';
+        newGroups[groupIndex].conditions[conditionIndex].value = '';
+      }
+      return { searchGroups: newGroups };
+    });
+  }
+
+  handleApply = () => {
+    const { searchGroups } = this.state;
+    if (this.props.onApply) {
+      this.props.onApply(searchGroups);
+    }
+    this.props.onClose();
+  }
+
+  handleReset = () => {
+    if (this.props.onApply) {
+      this.props.onApply(null); // null = no advanced search
+    }
+    this.props.onClose();
+  }
+
+  render() {
+    const { structure, onClose } = this.props;
+    const { searchGroups } = this.state;
+
+    // Get all searchable fields (table fields + n:1 relation fields)
+    const searchableFields = [];
+
+    // Add table fields
+    Object.entries(structure.fields).forEach(([fieldName, field]) => {
+      if (!field.arrayName && !field.as && !field.calculate) { // Exclude 1:N relations and computed fields
+        searchableFields.push({
+          value: fieldName,
+          label: field.label || fieldName,
+          type: field.type || 'varchar',
+          isRelation: !!field.relation
+        });
+      }
+    });
+
+    return e('div', {
+      className: 'modal-overlay',
+      onClick: (e) => { if (e.target === e.currentTarget) onClose(); }
+    },
+      e('div', {
+        className: 'modal-content',
+        onClick: (e) => e.stopPropagation(),
+        style: { maxWidth: '700px', maxHeight: '90vh' }
+      },
+        e('div', { className: 'modal-header' },
+          e('h3', null, '🔍 Recherche avancée'),
+          e('button', {
+            className: 'modal-close',
+            onClick: onClose
+          }, '✖')
+        ),
+        e('div', { className: 'modal-body', style: { maxHeight: '60vh', overflowY: 'auto' } },
+          e('div', { style: { marginBottom: '16px' } },
+            e('p', { style: { color: '#6c757d', fontSize: '14px', margin: '0 0 8px 0' } },
+              'Créez des conditions de recherche complexes avec logique ET/OU.'
+            ),
+            e('p', { style: { color: '#6c757d', fontSize: '13px', margin: 0, fontStyle: 'italic' } },
+              'Les conditions dans un même groupe sont liées par ET. Les groupes sont liés par OU.'
+            )
+          ),
+
+          // Search groups (OR logic between groups)
+          searchGroups.map((group, groupIndex) =>
+            e('div', {
+              key: groupIndex,
+              style: {
+                background: '#f8f9fa',
+                border: '2px solid #dee2e6',
+                borderRadius: '8px',
+                padding: '12px',
+                marginBottom: '12px'
+              }
+            },
+              // Group header
+              e('div', {
+                style: {
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: '12px'
+                }
+              },
+                e('strong', { style: { fontSize: '14px', color: '#495057' } },
+                  groupIndex === 0 ? 'Recherche' : `OU Recherche #${groupIndex + 1}`
+                ),
+                searchGroups.length > 1 && e('button', {
+                  onClick: () => this.handleRemoveGroup(groupIndex),
+                  style: {
+                    background: '#dc3545',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    padding: '4px 8px',
+                    cursor: 'pointer',
+                    fontSize: '12px'
+                  }
+                }, '🗑️ Supprimer groupe')
+              ),
+
+              // Conditions (AND logic within group)
+              group.conditions.map((condition, conditionIndex) => {
+                const selectedField = searchableFields.find(f => f.value === condition.field);
+                const fieldType = selectedField ? selectedField.type : 'varchar';
+                const operators = this.getOperatorsForField(fieldType);
+
+                return e('div', {
+                  key: conditionIndex,
+                  style: {
+                    background: 'white',
+                    border: '1px solid #dee2e6',
+                    borderRadius: '4px',
+                    padding: '8px',
+                    marginBottom: '8px'
+                  }
+                },
+                  e('div', {
+                    style: {
+                      display: 'flex',
+                      gap: '8px',
+                      alignItems: 'flex-start',
+                      flexWrap: 'wrap'
+                    }
+                  },
+                    conditionIndex > 0 && e('span', {
+                      style: {
+                        fontSize: '12px',
+                        fontWeight: 600,
+                        color: '#28a745',
+                        padding: '6px 8px',
+                        minWidth: '40px'
+                      }
+                    }, 'ET'),
+
+                    // Field selector
+                    e('select', {
+                      className: 'edit-field-select',
+                      style: { flex: '1 1 200px', minWidth: '150px' },
+                      value: condition.field,
+                      onChange: (e) => this.handleConditionChange(groupIndex, conditionIndex, 'field', e.target.value)
+                    },
+                      e('option', { value: '' }, '-- Champ --'),
+                      searchableFields.map(field =>
+                        e('option', { key: field.value, value: field.value },
+                          field.label + (field.isRelation ? ' 🔗' : '')
+                        )
+                      )
+                    ),
+
+                    // Operator selector
+                    e('select', {
+                      className: 'edit-field-select',
+                      style: { flex: '1 1 150px', minWidth: '120px' },
+                      value: condition.operator,
+                      onChange: (e) => this.handleConditionChange(groupIndex, conditionIndex, 'operator', e.target.value),
+                      disabled: !condition.field
+                    },
+                      operators.map(op =>
+                        e('option', { key: op.value, value: op.value }, op.label)
+                      )
+                    ),
+
+                    // Value input
+                    this.needsValue(condition.operator) && e('input', {
+                      type: fieldType === 'date' ? 'date' : (fieldType === 'datetime' ? 'datetime-local' : (fieldType === 'integer' ? 'number' : 'text')),
+                      className: 'edit-field-input',
+                      style: { flex: '1 1 150px', minWidth: '120px' },
+                      value: condition.value || '',
+                      onChange: (e) => this.handleConditionChange(groupIndex, conditionIndex, 'value', e.target.value),
+                      placeholder: this.needsTwoValues(condition.operator) ? 'De...' : 'Valeur...'
+                    }),
+
+                    // Second value for "between"
+                    this.needsTwoValues(condition.operator) && e('input', {
+                      type: fieldType === 'date' ? 'date' : (fieldType === 'datetime' ? 'datetime-local' : (fieldType === 'integer' ? 'number' : 'text')),
+                      className: 'edit-field-input',
+                      style: { flex: '1 1 150px', minWidth: '120px' },
+                      value: condition.value2 || '',
+                      onChange: (e) => this.handleConditionChange(groupIndex, conditionIndex, 'value2', e.target.value),
+                      placeholder: 'À...'
+                    }),
+
+                    // Remove button
+                    group.conditions.length > 1 && e('button', {
+                      onClick: () => this.handleRemoveCondition(groupIndex, conditionIndex),
+                      style: {
+                        background: '#dc3545',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '4px',
+                        padding: '6px 10px',
+                        cursor: 'pointer',
+                        fontSize: '13px',
+                        minWidth: '35px'
+                      }
+                    }, '🗑️')
+                  )
+                );
+              }),
+
+              // Add condition button
+              e('button', {
+                onClick: () => this.handleAddCondition(groupIndex),
+                style: {
+                  marginTop: '8px',
+                  padding: '6px 12px',
+                  background: '#28a745',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '13px'
+                }
+              }, '+ Ajouter condition ET')
+            )
+          ),
+
+          // Add group button
+          e('button', {
+            onClick: this.handleAddGroup,
+            style: {
+              padding: '8px 16px',
+              background: '#007bff',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '14px',
+              marginTop: '8px'
+            }
+          }, '+ Ajouter groupe OU')
+        ),
+        e('div', { className: 'modal-footer' },
+          e('button', {
+            className: 'btn-cancel',
+            onClick: this.handleReset
+          }, 'Réinitialiser'),
+          e('button', {
+            className: 'btn-cancel',
+            onClick: onClose
+          }, 'Annuler'),
+          e('button', {
+            className: 'btn-apply',
+            onClick: this.handleApply
+          }, 'Appliquer')
+        )
+      )
+    );
+  }
+}
+
+/**
+ * Create Form Modal Component
+ * Modal for creating a new record
+ */
+class CreateFormModal extends React.Component {
+  constructor(props) {
+    super(props);
+
+    const { structure, parentTable, parentId } = props;
+
+    // Initialize form data with default values
+    const formData = {};
+    Object.entries(structure.fields).forEach(([fieldName, field]) => {
+      // Skip system fields and computed fields
+      if (['id', 'ownerId', 'granted', 'createdAt', 'updatedAt'].includes(fieldName)) {
+        return;
+      }
+      if (field.as || field.calculate) {
+        return;
+      }
+
+      // Set parent field if this is a 1:N creation
+      if (parentTable && parentId) {
+        const lowerField = fieldName.toLowerCase();
+        const lowerParent = parentTable.toLowerCase();
+        if (lowerField.includes(lowerParent) || lowerField === `${lowerParent}id` || lowerField === `id${lowerParent}`) {
+          formData[fieldName] = parseInt(parentId);
+        }
+      }
+
+      // Set default values based on field type
+      if (!formData[fieldName]) {
+        if (field.type === 'boolean') {
+          formData[fieldName] = false;
+        } else if (field.type === 'integer') {
+          formData[fieldName] = '';
+        } else {
+          formData[fieldName] = '';
+        }
+      }
+    });
+
+    // Set default granted value
+    formData.granted = 'draft';
+
+    this.state = {
+      formData,
+      saveStatus: 'idle', // idle, saving, error
+      errors: {},
+      newRecordId: null
+    };
+
+    this.fieldRefs = {};
+  }
+
+  componentDidMount() {
+    // Prevent body scroll when modal is open
+    document.body.style.overflow = 'hidden';
+
+    // Auto-focus first editable field
+    const { structure, parentTable } = this.props;
+    const editableFields = Object.keys(structure.fields).filter(f => {
+      const field = structure.fields[f];
+      if (['id', 'ownerId', 'granted', 'createdAt', 'updatedAt'].includes(f)) return false;
+      if (field.as || field.calculate) return false;
+      // Skip parent field if this is a 1:N creation
+      if (parentTable) {
+        const lowerField = f.toLowerCase();
+        const lowerParent = parentTable.toLowerCase();
+        if (lowerField.includes(lowerParent) || lowerField === `${lowerParent}id` || lowerField === `id${lowerParent}`) {
+          return false;
+        }
+      }
+      return true;
+    });
+
+    if (editableFields.length > 0 && this.fieldRefs[editableFields[0]]) {
+      setTimeout(() => {
+        this.fieldRefs[editableFields[0]].focus();
+      }, 100);
+    }
+  }
+
+  componentWillUnmount() {
+    // Restore body scroll
+    document.body.style.overflow = '';
+  }
+
+  handleOverlayClick = (e) => {
+    if (e.target === e.currentTarget) {
+      this.props.onClose();
+    }
+  }
+
+  handleFieldChange = (fieldName, value) => {
+    this.setState(prev => ({
+      formData: {
+        ...prev.formData,
+        [fieldName]: value
+      }
+    }));
+  }
+
+  handleSubmit = async (e) => {
+    if (e) e.preventDefault();
+
+    const { tableName, onSuccess } = this.props;
+    const { formData } = this.state;
+
+    this.setState({ saveStatus: 'saving' });
+
+    try {
+      const response = await fetch(`/_api/${tableName}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        this.setState({ saveStatus: 'idle', newRecordId: data.id });
+        if (onSuccess) {
+          onSuccess(data.id);
+        }
+      } else {
+        this.setState({ saveStatus: 'error', errors: { _general: data.error } });
+      }
+    } catch (error) {
+      console.error('Create error:', error);
+      this.setState({ saveStatus: 'error', errors: { _general: error.message } });
+    }
+  }
+
+  renderField = (fieldName, field) => {
+    const { formData, errors } = this.state;
+    const { structure, tableConfig, permissions, parentTable } = this.props;
+    const value = formData[fieldName];
+    const label = field.label || fieldName;
+
+    // Skip computed fields
+    if (field.as || field.calculate) {
+      return null;
+    }
+
+    // Hide parent field if this is a 1:N creation (it's pre-filled and hidden)
+    if (parentTable) {
+      const lowerField = fieldName.toLowerCase();
+      const lowerParent = parentTable.toLowerCase();
+      if (lowerField.includes(lowerParent) || lowerField === `${lowerParent}id` || lowerField === `id${lowerParent}`) {
+        return null; // Hidden field
+      }
+    }
+
+    // Check if this is a relation
+    if (field.relation) {
+      return e('div', { key: fieldName, className: 'edit-field' },
+        e('label', { className: 'edit-field-label' }, label),
+        e(RelationAutocomplete, {
+          fieldName: fieldName,
+          relatedTable: field.relation,
+          value: null,
+          currentId: value,
+          onChange: (id, item) => this.handleFieldChange(fieldName, id),
+          canCreate: permissions.canCreate,
+          onAddNew: () => {
+            window.open(`/_crud/${field.relation}`, '_blank');
+          },
+          ref: (el) => { if (el) this.fieldRefs[fieldName] = el; }
+        })
+      );
+    }
+
+    // Special handling for granted field
+    if (fieldName === 'granted') {
+      return e('div', { key: fieldName, className: 'edit-field' },
+        e('label', { className: 'edit-field-label' }, label),
+        e(GrantedSelector, {
+          value: value,
+          publishableTo: tableConfig.publishableTo || [],
+          tableGranted: tableConfig.granted || {},
+          onChange: (val) => this.handleFieldChange(fieldName, val),
+          disabled: !permissions.canPublish
+        })
+      );
+    }
+
+    // Render based on field type
+    switch (field.type) {
+      case 'text':
+        return e('div', { key: fieldName, className: 'edit-field' },
+          e('label', { className: 'edit-field-label' }, label),
+          e('textarea', {
+            className: 'edit-field-textarea',
+            value: value || '',
+            onChange: (e) => this.handleFieldChange(fieldName, e.target.value),
+            ref: (el) => { if (el) this.fieldRefs[fieldName] = el; }
+          }),
+          errors[fieldName] && e('span', { className: 'edit-field-error' }, errors[fieldName])
+        );
+
+      case 'enum':
+        return e('div', { key: fieldName, className: 'edit-field' },
+          e('label', { className: 'edit-field-label' }, label),
+          e('select', {
+            className: 'edit-field-select',
+            value: value || '',
+            onChange: (e) => this.handleFieldChange(fieldName, e.target.value),
+            ref: (el) => { if (el) this.fieldRefs[fieldName] = el; }
+          },
+            e('option', { value: '' }, '-- Sélectionner --'),
+            field.values && field.values.map(val =>
+              e('option', { key: val, value: val }, val)
+            )
+          ),
+          errors[fieldName] && e('span', { className: 'edit-field-error' }, errors[fieldName])
+        );
+
+      case 'boolean':
+      case 'integer':
+        const inputType = field.type === 'boolean' ? 'checkbox' : 'number';
+        return e('div', { key: fieldName, className: 'edit-field' },
+          e('label', { className: 'edit-field-label' }, label),
+          e('input', {
+            type: inputType,
+            className: 'edit-field-input',
+            [inputType === 'checkbox' ? 'checked' : 'value']: inputType === 'checkbox' ? !!value : (value || ''),
+            onChange: (e) => this.handleFieldChange(
+              fieldName,
+              inputType === 'checkbox' ? e.target.checked : e.target.value
+            ),
+            ref: (el) => { if (el) this.fieldRefs[fieldName] = el; }
+          }),
+          errors[fieldName] && e('span', { className: 'edit-field-error' }, errors[fieldName])
+        );
+
+      case 'date':
+      case 'datetime':
+        return e('div', { key: fieldName, className: 'edit-field' },
+          e('label', { className: 'edit-field-label' }, label),
+          e('input', {
+            type: field.type === 'datetime' ? 'datetime-local' : 'date',
+            className: 'edit-field-input',
+            value: value || '',
+            onChange: (e) => this.handleFieldChange(fieldName, e.target.value),
+            ref: (el) => { if (el) this.fieldRefs[fieldName] = el; }
+          }),
+          errors[fieldName] && e('span', { className: 'edit-field-error' }, errors[fieldName])
+        );
+
+      default:
+        return e('div', { key: fieldName, className: 'edit-field' },
+          e('label', { className: 'edit-field-label' }, label),
+          e('input', {
+            type: 'text',
+            className: 'edit-field-input',
+            value: value || '',
+            onChange: (e) => this.handleFieldChange(fieldName, e.target.value),
+            ref: (el) => { if (el) this.fieldRefs[fieldName] = el; }
+          }),
+          errors[fieldName] && e('span', { className: 'edit-field-error' }, errors[fieldName])
+        );
+    }
+  }
+
+  render() {
+    const { tableName, structure, tableConfig, permissions, onClose, parentTable } = this.props;
+    const { saveStatus, errors } = this.state;
+
+    // Get editable fields (exclude system fields and parent field in sub-lists)
+    const editableFields = Object.keys(structure.fields).filter(f => {
+      if (['id', 'ownerId', 'createdAt', 'updatedAt'].includes(f)) return false;
+      const field = structure.fields[f];
+      if (field.as || field.calculate) return false;
+      // Don't exclude granted - it should be editable
+      // Hide parent field if this is a 1:N creation
+      if (parentTable) {
+        const lowerField = f.toLowerCase();
+        const lowerParent = parentTable.toLowerCase();
+        if (lowerField.includes(lowerParent) || lowerField === `${lowerParent}id` || lowerField === `id${lowerParent}`) {
+          return false;
+        }
+      }
+      return true;
+    });
+
+    return e('div', {
+      className: 'modal-overlay-detail',
+      onClick: this.handleOverlayClick
+    },
+      e('div', { className: 'modal-content-detail' },
+        // Fixed header
+        e('div', { className: 'modal-header-detail' },
+          e('div', { className: 'modal-title-section' },
+            e('h3', { className: 'modal-title-detail' },
+              `➕ Nouvelle fiche ${tableName}`,
+              parentTable && e('span', { key: 'parent', className: 'modal-subtitle' }, ` (liée à ${parentTable})`)
+            )
+          ),
+          e('button', {
+            className: 'modal-close-detail',
+            onClick: onClose,
+            title: 'Fermer (Echap)'
+          }, '✖')
+        ),
+
+        // Scrollable body
+        e('div', { className: 'modal-body-detail' },
+          e('form', {
+            className: 'edit-form',
+            onSubmit: this.handleSubmit
+          },
+            // General error
+            errors._general && e('div', { className: 'error' }, errors._general),
+
+            // Save indicator
+            saveStatus === 'saving' && e('div', {
+              style: { padding: '8px 12px', marginBottom: '12px', textAlign: 'center', background: '#d1ecf1', borderRadius: '4px' }
+            }, '💾 Création en cours...'),
+
+            // Form fields grid
+            e('div', { className: 'edit-form-grid' },
+              editableFields.map((fieldName) => {
+                const field = structure.fields[fieldName];
+                return this.renderField(fieldName, field);
+              })
+            ),
+
+            // Submit button
+            e('div', { style: { marginTop: '20px', display: 'flex', gap: '8px', justifyContent: 'flex-end' } },
+              e('button', {
+                type: 'button',
+                className: 'btn-cancel',
+                onClick: onClose
+              }, 'Annuler'),
+              e('button', {
+                type: 'submit',
+                className: 'btn-apply',
+                disabled: saveStatus === 'saving'
+              }, saveStatus === 'saving' ? 'Création...' : 'Créer')
+            )
+          )
+        )
       )
     );
   }
@@ -1956,6 +2887,13 @@ class CrudList extends React.Component {
       selectedFields: null,
       showFieldSelector: false,
       showDeleteButtons: false,
+      showCreateForm: false,
+      createFormParentTable: null,
+      createFormParentId: null,
+      showAdvancedSearch: false,
+      advancedSearchCriteria: null,
+      showAdvancedSort: false,
+      advancedSortCriteria: [],
       page: 0,
       limit: 100
     };
@@ -2020,7 +2958,7 @@ class CrudList extends React.Component {
     this.setState({ loading: true, error: null });
 
     const { table } = this.props;
-    const { search, orderBy, order, page, limit, displayMode, selectedFields } = this.state;
+    const { search, orderBy, order, page, limit, displayMode, selectedFields, advancedSearchCriteria, advancedSortCriteria } = this.state;
 
     const showSystemFields = displayMode === 'raw';
 
@@ -2036,6 +2974,16 @@ class CrudList extends React.Component {
 
       if (displayMode === 'custom' && selectedFields && selectedFields.length > 0) {
         params.set('selectedFields', selectedFields.join(','));
+      }
+
+      // Add advanced search criteria
+      if (advancedSearchCriteria) {
+        params.set('advancedSearch', JSON.stringify(advancedSearchCriteria));
+      }
+
+      // Add advanced sort criteria
+      if (advancedSortCriteria && advancedSortCriteria.length > 0) {
+        params.set('advancedSort', JSON.stringify(advancedSortCriteria));
       }
 
       const response = await fetch(`/_crud/${table}/data?${params}`);
@@ -2125,14 +3073,60 @@ class CrudList extends React.Component {
     this.setState(prev => ({ showDeleteButtons: !prev.showDeleteButtons }));
   }
 
-  handleAddNew = () => {
-    // For now, just reload. Could open a modal or navigate to create form
-    window.location.href = `/_crud/${this.props.table}?new=1`;
+  handleAddNew = (parentTable = null, parentId = null) => {
+    this.setState({
+      showCreateForm: true,
+      createFormParentTable: parentTable,
+      createFormParentId: parentId
+    });
+  }
+
+  handleCloseCreateForm = () => {
+    this.setState({
+      showCreateForm: false,
+      createFormParentTable: null,
+      createFormParentId: null
+    });
+  }
+
+  handleCreateSuccess = () => {
+    // Reload data after successful creation
+    this.loadData();
+    this.handleCloseCreateForm();
+  }
+
+  handleShowAdvancedSearch = () => {
+    this.setState({ showAdvancedSearch: true });
+  }
+
+  handleCloseAdvancedSearch = () => {
+    this.setState({ showAdvancedSearch: false });
+  }
+
+  handleApplyAdvancedSearch = (searchCriteria) => {
+    this.setState({
+      advancedSearchCriteria: searchCriteria,
+      page: 0 // Reset to first page
+    }, this.loadData);
+  }
+
+  handleShowAdvancedSort = () => {
+    this.setState({ showAdvancedSort: true });
+  }
+
+  handleCloseAdvancedSort = () => {
+    this.setState({ showAdvancedSort: false });
+  }
+
+  handleApplyAdvancedSort = (sortCriteria) => {
+    this.setState({
+      advancedSortCriteria: sortCriteria
+    }, this.loadData);
   }
 
   render() {
     const { table } = this.props;
-    const { loading, error, data, search, orderBy, order, displayMode, showFieldSelector, selectedFields, showDeleteButtons } = this.state;
+    const { loading, error, data, search, orderBy, order, displayMode, showFieldSelector, selectedFields, showDeleteButtons, showCreateForm, createFormParentTable, createFormParentId, showAdvancedSearch, advancedSearchCriteria, showAdvancedSort, advancedSortCriteria } = this.state;
 
     return e('div', { className: 'crud-list-container' },
       // Header
@@ -2155,7 +3149,11 @@ class CrudList extends React.Component {
             onDisplayModeChange: this.handleDisplayModeChange,
             onFieldSelect: this.handleShowFieldSelector,
             onToggleDelete: this.handleToggleDeleteButtons,
-            showDeleteButtons
+            showDeleteButtons,
+            onAdvancedSearch: this.handleShowAdvancedSearch,
+            onAdvancedSort: this.handleShowAdvancedSort,
+            hasAdvancedSearch: !!advancedSearchCriteria,
+            hasAdvancedSort: advancedSortCriteria && advancedSortCriteria.length > 0
           })
         )
       ),
@@ -2211,6 +3209,34 @@ class CrudList extends React.Component {
         structure: data.structure,
         onApply: this.handleApplyFieldSelection,
         onClose: this.handleCloseFieldSelector
+      }),
+
+      // Create form modal
+      showCreateForm && data && e(CreateFormModal, {
+        tableName: table,
+        structure: data.structure,
+        tableConfig: data.tableConfig,
+        permissions: data.permissions,
+        parentTable: createFormParentTable,
+        parentId: createFormParentId,
+        onClose: this.handleCloseCreateForm,
+        onSuccess: this.handleCreateSuccess
+      }),
+
+      // Advanced search modal
+      showAdvancedSearch && data && e(AdvancedSearchModal, {
+        structure: data.structure,
+        onApply: this.handleApplyAdvancedSearch,
+        onClose: this.handleCloseAdvancedSearch
+      }),
+
+      // Advanced sort modal
+      showAdvancedSort && data && e(AdvancedSortModal, {
+        structure: data.structure,
+        currentOrderBy: orderBy,
+        currentOrder: order,
+        onApply: this.handleApplyAdvancedSort,
+        onClose: this.handleCloseAdvancedSort
       })
     );
   }

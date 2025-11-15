@@ -26,7 +26,9 @@ class CrudService {
       search = '',
       showSystemFields = false,
       selectedFields = null, // Array of field names to show, null = default
-      compact = true
+      compact = true,
+      advancedSearch = null, // Advanced search criteria (JSON)
+      advancedSort = null // Advanced sort criteria (JSON)
     } = options;
 
     // Normalize table name
@@ -64,7 +66,14 @@ class CrudService {
     let customWhere = '1=1';
     const searchParams = [];
 
-    if (search && search.length >= 2) {
+    // Use advanced search if provided, otherwise use simple search
+    if (advancedSearch) {
+      const advancedResult = this.buildAdvancedSearchWhere(advancedSearch, table);
+      if (advancedResult.where) {
+        customWhere += ` AND (${advancedResult.where})`;
+        searchParams.push(...advancedResult.params);
+      }
+    } else if (search && search.length >= 2) {
       const searchFields = this.getSearchableFields(user, table);
       if (searchFields.length > 0) {
         const searchConditions = searchFields.map(field => {
@@ -77,6 +86,22 @@ class CrudService {
       }
     }
 
+    // Determine orderBy and order from advanced sort or simple sort
+    let finalOrderBy = orderBy;
+    let finalOrder = order;
+
+    if (advancedSort && advancedSort.length > 0) {
+      // Build multi-criteria ORDER BY clause
+      const sortClauses = advancedSort
+        .filter(criterion => criterion.field)
+        .map(criterion => `${criterion.field} ${criterion.order || 'ASC'}`)
+        .join(', ');
+      if (sortClauses) {
+        finalOrderBy = sortClauses; // Override with advanced sort
+        finalOrder = ''; // Clear order as it's already in finalOrderBy
+      }
+    }
+
     // Get data with relations
     // Don't pass 'relation' parameter to use the actual default behavior:
     // - All N:1 relations
@@ -84,8 +109,8 @@ class CrudService {
     const result = await TableDataService.getTableData(user, table, {
       limit,
       offset,
-      orderBy,
-      order,
+      orderBy: finalOrderBy,
+      order: finalOrder,
       customWhere,
       customWhereParams: searchParams,
       compact,
@@ -296,6 +321,134 @@ class CrudService {
       return PermissionService.hasPermission(user, table, 'create') ||
              PermissionService.hasPermission(user, table, 'update');
     });
+  }
+
+  /**
+   * Build WHERE clause from advanced search criteria
+   * @param {Object} searchGroups - Advanced search criteria (groups with AND/OR logic)
+   * @param {string} table - Table name
+   * @returns {Object} - { where: string, params: array }
+   */
+  static buildAdvancedSearchWhere(searchGroups, table) {
+    const groupClauses = [];
+    const allParams = [];
+
+    // Each group is an OR condition
+    for (const group of searchGroups) {
+      if (!group.conditions || group.conditions.length === 0) continue;
+
+      const conditionClauses = [];
+
+      // Each condition in a group is an AND condition
+      for (const condition of group.conditions) {
+        if (!condition.field || !condition.operator) continue;
+
+        const { field, operator, value, value2 } = condition;
+
+        // Build SQL based on operator
+        switch (operator) {
+          case 'contains':
+            conditionClauses.push(`${field} LIKE ?`);
+            allParams.push(`%${value}%`);
+            break;
+
+          case 'not_contains':
+            conditionClauses.push(`(${field} NOT LIKE ? OR ${field} IS NULL)`);
+            allParams.push(`%${value}%`);
+            break;
+
+          case 'equals':
+            conditionClauses.push(`${field} = ?`);
+            allParams.push(value);
+            break;
+
+          case 'not_equals':
+            conditionClauses.push(`(${field} != ? OR ${field} IS NULL)`);
+            allParams.push(value);
+            break;
+
+          case 'starts_with':
+            conditionClauses.push(`${field} LIKE ?`);
+            allParams.push(`${value}%`);
+            break;
+
+          case 'ends_with':
+            conditionClauses.push(`${field} LIKE ?`);
+            allParams.push(`%${value}`);
+            break;
+
+          case 'is_empty':
+            conditionClauses.push(`(${field} IS NULL OR ${field} = '')`);
+            break;
+
+          case 'is_not_empty':
+            conditionClauses.push(`(${field} IS NOT NULL AND ${field} != '')`);
+            break;
+
+          case 'greater_than':
+            conditionClauses.push(`${field} > ?`);
+            allParams.push(value);
+            break;
+
+          case 'less_than':
+            conditionClauses.push(`${field} < ?`);
+            allParams.push(value);
+            break;
+
+          case 'between':
+            if (value && value2) {
+              conditionClauses.push(`${field} BETWEEN ? AND ?`);
+              allParams.push(value, value2);
+            }
+            break;
+
+          case 'is_zero':
+            conditionClauses.push(`${field} = 0`);
+            break;
+
+          case 'is_not_zero':
+            conditionClauses.push(`${field} != 0`);
+            break;
+
+          case 'before':
+            conditionClauses.push(`${field} < ?`);
+            allParams.push(value);
+            break;
+
+          case 'after':
+            conditionClauses.push(`${field} > ?`);
+            allParams.push(value);
+            break;
+
+          case 'is_true':
+            conditionClauses.push(`${field} = 1`);
+            break;
+
+          case 'is_false':
+            conditionClauses.push(`${field} = 0`);
+            break;
+
+          default:
+            // Unknown operator, skip
+            break;
+        }
+      }
+
+      // Combine conditions with AND
+      if (conditionClauses.length > 0) {
+        groupClauses.push(`(${conditionClauses.join(' AND ')})`);
+      }
+    }
+
+    // Combine groups with OR
+    if (groupClauses.length > 0) {
+      return {
+        where: groupClauses.join(' OR '),
+        params: allParams
+      };
+    }
+
+    return { where: '', params: [] };
   }
 }
 
