@@ -1162,7 +1162,13 @@ class TableRow extends React.Component {
   handleKeyDown(event) {
     // Close on ESC key if this row is expanded
     if (event.key === 'Escape' && this.state.expanded) {
-      this.setState({ expanded: false, editMode: false });
+      // If in edit mode, close the form first (exit edit mode)
+      if (this.state.editMode) {
+        this.setState({ editMode: false });
+      } else {
+        // If not in edit mode, close the detail view
+        this.setState({ expanded: false });
+      }
     }
   }
 
@@ -1452,11 +1458,18 @@ class RowDetailModal extends React.Component {
             },
               cardTitle ? [
                 cardTitle,
-                e('span', {
+                e('a', {
                   key: 'subtitle',
-                  className: 'modal-subtitle'
-                }, ` ${tableName}/${row.id}`)
-              ] : `${tableName}/${row.id}`
+                  className: 'modal-subtitle',
+                  href: `/_crud/${tableName}/${row.id}`,
+                  onClick: (e) => e.stopPropagation(),
+                  title: 'Ouvrir dans une nouvelle page'
+                }, ` 🔗 ${tableName}/${row.id}`)
+              ] : e('a', {
+                href: `/_crud/${tableName}/${row.id}`,
+                onClick: (e) => e.stopPropagation(),
+                title: 'Ouvrir dans une nouvelle page'
+              }, `🔗 ${tableName}/${row.id}`)
             )
           ),
           // Close button (X exits edit mode if in edit, otherwise closes modal)

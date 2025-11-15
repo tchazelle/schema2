@@ -1182,6 +1182,17 @@ tr.detail-row td {
   font-weight: 400;
 }
 
+a.modal-subtitle {
+  text-decoration: none;
+  color: #6c757d;
+  transition: color 0.2s ease;
+}
+
+a.modal-subtitle:hover {
+  color: #0066cc;
+  text-decoration: underline;
+}
+
 /* Granted section - inline with title */
 .modal-granted-inline {
   flex-shrink: 0;
