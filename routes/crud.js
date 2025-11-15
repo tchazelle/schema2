@@ -8,6 +8,7 @@ const EntityService = require('../services/entityService');
 const CrudService = require('../services/crudService');
 const TemplateService = require('../services/templateService');
 const TableDataService = require('../services/tableDataService');
+const UIService = require('../services/uiService');
 
 // getTableStructure() a été déplacée dans SchemaService.getTableStructure()
 
@@ -148,18 +149,12 @@ router.get('/:table', async (req, res) => {
 
     // Check if table exists
     if (!table) {
-      return res.status(404).send(`
-        <!DOCTYPE html>
-        <html><body><h1>Table non trouvée</h1><p>La table "${tableParam}" n'existe pas.</p></body></html>
-      `);
+      return res.status(404).send(UIService.error404Page('Table', tableParam));
     }
 
     // Check if user has read permission
     if (!hasPermission(user, table, 'read')) {
-      return res.status(403).send(`
-        <!DOCTYPE html>
-        <html><body><h1>Accès refusé</h1><p>Vous n'avez pas la permission d'accéder à cette table.</p></body></html>
-      `);
+      return res.status(403).send(UIService.error403Page());
     }
 
     // user is already enriched by userEnrichMiddleware with all necessary info
@@ -190,10 +185,7 @@ router.get('/:table', async (req, res) => {
 
   } catch (error) {
     console.error('Error rendering CRUD page:', error);
-    res.status(500).send(`
-      <!DOCTYPE html>
-      <html><body><h1>Erreur serveur</h1><p>${error.message}</p></body></html>
-    `);
+    res.status(500).send(UIService.error500Page(error));
   }
 });
 
@@ -215,10 +207,7 @@ router.get('/:table/view', async (req, res) => {
 
     // Vérifier si la table existe
     if (!table) {
-      return res.status(404).send(`
-        <!DOCTYPE html>
-        <html><body><h1>Table non trouvée</h1><p>La table "${tableParam}" n'existe pas.</p></body></html>
-      `);
+      return res.status(404).send(UIService.error404Page('Table', tableParam));
     }
 
     const html = `
@@ -321,10 +310,7 @@ router.get('/:table/view', async (req, res) => {
 
   } catch (error) {
     console.error('Erreur lors de la génération de la page CRUD view:', error);
-    res.status(500).send(`
-      <!DOCTYPE html>
-      <html><body><h1>Erreur serveur</h1><p>${error.message}</p></body></html>
-    `);
+    res.status(500).send(UIService.error500Page(error));
   }
 });
 
@@ -343,32 +329,27 @@ router.get('/:table/structure', async (req, res) => {
     const table = SchemaService.getTableName(tableParam);
 
     if (!table) {
-      return res.status(404).json({
-        error: 'Table non trouvée',
-        table: tableParam
-      });
+      return res.status(404).json(UIService.jsonError(
+        UIService.messages.TABLE_NOT_FOUND,
+        { table: tableParam }
+      ));
     }
 
     // Récupérer la structure de la table
     const structure = SchemaService.getTableStructure(user, table);
 
     if (!structure) {
-      return res.status(403).json({
-        error: 'Accès refusé à cette table',
-        table: table
-      });
+      return res.status(403).json(UIService.jsonError(
+        UIService.messages.ACCESS_DENIED,
+        { table: table }
+      ));
     }
 
-    res.json({
-      success: true,
-      structure: structure
-    });
+    res.json(UIService.jsonSuccess({ structure }));
 
   } catch (error) {
     console.error('Erreur lors de la récupération de la structure:', error);
-    res.status(500).json({
-      error: 'Erreur serveur lors de la récupération de la structure'
-    });
+    res.status(500).json(UIService.jsonError(UIService.messages.ERROR_SERVER));
   }
 });
 
@@ -390,12 +371,9 @@ router.get('/:table/:id', async (req, res) => {
       // Check if HTML or JSON response is expected
       const acceptsJson = req.accepts(['html', 'json']) === 'json';
       if (acceptsJson) {
-        return res.status(404).json({ error: 'Table non trouvée' });
+        return res.status(404).json(UIService.jsonError(UIService.messages.TABLE_NOT_FOUND));
       } else {
-        return res.status(404).send(`
-          <!DOCTYPE html>
-          <html><body><h1>Table non trouvée</h1><p>La table "${tableParam}" n'existe pas.</p></body></html>
-        `);
+        return res.status(404).send(UIService.error404Page('Table', tableParam));
       }
     }
 
@@ -403,12 +381,9 @@ router.get('/:table/:id', async (req, res) => {
     if (!hasPermission(user, table, 'read')) {
       const acceptsJson = req.accepts(['html', 'json']) === 'json';
       if (acceptsJson) {
-        return res.status(403).json({ error: 'Accès refusé à cette table' });
+        return res.status(403).json(UIService.jsonError(UIService.messages.ACCESS_DENIED));
       } else {
-        return res.status(403).send(`
-          <!DOCTYPE html>
-          <html><body><h1>Accès refusé</h1><p>Vous n'avez pas la permission d'accéder à cette table.</p></body></html>
-        `);
+        return res.status(403).send(UIService.error403Page());
       }
     }
 
@@ -423,12 +398,13 @@ router.get('/:table/:id', async (req, res) => {
     if (!result.success || !result.rows || result.rows.length === 0) {
       const acceptsJson = req.accepts(['html', 'json']) === 'json';
       if (acceptsJson) {
-        return res.status(404).json({ error: 'Enregistrement non trouvé' });
+        return res.status(404).json(UIService.jsonError(UIService.messages.RECORD_NOT_FOUND));
       } else {
-        return res.status(404).send(`
-          <!DOCTYPE html>
-          <html><body><h1>Enregistrement non trouvé</h1><p>L'enregistrement #${id} n'existe pas dans la table ${table}.</p></body></html>
-        `);
+        return res.status(404).send(UIService.errorPage(
+          UIService.messages.RECORD_NOT_FOUND,
+          UIService.recordNotFoundMessage(table, id),
+          `/_crud/${table}`
+        ));
       }
     }
 
@@ -474,12 +450,9 @@ router.get('/:table/:id', async (req, res) => {
     console.error('Erreur lors de la récupération de l\'enregistrement:', error);
     const acceptsJson = req.accepts(['html', 'json']) === 'json';
     if (acceptsJson) {
-      res.status(500).json({ error: 'Erreur serveur lors de la récupération de l\'enregistrement' });
+      res.status(500).json(UIService.jsonError(UIService.messages.ERROR_SERVER));
     } else {
-      res.status(500).send(`
-        <!DOCTYPE html>
-        <html><body><h1>Erreur serveur</h1><p>${error.message}</p></body></html>
-      `);
+      res.status(500).send(UIService.error500Page(error));
     }
   }
 });
