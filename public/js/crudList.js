@@ -710,7 +710,8 @@ class EditForm extends React.Component {
           publishableTo: tableConfig.publishableTo || [],
           tableGranted: tableConfig.granted || {},
           onChange: (val) => this.handleFieldChange(fieldName, val),
-          disabled: !permissions.canPublish
+          disabled: !permissions.canPublish,
+          compact: true
         })
       );
     }
@@ -847,21 +848,40 @@ class EditForm extends React.Component {
     // Extract 1:N relations (only if not hidden)
     const relations1N = [];
     if (!hideRelations1N) {
-      // Get all defined 1:N relations from schema IN ORDER
-      Object.entries(structure.fields).forEach(([fieldName, field]) => {
-        if (field.arrayName) {
-          const relName = field.arrayName;
-          const relData = (row._relations && row._relations[relName]) || [];
-          const relatedTable = field.relation;
+      // Get all defined 1:N relations from structure.relations (preferred method)
+      if (structure.relations) {
+        Object.entries(structure.relations).forEach(([relationName, relationConfig]) => {
+          if (relationConfig.type === 'one-to-many') {
+            // Check if data exists in row._relations, otherwise use empty array
+            const relData = (row._relations && row._relations[relationName]) || [];
 
-          relations1N.push({
-            name: relName,
-            data: Array.isArray(relData) ? relData : [],
-            relatedTable: relatedTable,
-            relationshipStrength: field.relationshipStrength
-          });
-        }
-      });
+            relations1N.push({
+              name: relationName,
+              data: Array.isArray(relData) ? relData : [],
+              relatedTable: relationConfig.relatedTable,
+              relationshipStrength: relationConfig.relationshipStrength
+            });
+          }
+        });
+      }
+
+      // Fallback: Get 1:N relations from fields with arrayName (old method)
+      if (relations1N.length === 0) {
+        Object.entries(structure.fields).forEach(([fieldName, field]) => {
+          if (field.arrayName) {
+            const relName = field.arrayName;
+            const relData = (row._relations && row._relations[relName]) || [];
+            const relatedTable = field.relation;
+
+            relations1N.push({
+              name: relName,
+              data: Array.isArray(relData) ? relData : [],
+              relatedTable: relatedTable,
+              relationshipStrength: field.relationshipStrength
+            });
+          }
+        });
+      }
 
       // Also include any 1:N relations from row._relations not yet in relations1N
       if (row._relations) {
@@ -965,9 +985,20 @@ class RelationRenderer extends React.Component {
   getDisplayValue(relation) {
     if (typeof relation === 'string') return relation;
 
+    // Priority 1: Use _label if available (built from displayFields by API)
+    if (relation._label) {
+      return relation._label;
+    }
+
+    // Priority 2: Use label if available (fallback)
+    if (relation.label) {
+      return relation.label;
+    }
+
+    // Priority 3: Collect non-system fields
     const values = [];
     for (const key in relation) {
-      if (key !== 'id' && key !== '_table' && relation[key]) {
+      if (key !== 'id' && key !== '_table' && !key.startsWith('_') && relation[key]) {
         values.push(relation[key]);
       }
     }
@@ -991,6 +1022,7 @@ class TableHeader extends React.Component {
       return e('thead', null,
         e('tr', null,
           showDeleteButton && permissions && permissions.canDelete && e('th', { key: 'delete-header', style: { width: '40px' } }, ''),
+          e('th', { key: 'granted-header', style: { width: '40px' } }, ''),
           fields.map(fieldName =>
             e('th', { key: fieldName }, fieldName)
           )
@@ -1001,6 +1033,7 @@ class TableHeader extends React.Component {
     return e('thead', null,
       e('tr', null,
         showDeleteButton && permissions && permissions.canDelete && e('th', { key: 'delete-header', style: { width: '40px' } }, ''),
+        e('th', { key: 'granted-header', style: { width: '40px', textAlign: 'center' }, title: 'Statut de publication' }, '📋'),
         fields.map(fieldName => {
           const field = structure.fields[fieldName];
           const label = field?.label || fieldName;
@@ -1180,6 +1213,12 @@ class TableRow extends React.Component {
             }
           }, '🗑️')
         ),
+        // Granted column (always shown)
+        e('td', {
+          key: 'granted-col',
+          'data-label': 'Statut',
+          style: { width: '40px', textAlign: 'center', fontSize: '16px' }
+        }, getGrantedIcon(row.granted)),
         // Regular field columns
         fields.map(fieldName => {
           const field = structure.fields[fieldName];
@@ -1437,23 +1476,40 @@ class RowDetailView extends React.Component {
     // Maintain order from schema definition
     const relations1N = [];
 
-    // Get all defined 1:N relations from schema IN ORDER
-    Object.entries(structure.fields).forEach(([fieldName, field]) => {
-      if (field.arrayName) {
-        // This field has a reverse relation (1:N)
-        const relName = field.arrayName;
-        // Check if data exists in row._relations, otherwise use empty array
-        const relData = (row._relations && row._relations[relName]) || [];
-        const relatedTable = field.relation;
+    // Get all defined 1:N relations from structure.relations (preferred method)
+    if (structure.relations) {
+      Object.entries(structure.relations).forEach(([relationName, relationConfig]) => {
+        if (relationConfig.type === 'one-to-many') {
+          // Check if data exists in row._relations, otherwise use empty array
+          const relData = (row._relations && row._relations[relationName]) || [];
 
-        relations1N.push({
-          name: relName,
-          data: Array.isArray(relData) ? relData : [],
-          relatedTable: relatedTable,
-          relationshipStrength: field.relationshipStrength
-        });
-      }
-    });
+          relations1N.push({
+            name: relationName,
+            data: Array.isArray(relData) ? relData : [],
+            relatedTable: relationConfig.relatedTable,
+            relationshipStrength: relationConfig.relationshipStrength
+          });
+        }
+      });
+    }
+
+    // Fallback: Get 1:N relations from fields with arrayName (old method)
+    if (relations1N.length === 0) {
+      Object.entries(structure.fields).forEach(([fieldName, field]) => {
+        if (field.arrayName) {
+          const relName = field.arrayName;
+          const relData = (row._relations && row._relations[relName]) || [];
+          const relatedTable = field.relation;
+
+          relations1N.push({
+            name: relName,
+            data: Array.isArray(relData) ? relData : [],
+            relatedTable: relatedTable,
+            relationshipStrength: field.relationshipStrength
+          });
+        }
+      });
+    }
 
     // Also include any 1:N relations from row._relations not yet in relations1N
     // (for backwards compatibility)
@@ -2007,7 +2063,16 @@ class AdvancedSortModal extends React.Component {
     const { structure } = this.props;
     const relatedTables = new Set();
 
-    // Find all N:1 relations
+    // Find all N:1 relations from structure.relations (preferred method)
+    if (structure.relations) {
+      Object.entries(structure.relations).forEach(([relationName, relationConfig]) => {
+        if (relationConfig.type === 'many-to-one') {
+          relatedTables.add(relationConfig.relatedTable);
+        }
+      });
+    }
+
+    // Fallback: Find N:1 relations from structure.fields
     Object.entries(structure.fields).forEach(([fieldName, field]) => {
       if (field.relation && !field.arrayName) {
         relatedTables.add(field.relation);
@@ -2254,7 +2319,16 @@ class AdvancedSearchModal extends React.Component {
     const { structure } = this.props;
     const relatedTables = new Set();
 
-    // Find all N:1 relations
+    // Find all N:1 relations from structure.relations (preferred method)
+    if (structure.relations) {
+      Object.entries(structure.relations).forEach(([relationName, relationConfig]) => {
+        if (relationConfig.type === 'many-to-one') {
+          relatedTables.add(relationConfig.relatedTable);
+        }
+      });
+    }
+
+    // Fallback: Find N:1 relations from structure.fields
     Object.entries(structure.fields).forEach(([fieldName, field]) => {
       if (field.relation && !field.arrayName) {
         relatedTables.add(field.relation);
@@ -2785,10 +2859,58 @@ class CreateFormModal extends React.Component {
       const data = await response.json();
 
       if (data.success) {
-        this.setState({ saveStatus: 'idle', newRecordId: data.id });
+        // Show success message and keep modal open for creating another record
+        this.setState({ saveStatus: 'success', newRecordId: data.id });
+
+        // Call onSuccess to refresh parent list
         if (onSuccess) {
           onSuccess(data.id);
         }
+
+        // Reset form after 1 second
+        setTimeout(() => {
+          // Reset form data but keep parent field if it exists
+          const { structure, parentTable, parentId } = this.props;
+          const formData = {};
+
+          Object.keys(structure.fields).forEach((fieldName) => {
+            const field = structure.fields[fieldName];
+
+            if (['id', 'ownerId', 'granted', 'createdAt', 'updatedAt'].includes(fieldName)) {
+              return;
+            }
+            if (field.as || field.calculate) {
+              return;
+            }
+
+            // Re-set parent field if this is a 1:N creation
+            if (parentTable && typeof parentTable === 'string' && parentId) {
+              const lowerField = fieldName.toLowerCase();
+              const lowerParent = parentTable.toLowerCase();
+              if (lowerField.includes(lowerParent) || lowerField === `${lowerParent}id` || lowerField === `id${lowerParent}`) {
+                formData[fieldName] = parseInt(parentId);
+                return;
+              }
+            }
+
+            // Reset to default values
+            if (field.type === 'boolean') {
+              formData[fieldName] = false;
+            } else {
+              formData[fieldName] = '';
+            }
+          });
+
+          // Reset granted to draft
+          formData.granted = 'draft';
+
+          this.setState({
+            formData,
+            saveStatus: 'idle',
+            errors: {},
+            newRecordId: null
+          });
+        }, 1000);
       } else {
         this.setState({ saveStatus: 'error', errors: { _general: data.error } });
       }
@@ -2846,7 +2968,8 @@ class CreateFormModal extends React.Component {
           publishableTo: tableConfig.publishableTo || [],
           tableGranted: tableConfig.granted || {},
           onChange: (val) => this.handleFieldChange(fieldName, val),
-          disabled: !permissions.canPublish
+          disabled: !permissions.canPublish,
+          compact: true
         })
       );
     }
@@ -2960,7 +3083,7 @@ class CreateFormModal extends React.Component {
           e('div', { className: 'modal-title-section' },
             e('h3', { className: 'modal-title-detail' },
               `➕ Nouvelle fiche ${tableName}`,
-              parentTable && e('span', { key: 'parent', className: 'modal-subtitle' }, ` (liée à ${parentTable})`)
+              parentTable && typeof parentTable === 'string' && e('span', { key: 'parent', className: 'modal-subtitle' }, ` (liée à ${parentTable})`)
             )
           ),
           e('button', {
@@ -2983,6 +3106,9 @@ class CreateFormModal extends React.Component {
             saveStatus === 'saving' && e('div', {
               style: { padding: '8px 12px', marginBottom: '12px', textAlign: 'center', background: '#d1ecf1', borderRadius: '4px' }
             }, '💾 Création en cours...'),
+            saveStatus === 'success' && e('div', {
+              style: { padding: '8px 12px', marginBottom: '12px', textAlign: 'center', background: '#d4edda', borderRadius: '4px', color: '#155724' }
+            }, '✅ Fiche créée avec succès ! Le formulaire a été réinitialisé.'),
 
             // Form fields grid
             e('div', { className: 'edit-form-grid' },
@@ -3046,6 +3172,23 @@ class CrudList extends React.Component {
     this.loadSchema();
     this.loadData();
     this.loadUserPreferences();
+    this.checkURLParameters();
+  }
+
+  checkURLParameters() {
+    // Parse URL query parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const parent = urlParams.get('parent');
+    const parentId = urlParams.get('parentId');
+
+    // If parent and parentId are provided, open create form automatically
+    if (parent && parentId) {
+      this.setState({
+        showCreateForm: true,
+        createFormParentTable: parent,
+        createFormParentId: parseInt(parentId)
+      });
+    }
   }
 
   loadSchema = async () => {
