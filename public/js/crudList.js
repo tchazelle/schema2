@@ -910,10 +910,10 @@ class EditForm extends React.Component {
               style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }
             },
               e('div', {
-                style: { display: 'flex', alignItems: 'center', gap: '6px', cursor: count > 0 ? 'pointer' : 'default' },
-                onClick: count > 0 ? () => this.toggleRelation(relName) : null
+                style: { display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' },
+                onClick: () => this.toggleRelation(relName)
               },
-                count > 0 && e('span', { className: 'relation-toggle' }, isOpen ? '▼' : '▶'),
+                e('span', { className: 'relation-toggle' }, isOpen ? '▼' : '▶'),
                 e('strong', null, relName),
                 e('span', { className: 'relation-count' }, count)
               ),
@@ -926,7 +926,7 @@ class EditForm extends React.Component {
                 title: `Créer un nouveau ${relatedTable}`
               }, '+ Nouveau')
             ),
-            isOpen && count > 0 && e('div', { className: 'relation-list' },
+            isOpen && e('div', { className: 'relation-list' },
               e(SubList, {
                 rows: relRows,
                 tableName: relatedTable,
@@ -1531,12 +1531,12 @@ class RowDetailView extends React.Component {
               style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }
             },
               e('div', {
-                style: { display: 'flex', alignItems: 'center', gap: '6px', cursor: count > 0 ? 'pointer' : 'default' },
-                onClick: count > 0 ? () => this.toggleRelation(relName) : null
+                style: { display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' },
+                onClick: () => this.toggleRelation(relName)
               },
-                count > 0 && e('span', { className: 'relation-toggle' }, isOpen ? '▼' : '▶'),
+                e('span', { className: 'relation-toggle' }, isOpen ? '▼' : '▶'),
                 e('strong', null, relName),
-                count > 0 && e('span', { className: 'relation-count' }, count)
+                e('span', { className: 'relation-count' }, count)
               ),
               e('button', {
                 className: 'btn-add-relation-item',
@@ -1547,7 +1547,7 @@ class RowDetailView extends React.Component {
                 title: `Créer un nouveau ${relatedTable}`
               }, '+ Nouveau')
             ),
-            isOpen && count > 0 && e('div', { className: 'relation-list' },
+            isOpen && e('div', { className: 'relation-list' },
               e(SubList, {
                 rows: relRows,
                 tableName: relatedTable,
@@ -1767,9 +1767,10 @@ class SubList extends React.Component {
   }
 
   isParentField(fieldName, parentTable) {
+    if (!parentTable || typeof parentTable !== 'string') return false;
     const lowerField = fieldName.toLowerCase();
     const lowerParent = parentTable.toLowerCase();
-    return lowerField.includes(lowerParent) || lowerField === `id${parentTable}`;
+    return lowerField.includes(lowerParent) || lowerField === `id${lowerParent}`;
   }
 }
 
@@ -1996,8 +1997,38 @@ class AdvancedSortModal extends React.Component {
       : [];
 
     this.state = {
-      criteria: initialCriteria
+      criteria: initialCriteria,
+      relatedStructures: {} // Cache for related table structures
     };
+  }
+
+  async componentDidMount() {
+    // Fetch structures for all related tables
+    const { structure } = this.props;
+    const relatedTables = new Set();
+
+    // Find all N:1 relations
+    Object.entries(structure.fields).forEach(([fieldName, field]) => {
+      if (field.relation && !field.arrayName) {
+        relatedTables.add(field.relation);
+      }
+    });
+
+    // Fetch structure for each related table
+    const relatedStructures = {};
+    for (const tableName of relatedTables) {
+      try {
+        const response = await fetch(`/_crud/${tableName}/structure`);
+        const data = await response.json();
+        if (data.success && data.structure) {
+          relatedStructures[tableName] = data.structure;
+        }
+      } catch (error) {
+        console.error(`Failed to fetch structure for ${tableName}:`, error);
+      }
+    }
+
+    this.setState({ relatedStructures });
   }
 
   handleAddCriterion = () => {
@@ -2037,7 +2068,7 @@ class AdvancedSortModal extends React.Component {
 
   render() {
     const { structure, onClose } = this.props;
-    const { criteria } = this.state;
+    const { criteria, relatedStructures } = this.state;
 
     // Get all sortable fields (table fields + n:1 relation fields)
     const sortableFields = [];
@@ -2052,20 +2083,26 @@ class AdvancedSortModal extends React.Component {
           group: 'Champs de la table'
         });
 
-        // If this is an n:1 relation, add common fields from the related table
+        // If this is an n:1 relation, add fields from the related table
         if (field.relation && !field.arrayName) {
           const relatedTable = field.relation;
-          // Add common sortable fields from related table
-          // TODO: Could fetch full structure, but for now use common fields
-          const commonRelatedFields = ['name', 'title', 'givenName', 'familyName', 'email', 'createdAt', 'updatedAt'];
-          commonRelatedFields.forEach(relField => {
-            sortableFields.push({
-              value: `${relatedTable}.${relField}`,
-              label: `${relatedTable} › ${relField}`,
-              isRelation: true,
-              group: `Relations N:1 (${relatedTable})`
+          const relatedStructure = relatedStructures[relatedTable];
+
+          if (relatedStructure && relatedStructure.fields) {
+            // Use actual fields from related table structure
+            Object.entries(relatedStructure.fields).forEach(([relFieldName, relField]) => {
+              // Exclude computed fields, arrayNames (1:N relations), and system fields
+              if (!relField.as && !relField.calculate && !relField.arrayName &&
+                  !['id', 'ownerId', 'granted'].includes(relFieldName)) {
+                sortableFields.push({
+                  value: `${relatedTable}.${relFieldName}`,
+                  label: `${relatedTable} › ${relField.label || relFieldName}`,
+                  isRelation: true,
+                  group: `Relations N:1 (${relatedTable})`
+                });
+              }
             });
-          });
+          }
         }
       }
     });
@@ -2207,8 +2244,38 @@ class AdvancedSearchModal extends React.Component {
             { field: '', operator: 'contains', value: '' }
           ]
         }
-      ]
+      ],
+      relatedStructures: {} // Cache for related table structures
     };
+  }
+
+  async componentDidMount() {
+    // Fetch structures for all related tables
+    const { structure } = this.props;
+    const relatedTables = new Set();
+
+    // Find all N:1 relations
+    Object.entries(structure.fields).forEach(([fieldName, field]) => {
+      if (field.relation && !field.arrayName) {
+        relatedTables.add(field.relation);
+      }
+    });
+
+    // Fetch structure for each related table
+    const relatedStructures = {};
+    for (const tableName of relatedTables) {
+      try {
+        const response = await fetch(`/_crud/${tableName}/structure`);
+        const data = await response.json();
+        if (data.success && data.structure) {
+          relatedStructures[tableName] = data.structure;
+        }
+      } catch (error) {
+        console.error(`Failed to fetch structure for ${tableName}:`, error);
+      }
+    }
+
+    this.setState({ relatedStructures });
   }
 
   // Get operators based on field type
@@ -2341,7 +2408,7 @@ class AdvancedSearchModal extends React.Component {
 
   render() {
     const { structure, onClose } = this.props;
-    const { searchGroups } = this.state;
+    const { searchGroups, relatedStructures } = this.state;
 
     // Get all searchable fields (table fields + n:1 relation fields)
     const searchableFields = [];
@@ -2357,27 +2424,27 @@ class AdvancedSearchModal extends React.Component {
           group: 'Champs de la table'
         });
 
-        // If this is an n:1 relation, add common fields from the related table
+        // If this is an n:1 relation, add fields from the related table
         if (field.relation && !field.arrayName) {
           const relatedTable = field.relation;
-          // Add common searchable fields from related table
-          const commonRelatedFields = [
-            { name: 'name', type: 'varchar' },
-            { name: 'title', type: 'varchar' },
-            { name: 'givenName', type: 'varchar' },
-            { name: 'familyName', type: 'varchar' },
-            { name: 'email', type: 'varchar' },
-            { name: 'description', type: 'text' }
-          ];
-          commonRelatedFields.forEach(relField => {
-            searchableFields.push({
-              value: `${relatedTable}.${relField.name}`,
-              label: `${relatedTable} › ${relField.name}`,
-              type: relField.type,
-              isRelation: true,
-              group: `Relations N:1 (${relatedTable})`
+          const relatedStructure = relatedStructures[relatedTable];
+
+          if (relatedStructure && relatedStructure.fields) {
+            // Use actual fields from related table structure
+            Object.entries(relatedStructure.fields).forEach(([relFieldName, relField]) => {
+              // Exclude computed fields, arrayNames (1:N relations), and system fields
+              if (!relField.as && !relField.calculate && !relField.arrayName &&
+                  !['id', 'ownerId', 'granted'].includes(relFieldName)) {
+                searchableFields.push({
+                  value: `${relatedTable}.${relFieldName}`,
+                  label: `${relatedTable} › ${relField.label || relFieldName}`,
+                  type: relField.type || 'varchar',
+                  isRelation: true,
+                  group: `Relations N:1 (${relatedTable})`
+                });
+              }
             });
-          });
+          }
         }
       }
     });
