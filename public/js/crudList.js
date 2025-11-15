@@ -3600,7 +3600,8 @@ class CrudList extends React.Component {
           selectedFields: parsed.selectedFields || null,
           orderBy: parsed.orderBy || 'updatedAt',
           order: parsed.order || 'DESC',
-          advancedSortCriteria: parsed.advancedSortCriteria || []
+          advancedSortCriteria: parsed.advancedSortCriteria || [],
+          advancedSearchCriteria: parsed.advancedSearchCriteria || null
         });
       } catch (e) {
         console.error('Failed to parse preferences:', e);
@@ -3609,8 +3610,8 @@ class CrudList extends React.Component {
   }
 
   saveUserPreferences = () => {
-    const { displayMode, selectedFields, orderBy, order, advancedSortCriteria } = this.state;
-    const prefs = JSON.stringify({ displayMode, selectedFields, orderBy, order, advancedSortCriteria });
+    const { displayMode, selectedFields, orderBy, order, advancedSortCriteria, advancedSearchCriteria } = this.state;
+    const prefs = JSON.stringify({ displayMode, selectedFields, orderBy, order, advancedSortCriteria, advancedSearchCriteria });
     this.setCookie(`crud_prefs_${this.props.table}`, prefs, 365);
   }
 
@@ -3785,7 +3786,10 @@ class CrudList extends React.Component {
     this.setState({
       advancedSearchCriteria: searchCriteria,
       page: 0 // Reset to first page
-    }, this.loadData);
+    }, () => {
+      this.saveUserPreferences();
+      this.loadData();
+    });
   }
 
   handleShowAdvancedSort = () => {
@@ -3843,29 +3847,85 @@ class CrudList extends React.Component {
         .join(', ');
     }
 
-    // Simple sort (but not default)
-    if (orderBy !== 'updatedAt' || order !== 'DESC') {
-      const arrow = order === 'DESC' ? '▼' : '▲';
-      let fieldLabel = orderBy;
-      if (data && data.structure) {
-        // Handle relation fields (format: Table.field)
-        if (orderBy.includes('.')) {
-          const parts = orderBy.split('.');
-          // Remove main table prefix if present (e.g., "MusicAlbum.Organization.name" → "Organization.name")
-          if (parts.length === 3) {
-            fieldLabel = `${parts[1]}.${parts[2]}`;
-          } else {
-            fieldLabel = orderBy;
-          }
+    // Simple sort (including default sort)
+    const arrow = order === 'DESC' ? '▼' : '▲';
+    let fieldLabel = orderBy;
+    if (data && data.structure) {
+      // Handle relation fields (format: Table.field)
+      if (orderBy.includes('.')) {
+        const parts = orderBy.split('.');
+        // Remove main table prefix if present (e.g., "MusicAlbum.Organization.name" → "Organization.name")
+        if (parts.length === 3) {
+          fieldLabel = `${parts[1]}.${parts[2]}`;
         } else {
-          const field = data.structure.fields[orderBy];
-          fieldLabel = field?.label || orderBy;
+          fieldLabel = orderBy;
         }
+      } else {
+        const field = data.structure.fields[orderBy];
+        fieldLabel = field?.label || orderBy;
       }
-      return `${fieldLabel} ${arrow}`;
+    }
+    return `${fieldLabel} ${arrow}`;
+  }
+
+  getSearchRepresentation = () => {
+    const { advancedSearchCriteria, data } = this.state;
+
+    if (!advancedSearchCriteria) {
+      return null;
     }
 
-    return null;
+    // Build a representation of the search criteria
+    const parts = [];
+
+    if (advancedSearchCriteria.field && advancedSearchCriteria.operator && advancedSearchCriteria.value) {
+      let fieldLabel = advancedSearchCriteria.field;
+      if (data && data.structure) {
+        // Handle relation fields (format: Table.field)
+        if (advancedSearchCriteria.field.includes('.')) {
+          const [tableName, fieldName] = advancedSearchCriteria.field.split('.');
+          fieldLabel = `${tableName}.${fieldName}`;
+        } else {
+          const field = data.structure.fields[advancedSearchCriteria.field];
+          fieldLabel = field?.label || advancedSearchCriteria.field;
+        }
+      }
+
+      const operatorLabels = {
+        'equals': '=',
+        'notEquals': '≠',
+        'contains': '⊃',
+        'notContains': '⊅',
+        'startsWith': 'commence par',
+        'endsWith': 'finit par',
+        'greaterThan': '>',
+        'lessThan': '<',
+        'greaterOrEqual': '≥',
+        'lessOrEqual': '≤',
+        'isNull': 'est vide',
+        'isNotNull': 'n\'est pas vide'
+      };
+
+      const operatorLabel = operatorLabels[advancedSearchCriteria.operator] || advancedSearchCriteria.operator;
+
+      if (advancedSearchCriteria.operator === 'isNull' || advancedSearchCriteria.operator === 'isNotNull') {
+        parts.push(`${fieldLabel} ${operatorLabel}`);
+      } else {
+        parts.push(`${fieldLabel} ${operatorLabel} "${advancedSearchCriteria.value}"`);
+      }
+    }
+
+    return parts.length > 0 ? parts.join(', ') : null;
+  }
+
+  handleCancelSearch = () => {
+    this.setState({
+      advancedSearchCriteria: null,
+      page: 0
+    }, () => {
+      this.saveUserPreferences();
+      this.loadData();
+    });
   }
 
   render() {
@@ -3937,6 +3997,8 @@ class CrudList extends React.Component {
 
     const sortRepresentation = this.getSortRepresentation();
     const hasAdvancedSort = advancedSortCriteria && advancedSortCriteria.length > 0;
+    const searchRepresentation = this.getSearchRepresentation();
+    const hasAdvancedSearch = !!advancedSearchCriteria;
 
     return e('div', { className: 'crud-list-container' },
       // Header
@@ -3969,6 +4031,33 @@ class CrudList extends React.Component {
               title: 'Annuler le tri et revenir au défaut'
             }, '✕ '),
             'Tri : ', sortRepresentation
+          ),
+          searchRepresentation && e('span', {
+            className: 'search-indicator',
+            onClick: this.handleShowAdvancedSearch,
+            style: {
+              fontSize: '0.8em',
+              marginLeft: '10px',
+              color: '#666',
+              cursor: 'pointer',
+              fontWeight: 'normal'
+            },
+            title: 'Cliquer pour modifier la recherche avancée'
+          },
+            e('span', {
+              onClick: (ev) => {
+                ev.stopPropagation();
+                this.handleCancelSearch();
+              },
+              style: {
+                color: 'red',
+                marginRight: '5px',
+                cursor: 'pointer',
+                fontWeight: 'bold'
+              },
+              title: 'Annuler la recherche'
+            }, '✕ '),
+            'Recherche avancée : ', searchRepresentation
           )
         ),
         e('div', { className: 'crud-actions' },
