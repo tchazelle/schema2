@@ -518,15 +518,15 @@ class TemplateService {
           day: 'numeric'
         });
         modalDate.innerHTML = '<strong>Date sélectionnée :</strong> ' + dateStr;
-
+        const dataForCreate = dateObj.toISOString().slice(0,11)+"09:00" // ajouter par TC
         // Afficher la liste des tables
         if (creatableTables.length === 0) {
           tableList.innerHTML = '<li class="calendar-modal-empty">Aucune table disponible pour la création d\\'événements</li>';
         } else {
           tableList.innerHTML = creatableTables.map(table =>
             '<li class="calendar-table-item">' +
-            '<button type="button" class="calendar-table-button" data-table="' + table.name + '">' +
-            table.name +
+            '<button type="button" class="calendar-table-button" data-date="'+dataForCreate+'" data-table="' + table.name + '">' +
+            table.name 
             '</button></li>'
           ).join('');
 
@@ -537,6 +537,7 @@ class TemplateService {
               event.preventDefault();
               event.stopPropagation();
               const tableName = this.getAttribute('data-table');
+              const selectedDate = this.getAttribute('data-date'); // ajouté par Thierry Chazelle
               createEvent(tableName, selectedDate);
             });
           });
@@ -560,12 +561,17 @@ class TemplateService {
 
         // Sauvegarder la vue actuelle pour le retour
         sessionStorage.setItem('calendarReturnView', calendar.view.type);
-        sessionStorage.setItem('calendarReturnDate', calendar.getDate().toISOString());
-
+        sessionStorage.setItem('calendarReturnDate', date);
+        //  sessionStorage.setItem('calendarReturnDate', calendar.getDate().toISOString());
+        const url = '/_crud/' + tableName + '?startDate=' + encodeURIComponent(date); // modifié par TC
+        window.location.href = url  // modifié par TC
+        return 
         // Construire l'URL avec la date pré-remplie
+        /*
         // Pour les champs datetime, on ajoute l'heure 09:00
         const match = date.match(/^(\d{4})-(\d{2})-(\d{2})/);
-
+        console.log("calendar.getDate()", calendar.getDate().toISOString())
+      
         if (match) {
           const [, year, month, day] = match;
           const dateTimeISO = year + '-' + month + '-' + day + 'T09:00';
@@ -575,6 +581,7 @@ class TemplateService {
           // Fallback if date format is unexpected
           window.location.href = '/_crud/' + tableName;
         }
+          */
       }
 
       // Événements de fermeture de la modale
