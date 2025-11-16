@@ -121,6 +121,41 @@ class FieldRenderer extends React.Component {
           value
         );
 
+      case 'rowLink':
+        // Format: "TableName/id" - render as link to that row
+        if (value && value.includes('/')) {
+          const [linkTable, linkId] = value.split('/');
+          return e('span', { className: 'field-value rowlink' },
+            e('a', {
+              href: `/_crud/${linkTable}?open=${linkId}`,
+              onClick: (ev) => ev.stopPropagation(),
+              className: 'field-icon-link',
+              title: `Voir ${linkTable}/${linkId}`
+            }, '🔗'),
+            ' ',
+            value
+          );
+        }
+        return e('span', { className: 'field-value text' }, String(value));
+
+      case 'filePreview':
+        // Show file path with preview capability
+        if (value) {
+          return e('span', { className: 'field-value file-preview' },
+            e('a', {
+              href: `/${value}`,
+              target: '_blank',
+              rel: 'noopener noreferrer',
+              onClick: (ev) => ev.stopPropagation(),
+              className: 'field-icon-link',
+              title: 'Voir le fichier'
+            }, '📎'),
+            ' ',
+            value
+          );
+        }
+        return e('span', { className: 'field-value text' }, '');
+
       case 'markdown':
         return e('div', {
           className: 'field-value markdown',
@@ -1992,13 +2027,300 @@ class RowDetailModal extends React.Component {
 }
 
 /**
+ * Attachments Tab Component
+ * Handles file uploads, previews, download, and deletion
+ */
+class AttachmentsTab extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      attachments: [],
+      loading: true,
+      uploading: false,
+      dragOver: false
+    };
+    this.fileInputRef = React.createRef();
+  }
+
+  async componentDidMount() {
+    await this.loadAttachments();
+  }
+
+  loadAttachments = async () => {
+    const { tableName, rowId } = this.props;
+
+    try {
+      const response = await fetch(`/_api/${tableName}/${rowId}/attachments`);
+      const data = await response.json();
+
+      if (data.success) {
+        this.setState({
+          attachments: data.attachments || [],
+          loading: false
+        });
+      } else {
+        console.error('Failed to load attachments:', data.error);
+        this.setState({ loading: false });
+      }
+    } catch (error) {
+      console.error('Error loading attachments:', error);
+      this.setState({ loading: false });
+    }
+  }
+
+  handleFileSelect = async (files) => {
+    if (!files || files.length === 0) return;
+
+    const { tableName, rowId } = this.props;
+    this.setState({ uploading: true });
+
+    for (const file of files) {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      try {
+        const response = await fetch(`/_api/${tableName}/${rowId}/attachments`, {
+          method: 'POST',
+          body: formData
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          // Reload attachments
+          await this.loadAttachments();
+        } else {
+          alert(`Erreur lors de l'upload de ${file.name}: ${data.error}`);
+        }
+      } catch (error) {
+        console.error('Upload error:', error);
+        alert(`Erreur lors de l'upload de ${file.name}`);
+      }
+    }
+
+    this.setState({ uploading: false });
+    if (this.fileInputRef.current) {
+      this.fileInputRef.current.value = '';
+    }
+  }
+
+  handleDelete = async (attachmentId, fileName) => {
+    if (!confirm(`Supprimer ${fileName} ?`)) return;
+
+    try {
+      const response = await fetch(`/_api/attachments/${attachmentId}`, {
+        method: 'DELETE'
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Reload attachments
+        await this.loadAttachments();
+      } else {
+        alert(`Erreur lors de la suppression: ${data.error}`);
+      }
+    } catch (error) {
+      console.error('Delete error:', error);
+      alert('Erreur lors de la suppression');
+    }
+  }
+
+  handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    this.setState({ dragOver: true });
+  }
+
+  handleDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    this.setState({ dragOver: false });
+  }
+
+  handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    this.setState({ dragOver: false });
+
+    const files = Array.from(e.dataTransfer.files);
+    this.handleFileSelect(files);
+  }
+
+  renderPreview(attachment) {
+    const { previewType, downloadUrl, fileName, icon } = attachment;
+
+    switch (previewType) {
+      case 'image':
+        return e('div', { className: 'attachment-preview' },
+          e('img', {
+            src: `${downloadUrl}?inline=1`,
+            alt: fileName,
+            style: { maxWidth: '100%', maxHeight: '300px', borderRadius: '4px' }
+          })
+        );
+
+      case 'audio':
+        return e('div', { className: 'attachment-preview' },
+          e('audio', {
+            controls: true,
+            style: { width: '100%', maxWidth: '400px' }
+          },
+            e('source', { src: `${downloadUrl}?inline=1` })
+          )
+        );
+
+      case 'video':
+        return e('div', { className: 'attachment-preview' },
+          e('video', {
+            controls: true,
+            style: { maxWidth: '100%', maxHeight: '400px', borderRadius: '4px' }
+          },
+            e('source', { src: `${downloadUrl}?inline=1` })
+          )
+        );
+
+      case 'pdf':
+        return e('div', { className: 'attachment-preview' },
+          e('iframe', {
+            src: `${downloadUrl}?inline=1`,
+            style: { width: '100%', height: '500px', border: '1px solid #ddd', borderRadius: '4px' }
+          })
+        );
+
+      default:
+        return e('div', { className: 'attachment-no-preview', style: { padding: '20px', textAlign: 'center', color: '#666' } },
+          e('div', { style: { fontSize: '48px' } }, icon),
+          e('div', { style: { marginTop: '10px' } }, 'Aucun aperçu disponible')
+        );
+    }
+  }
+
+  render() {
+    const { attachments, loading, uploading, dragOver } = this.state;
+    const { permissions } = this.props;
+    const canUpload = permissions && permissions.canUpdate;
+
+    if (loading) {
+      return e('div', { className: 'attachments-loading', style: { padding: '20px', textAlign: 'center' } },
+        'Chargement des pièces jointes...'
+      );
+    }
+
+    return e('div', { className: 'attachments-tab' },
+      // Upload zone
+      canUpload && e('div', {
+        className: `attachment-upload-zone ${dragOver ? 'drag-over' : ''}`,
+        onDragOver: this.handleDragOver,
+        onDragLeave: this.handleDragLeave,
+        onDrop: this.handleDrop,
+        style: {
+          border: '2px dashed ' + (dragOver ? '#007bff' : '#ccc'),
+          borderRadius: '8px',
+          padding: '30px',
+          marginBottom: '20px',
+          textAlign: 'center',
+          backgroundColor: dragOver ? '#f0f8ff' : '#fafafa',
+          cursor: 'pointer',
+          transition: 'all 0.3s'
+        },
+        onClick: () => this.fileInputRef.current && this.fileInputRef.current.click()
+      },
+        e('div', { style: { fontSize: '48px', marginBottom: '10px' } }, '📎'),
+        e('div', { style: { fontSize: '16px', marginBottom: '10px' } },
+          dragOver ? 'Déposez le fichier ici' : 'Glissez-déposez un fichier ou cliquez pour sélectionner'
+        ),
+        e('input', {
+          ref: this.fileInputRef,
+          type: 'file',
+          multiple: true,
+          style: { display: 'none' },
+          onChange: (e) => this.handleFileSelect(Array.from(e.target.files))
+        }),
+        uploading && e('div', { style: { marginTop: '10px', color: '#007bff' } }, 'Upload en cours...')
+      ),
+
+      // Attachments list
+      attachments.length === 0 ? e('div', {
+        className: 'no-attachments',
+        style: { padding: '20px', textAlign: 'center', color: '#999' }
+      }, 'Aucune pièce jointe')
+        : e('div', { className: 'attachments-list' },
+          attachments.map(att => e('div', {
+            key: att.id,
+            className: 'attachment-item',
+            style: {
+              border: '1px solid #ddd',
+              borderRadius: '8px',
+              padding: '15px',
+              marginBottom: '15px'
+            }
+          },
+            // Header: filename, size, actions
+            e('div', {
+              className: 'attachment-header',
+              style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }
+            },
+              e('div', { style: { flex: 1 } },
+                e('div', { style: { fontWeight: 'bold', marginBottom: '4px' } },
+                  att.icon + ' ' + att.fileName
+                ),
+                e('div', { style: { fontSize: '12px', color: '#666' } },
+                  att.fileSizeFormatted + ' • ' + new Date(att.createdAt).toLocaleDateString('fr-FR')
+                )
+              ),
+              e('div', { style: { display: 'flex', gap: '8px' } },
+                // Download button
+                e('a', {
+                  href: att.downloadUrl,
+                  download: att.fileName,
+                  className: 'btn-download',
+                  style: {
+                    padding: '6px 12px',
+                    backgroundColor: '#007bff',
+                    color: 'white',
+                    textDecoration: 'none',
+                    borderRadius: '4px',
+                    fontSize: '12px'
+                  },
+                  onClick: (ev) => ev.stopPropagation()
+                }, '⬇️ Télécharger'),
+                // Delete button
+                canUpload && e('button', {
+                  onClick: (ev) => {
+                    ev.stopPropagation();
+                    this.handleDelete(att.id, att.fileName);
+                  },
+                  className: 'btn-delete',
+                  style: {
+                    padding: '6px 12px',
+                    backgroundColor: '#dc3545',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontSize: '12px'
+                  }
+                }, '🗑️ Supprimer')
+              )
+            ),
+            // Preview
+            this.renderPreview(att)
+          ))
+        )
+    );
+  }
+}
+
+/**
  * Row Detail View Component
  */
 class RowDetailView extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      openRelations: new Set()
+      openRelations: new Set(),
+      showAttachments: false
     };
   }
 
@@ -2041,7 +2363,11 @@ class RowDetailView extends React.Component {
 
   render() {
     const { row, structure, tableName, permissions, onEdit, parentTable, hideRelations1N } = this.props;
-    const { openRelations } = this.state;
+    const { openRelations, showAttachments } = this.state;
+
+    // Check if table has attachments enabled
+    const tableConfig = SCHEMA_CONFIG?.tables?.[tableName];
+    const hasAttachmentsTab = tableConfig?.hasAttachmentsTab || false;
 
     // Get calendar config from structure if available
     const hasCalendar = structure.calendar;
@@ -2237,6 +2563,28 @@ class RowDetailView extends React.Component {
               })
             )
           );
+        })
+      ),
+
+      // Attachments section (if table has hasAttachmentsTab enabled)
+      hasAttachmentsTab && e('div', { className: 'detail-attachments-section' },
+        e('div', {
+          className: 'relation-header',
+          style: { display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'space-between' }
+        },
+          e('div', {
+            style: { display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', flex: 1 },
+            onClick: () => this.setState(prev => ({ showAttachments: !prev.showAttachments }))
+          },
+            e('span', { className: 'relation-toggle' }, showAttachments ? '▼' : '▶'),
+            e('strong', null, 'Pièces jointes'),
+            e('span', { className: 'relation-count badge', style: { fontSize: '14px' } }, '📎')
+          )
+        ),
+        showAttachments && e(AttachmentsTab, {
+          tableName: tableName,
+          rowId: row.id,
+          permissions: permissions
         })
       )
     );

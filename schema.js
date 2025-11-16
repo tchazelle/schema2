@@ -154,6 +154,7 @@ module.exports = {
     Person: {
       // ... defaultConfigTable
       displayFields: ["givenName", "familyName"],
+      hasAttachmentsTab: true, // Permet d'attacher des pièces jointes
       granted: {
         "admin": ["read", "create", "update", "delete", "publish"]
       },
@@ -173,6 +174,7 @@ module.exports = {
     },
     Organization: {
       // ... defaultConfigTable
+      hasAttachmentsTab: true, // Permet d'attacher des pièces jointes
       granted: {
         "admin": ["read", "create", "update", "delete", "publish"]
       },
@@ -227,6 +229,7 @@ module.exports = {
     },
     Project: {
       // ... defaultConfigTable
+      hasAttachmentsTab: true, // Permet d'attacher des pièces jointes
       granted: {
         "admin": ["read", "create", "update", "delete", "publish"]
       },
@@ -239,6 +242,7 @@ module.exports = {
     },
     Contrat: {
       // ... defaultConfigTable
+      hasAttachmentsTab: true, // Permet d'attacher des pièces jointes
       granted: {
         "admin": ["read", "create", "update", "delete", "publish"]
       },
@@ -252,7 +256,21 @@ module.exports = {
           // + commonFields
       }
     },
-    
+    Notes: {
+      // ... defaultConfigTable
+      hasAttachmentsTab: true, // Permet d'attacher des pièces jointes
+      granted: {
+        "promo": ["read", "create", "update", "delete"],
+        "road": ["read", "create", "update", "delete"],
+        "admin": ["publish"]
+      },
+      fields: {
+        id: { type: "integer", isPrimary: true, autoIncrement: true },
+        name: { type:   "varchar" },
+        description: { type: "text" },
+        // ... commonFields
+      }
+    },
     MusicAlbum: {
       displayFields: ["name"],
       searchFields: ["name", "description", "genre"],
@@ -260,6 +278,7 @@ module.exports = {
       dateFormat: "fr",
       cardWidth: "600px",
       publishableTo: ["public", "member", "premium"],
+      hasAttachmentsTab: true, // Permet d'attacher des pièces jointes
       granted: {
         "public": ["read"],
         "admin": ["read", "create", "update", "delete", "publish"]
@@ -382,6 +401,7 @@ module.exports = {
       displayFields: ["name"],
       searchFields: ["name", "description", "location"],
       pageSize: 50,
+      hasAttachmentsTab: true, // Permet d'attacher des pièces jointes
       granted: {
         "member": ["read"],
         "admin": ["read", "create", "update", "delete", "publish"]
