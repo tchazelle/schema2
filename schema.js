@@ -78,7 +78,8 @@ module.exports = {
   calendar: {
     granted: {
       admin: ["read", "write"]
-    }
+    },
+    firstDayInWeek:1 // 1 = Lundi, 0 = Dimanche
   },
 
   renderer: {
@@ -355,7 +356,7 @@ module.exports = {
     },
     Event: {
       // Configuration de table selon schema.org Event
-      displayFields: ["name", "startDate"],
+      displayFields: ["name"],
       searchFields: ["name", "description", "location"],
       pageSize: 50,
       granted: {
