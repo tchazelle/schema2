@@ -96,15 +96,20 @@ class FieldRenderer extends React.Component {
       case 'date':
       case 'datetime':
         const date = new Date(value);
-        const formatted = date.toLocaleDateString('fr-FR', {
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit',
-          ...(renderer === 'datetime' && {
-            hour: '2-digit',
-            minute: '2-digit'
-          })
-        });
+        // Use local time components to avoid timezone shifts
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+
+        let formatted;
+        if (renderer === 'datetime') {
+          const hours = String(date.getHours()).padStart(2, '0');
+          const minutes = String(date.getMinutes()).padStart(2, '0');
+          formatted = `${day}/${month}/${year} ${hours}:${minutes}`;
+        } else {
+          formatted = `${day}/${month}/${year}`;
+        }
+
         return e('time', {
           dateTime: value,
           className: 'field-value date'
@@ -3615,14 +3620,24 @@ class CrudList extends React.Component {
     const urlParams = new URLSearchParams(window.location.search);
     const parent = urlParams.get('parent');
     const parentId = urlParams.get('parentId');
+    const openRecordId = urlParams.get('open');
 
     // Extract all URL parameters as default values for form fields
     const defaultValues = {};
     for (const [key, value] of urlParams.entries()) {
-      // Skip parent and parentId as they're handled separately
-      if (key !== 'parent' && key !== 'parentId') {
+      // Skip special parameters: parent, parentId, open
+      if (key !== 'parent' && key !== 'parentId' && key !== 'open') {
         defaultValues[key] = value;
       }
+    }
+
+    // If 'open' parameter is provided, load that record in fullscreen mode
+    if (openRecordId) {
+      this.setState({
+        fullscreenRecordId: parseInt(openRecordId)
+      });
+      this.loadFullscreenRecord(parseInt(openRecordId));
+      return; // Don't process other parameters if opening a specific record
     }
 
     // If parent and parentId are provided, open create form automatically
