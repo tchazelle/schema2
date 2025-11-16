@@ -162,23 +162,33 @@ router.post('/:tableName', async (req, res) => {
     }
 
     // Convert datetime fields from ISO format to MySQL format WITHOUT timezone conversion
+    // Also handle empty strings for integer fields
     const tableSchema = schema.tables[table];
     if (tableSchema && tableSchema.fields) {
       for (const [key, value] of Object.entries(data)) {
         const field = tableSchema.fields[key];
-        if (field && (field.type === 'datetime' || field.type === 'date')) {
-          // Handle empty string: convert to null for MySQL compatibility
-          if (value === '' || (typeof value === 'string' && value.trim() === '')) {
-            data[key] = null;
-          } else if (value && typeof value === 'string' && value.includes('T')) {
-            // Parse ISO format (2025-11-16T16:00:00 or 2025-11-16T16:00) as a STRING
-            const match = value.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?/);
-            if (match) {
-              const [, year, month, day, hours, minutes, seconds = '00'] = match;
-              if (field.type === 'datetime') {
-                data[key] = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
-              } else {
-                data[key] = `${year}-${month}-${day}`;
+        if (field) {
+          // Handle integer fields: convert empty strings to null
+          if (field.type === 'integer') {
+            if (value === '' || (typeof value === 'string' && value.trim() === '')) {
+              data[key] = null;
+            }
+          }
+          // Handle datetime/date fields
+          else if (field.type === 'datetime' || field.type === 'date') {
+            // Handle empty string: convert to null for MySQL compatibility
+            if (value === '' || (typeof value === 'string' && value.trim() === '')) {
+              data[key] = null;
+            } else if (value && typeof value === 'string' && value.includes('T')) {
+              // Parse ISO format (2025-11-16T16:00:00 or 2025-11-16T16:00) as a STRING
+              const match = value.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?/);
+              if (match) {
+                const [, year, month, day, hours, minutes, seconds = '00'] = match;
+                if (field.type === 'datetime') {
+                  data[key] = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+                } else {
+                  data[key] = `${year}-${month}-${day}`;
+                }
               }
             }
           }
@@ -259,9 +269,17 @@ router.put('/:tableName/:id', async (req, res) => {
         if (tableSchema.fields[key] && !tableSchema.fields[key].as && !tableSchema.fields[key].calculate) {
           const field = tableSchema.fields[key];
 
+          // Handle integer fields: convert empty strings to null
+          if (field.type === 'integer') {
+            if (value === '' || (typeof value === 'string' && value.trim() === '')) {
+              validFields[key] = null;
+            } else {
+              validFields[key] = value;
+            }
+          }
           // Convert ISO datetime to MySQL format WITHOUT timezone conversion
           // CRITICAL: We treat dates as LOCAL strings, not as UTC timestamps
-          if (field.type === 'datetime' || field.type === 'date') {
+          else if (field.type === 'datetime' || field.type === 'date') {
             // Handle empty string: convert to null for MySQL compatibility
             if (value === '' || (typeof value === 'string' && value.trim() === '')) {
               validFields[key] = null;
