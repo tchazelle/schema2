@@ -4,6 +4,7 @@ const EntityService = require('./entityService');
 const TableDataService = require('./tableDataService');
 const PermissionService = require('./permissionService');
 const schema = require('../schema');
+const { hasCalendar } = require('../utils/dateRangeFormatter');
 
 /**
  * CRUD Service - Business logic for CRUD operations
@@ -278,6 +279,12 @@ class CrudService {
     // If specific fields selected, use those and respect the user's choice (don't filter system fields)
     if (selectedFields && Array.isArray(selectedFields) && selectedFields.length > 0) {
       fields = fields.filter(f => selectedFields.includes(f));
+
+      // Add _dateRange if table has calendar and it's not already in selectedFields
+      if (hasCalendar(table) && !fields.includes('_dateRange')) {
+        fields.push('_dateRange');
+      }
+
       return fields;
     }
 
@@ -285,6 +292,11 @@ class CrudService {
     const systemFields = ['id', 'ownerId', 'granted', 'createdAt', 'updatedAt'];
     if (!showSystemFields) {
       fields = fields.filter(f => !systemFields.includes(f));
+    }
+
+    // Add _dateRange if table has calendar
+    if (hasCalendar(table)) {
+      fields.push('_dateRange');
     }
 
     return fields;
