@@ -12,7 +12,8 @@
 }
 
 .calendar-header {
-  display: flex;
+  _display: flex;
+  display: none; /* modifié par TC Thierry Chazelle */
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
@@ -47,6 +48,9 @@
 
 /* Personnalisation des événements */
 .fc-event {
+  padding:3px;
+  text-wrap: wrap;
+  color:#333;
   cursor: pointer;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
