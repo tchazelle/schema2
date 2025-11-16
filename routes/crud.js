@@ -358,27 +358,21 @@ router.get('/:table/data', async (req, res) => {
 /**
  * GET /_crud/:table/:id
  * Récupère un enregistrement spécifique avec vérification des permissions
- * Retourne JSON si Accept: application/json, sinon HTML fullscreen
+ * Retourne JSON si Accept: application/json, sinon redirige vers /_crud/:table?open=:id
  */
 router.get('/:table/:id', async (req, res) => {
   try {
     const { table: tableParam, id } = req.params;
     const user = req.user; // Déjà enrichi par userEnrichMiddleware
-    
-
-    //console.log('\n============ [CRUD Route] GET /:table/:id ============');
-    //console.log('[CRUD Route] Params:', { tableParam, id });
-    //console.log('[CRUD Route] User:', user ? `id=${user.id}, email=${user.email}, roles=${JSON.stringify(user.roles)}` : 'null (public)');
 
     // Normaliser le nom de la table (case-insensitive)
     const table = SchemaService.getTableName(tableParam);
-    //console.log('[CRUD Route] Table normalisée:', table);
+
+    // Check if JSON or HTML response is expected
+    const acceptsJson = req.accepts(['html', 'json']) === 'json';
 
     // Vérifier si la table existe dans le schéma
     if (!table) {
-      //console.log('[CRUD Route] ❌ Table non trouvée dans le schéma:', tableParam);
-      // Check if HTML or JSON response is expected
-      const acceptsJson = req.accepts(['html', 'json']) === 'json';
       if (acceptsJson) {
         return res.status(404).json(UIService.jsonError(UIService.messages.TABLE_NOT_FOUND));
       } else {
@@ -387,74 +381,36 @@ router.get('/:table/:id', async (req, res) => {
     }
 
     // Vérifier si l'utilisateur a accès à la table
-    //console.log('[CRUD Route] Vérification permission table-level...');
     if (!hasPermission(user, table, 'read')) {
-      //console.log('[CRUD Route] ❌ Permission refusée au niveau table');
-      const acceptsJson = req.accepts(['html', 'json']) === 'json';
       if (acceptsJson) {
         return res.status(403).json(UIService.jsonError(UIService.messages.ACCESS_DENIED));
       } else {
         return res.status(403).send(UIService.error403Page());
       }
     }
-    //console.log('[CRUD Route] ✅ Permission table-level OK');
-
-    
-
-    // Récupérer l'enregistrement avec TableDataService (gère les permissions row-level et field-level)
-    //console.log('[CRUD Route] Appel TableDataService.getTableData avec:', { table, id, relation: 'all', compact: true, includeSchema: '1' });
-    const result = await TableDataService.getTableData(user, table, {
-      id: parseInt(id), // ajouté par TC pour correction du bug
-      relation: 'all', // Load all relations for detail view
-      compact: true,
-      includeSchema: '1'
-    });
-    //console.log('[CRUD Route] Résultat TableDataService:', { success: result.success, rowCount: result.rows?.length || 0, error: result.error });
-
-    // Check if JSON or HTML response is expected
-    const acceptsJson = req.accepts(['html', 'json']) === 'json';
-
-    // Handle service errors (table not found, access denied, etc.)
-    if (!result.success) {
-      const statusCode = result.statusCode || 500;
-      const errorMessage = result.error || 'Erreur serveur';
-      //console.log('[CRUD Route] ❌ Service retourné error:', { statusCode, errorMessage });
-
-      if (acceptsJson) {
-        return res.status(statusCode).json({ success: false, error: errorMessage });
-      } else {
-        if (statusCode === 403) {
-          return res.status(403).send(UIService.error403Page());
-        } else if (statusCode === 404) {
-          return res.status(404).send(UIService.error404Page('Table', table));
-        } else {
-          return res.status(500).send(UIService.error500Page(new Error(errorMessage)));
-        }
-      }
-    }
-
-    // Handle record not found (success but no rows)
-    if (!result.rows || result.rows.length === 0) {
-      //console.log('[CRUD Route] ❌ Aucun enregistrement trouvé pour id:', id);
-      if (acceptsJson) {
-        return res.status(404).json(UIService.jsonError(UIService.messages.RECORD_NOT_FOUND));
-      } else {
-        return res.status(404).send(UIService.errorPage(
-          UIService.messages.RECORD_NOT_FOUND,
-          UIService.recordNotFoundMessage(table, id),
-          `/_crud/${table}`
-        ));
-      }
-    }
-
-    const row = result.rows[0];
-    //console.log('[CRUD Route] ✅ Enregistrement récupéré:', { id: row.id, hasRelations: !!row._relations });
-
-    
 
     if (acceptsJson) {
-      // Return JSON for API calls
-      //console.log('[CRUD Route] Retour JSON');
+      // Récupérer l'enregistrement pour les requêtes JSON
+      const result = await TableDataService.getTableData(user, table, {
+        id: parseInt(id),
+        relation: 'all',
+        compact: true,
+        includeSchema: '1'
+      });
+
+      // Handle service errors
+      if (!result.success) {
+        const statusCode = result.statusCode || 500;
+        const errorMessage = result.error || 'Erreur serveur';
+        return res.status(statusCode).json({ success: false, error: errorMessage });
+      }
+
+      // Handle record not found
+      if (!result.rows || result.rows.length === 0) {
+        return res.status(404).json(UIService.jsonError(UIService.messages.RECORD_NOT_FOUND));
+      }
+
+      const row = result.rows[0];
       res.json({
         success: true,
         table: table,
@@ -462,31 +418,11 @@ router.get('/:table/:id', async (req, res) => {
         rows: row
       });
     } else {
-      
-      //console.log('[CRUD Route] Retour HTML - Génération de la page...');
-      // Return HTML fullscreen view
-      // Get accessible tables for menu
-      const accessibleTables = user ? CrudService.getMenuTables(user) : [];
-
-      // Get pages for menu
-      let pages = [];
-      try {
-        const pagesFromTablePage = await TableDataService.getTableData(user, schema.menu.page, {});
-        pages = pagesFromTablePage.rows || [];
-      } catch (error) {
-        console.error('Error loading pages for menu:', error);
-      }
-      
-    
-      const html = TemplateService.htmlCrudDetailPage({
-        user: user,
-        pages: pages,
-        table: table,
-        recordId: id,
-        accessibleTables: accessibleTables
-      });
-
-      res.send(html);
+      // Pour les requêtes HTML, rediriger vers /_crud/:table?open=:id
+      // Cela permet d'utiliser l'interface de liste avec la fiche ouverte automatiquement
+      const queryParams = new URLSearchParams(req.query);
+      queryParams.set('open', id);
+      return res.redirect(`/_crud/${table}?${queryParams.toString()}`);
     }
 
   } catch (error) {

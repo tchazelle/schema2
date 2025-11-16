@@ -358,7 +358,17 @@ class TemplateService {
   <script>
     // Mount the React component
     const root = ReactDOM.createRoot(document.getElementById('root'));
-    root.render(React.createElement(CrudList, { table: '${table}' }));
+
+    // Check if there's an 'open' parameter in the URL to auto-open a record
+    const urlParams = new URLSearchParams(window.location.search);
+    const openRecordId = urlParams.get('open');
+
+    const props = { table: '${table}' };
+    if (openRecordId) {
+      props.initialRecordId = parseInt(openRecordId);
+    }
+
+    root.render(React.createElement(CrudList, props));
   </script>
 </body>
 </html>
@@ -489,8 +499,12 @@ class TemplateService {
       fetch('/_calendar/tables')
         .then(response => response.json())
         .then(data => {
+          console.log('[Calendar] Tables response:', data);
           if (data.success && data.data) {
             creatableTables = data.data;
+            console.log('[Calendar] Creatable tables loaded:', creatableTables.length);
+          } else {
+            console.warn('[Calendar] No creatable tables or error:', data);
           }
         })
         .catch(error => console.error('Erreur lors du chargement des tables:', error));
@@ -609,6 +623,12 @@ class TemplateService {
         eventDidMount: function(info) {
           // Ajouter un tooltip avec les informations de l'événement
           info.el.title = info.event.title;
+
+          // Appliquer la couleur de fond personnalisée
+          if (info.event.backgroundColor) {
+            info.el.style.backgroundColor = info.event.backgroundColor;
+            info.el.style.borderColor = info.event.borderColor || info.event.backgroundColor;
+          }
         },
         eventContent: function(arg) {
           // Format personnalisé: <heure début>-<heure fin> + titre
