@@ -554,6 +554,8 @@ class TemplateService {
 
       // Fonction pour créer un événement
       function createEvent(tableName, date) {
+        console.log('[Calendar] createEvent called with:', { tableName, date });
+
         // Sauvegarder la vue actuelle pour le retour
         sessionStorage.setItem('calendarReturnView', calendar.view.type);
         sessionStorage.setItem('calendarReturnDate', calendar.getDate().toISOString());
@@ -562,13 +564,17 @@ class TemplateService {
         // Pour les champs datetime, on ajoute l'heure 09:00
         // Parse date string WITHOUT timezone conversion
         const match = date.match(/^(\d{4})-(\d{2})-(\d{2})/);
+        console.log('[Calendar] Regex match result:', match);
+
         if (match) {
           const [, year, month, day] = match;
           const dateTimeISO = year + '-' + month + '-' + day + 'T09:00';
-          const url = '/_crud/' + tableName + '?startDate=' + dateTimeISO;
+          const url = '/_crud/' + tableName + '?startDate=' + encodeURIComponent(dateTimeISO);
+          console.log('[Calendar] Navigating to URL:', url);
           window.location.href = url;
         } else {
           // Fallback if date format is unexpected
+          console.warn('[Calendar] Date format did not match, navigating without startDate:', date);
           window.location.href = '/_crud/' + tableName;
         }
       }
@@ -686,13 +692,18 @@ class TemplateService {
       fetch('/_calendar/stats')
         .then(response => response.json())
         .then(data => {
-          if (data.success && data.data) {
+          console.log('[Calendar] Stats response:', data);
+          if (data.success) {
             const statsEl = document.getElementById('calendarStats');
+            // Stats are spread directly into the response object, not nested under data.data
+            const totalEvents = data.totalEvents || 0;
+            const accessibleTables = data.accessibleTables || 0;
+            const totalTables = data.totalTables || 0;
             statsEl.innerHTML =
-              '<span>' + data.data.totalEvents + ' événements</span>' +
-              '<span>' + data.data.accessibleTables + ' / ' + data.data.totalTables + ' tables accessibles</span>';
+              '<span>' + totalEvents + ' événements</span>' +
+              '<span>' + accessibleTables + ' / ' + totalTables + ' tables accessibles</span>';
           } else {
-            console.warn('[Calendar] Stats response invalid:', data);
+            console.warn('[Calendar] Stats response error:', data);
           }
         })
         .catch(error => console.error('Erreur lors du chargement des statistiques:', error));
