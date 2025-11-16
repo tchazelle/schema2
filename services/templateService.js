@@ -543,11 +543,15 @@ class TemplateService {
         if (creatableTables.length === 0) {
           tableList.innerHTML = '<li class="calendar-modal-empty">Aucune table disponible pour la création d\\'événements</li>';
         } else {
-          tableList.innerHTML = creatableTables.map(table =>
-            '<li class="calendar-table-item">' +
-            '<button type="button" class="calendar-table-button" data-date="' + dateForCreate + '" data-table="' + table.name + '">' +
-            table.name +  '</button></li>'
-          ).join('');
+          tableList.innerHTML = creatableTables.map(table => {
+            // Get bgColor from table's calendar config
+            const bgColor = table.calendar && table.calendar.bgColor ? table.calendar.bgColor : '#007bff';
+            const style = 'background-color: ' + bgColor + '; color: white;';
+
+            return '<li class="calendar-table-item">' +
+              '<button type="button" class="calendar-table-button" style="' + style + '" data-date="' + dateForCreate + '" data-table="' + table.name + '">' +
+              table.name +  '</button></li>';
+          }).join('');
 
           // Ajouter les événements sur les boutons
           const buttons = tableList.querySelectorAll('.calendar-table-button');

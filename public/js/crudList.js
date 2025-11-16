@@ -40,10 +40,44 @@ function buildCardTitle(row, tableName, tableConfig) {
  */
 class FieldRenderer extends React.Component {
   render() {
-    const { value, field, tableName } = this.props;
+    const { value, field, tableName, fieldName } = this.props;
 
     if (value === null || value === undefined) {
       return e('span', { className: 'field-value empty' }, '-');
+    }
+
+    // Special handling for _dateRange field
+    if (fieldName === '_dateRange') {
+      // Extract year and month from the date range value
+      // Format: "15 janv. 2024 14:30→18:00" or "15 janv. 2024 14:30→16 janv. 2024 10:00"
+      const yearMonthMatch = value.match(/(\d{4})/);
+      const monthNames = {
+        'janv.': '01', 'févr.': '02', 'mars': '03', 'avr.': '04',
+        'mai': '05', 'juin': '06', 'juil.': '07', 'août': '08',
+        'sept.': '09', 'oct.': '10', 'nov.': '11', 'déc.': '12'
+      };
+
+      let calendarUrl = '/_calendar';
+      if (yearMonthMatch) {
+        const year = yearMonthMatch[1];
+        // Try to find month name in the value
+        const monthMatch = value.match(/(\w+\.?)\s+\d{4}/);
+        if (monthMatch && monthNames[monthMatch[1]]) {
+          const month = monthNames[monthMatch[1]];
+          calendarUrl = `/_calendar/${year}/${month}`;
+        }
+      }
+
+      return e('span', { className: 'field-value daterange' },
+        e('a', {
+          href: calendarUrl,
+          onClick: (ev) => ev.stopPropagation(),
+          className: 'field-icon-link',
+          title: 'Voir le calendrier'
+        }, '📅'),
+        ' ',
+        value
+      );
     }
 
     const renderer = field.renderer || field.type;
@@ -1695,12 +1729,46 @@ class TableRow extends React.Component {
             }
           }, '🗑️')
         ),
-        // Granted column (always shown)
+        // Granted column (always shown) - or Calendar icon for calendar tables
         e('td', {
           key: 'granted-col',
           'data-label': 'Statut',
           style: { width: '40px', textAlign: 'center', fontSize: '16px' }
-        }, getGrantedIcon(row.granted)),
+        }, (() => {
+          // Check if table has calendar configuration
+          const tableConfig = SCHEMA_CONFIG?.tables?.[tableName];
+          if (tableConfig?.calendar) {
+            // Extract year and month from _dateRange if available
+            const dateRangeValue = row._dateRange;
+            if (dateRangeValue) {
+              const yearMonthMatch = dateRangeValue.match(/(\d{4})/);
+              const monthNames = {
+                'janv.': '01', 'févr.': '02', 'mars': '03', 'avr.': '04',
+                'mai': '05', 'juin': '06', 'juil.': '07', 'août': '08',
+                'sept.': '09', 'oct.': '10', 'nov.': '11', 'déc.': '12'
+              };
+
+              let calendarUrl = '/_calendar';
+              if (yearMonthMatch) {
+                const year = yearMonthMatch[1];
+                const monthMatch = dateRangeValue.match(/(\w+\.?)\s+\d{4}/);
+                if (monthMatch && monthNames[monthMatch[1]]) {
+                  const month = monthNames[monthMatch[1]];
+                  calendarUrl = `/_calendar/${year}/${month}`;
+                }
+              }
+
+              return e('a', {
+                href: calendarUrl,
+                onClick: (ev) => ev.stopPropagation(),
+                className: 'field-icon-link',
+                title: 'Voir le calendrier'
+              }, '📅');
+            }
+          }
+          // Default: show granted icon
+          return getGrantedIcon(row.granted);
+        })()),
         // Regular field columns
         fields.map(fieldName => {
           const field = structure.fields[fieldName];
@@ -1726,7 +1794,8 @@ class TableRow extends React.Component {
               : e(FieldRenderer, {
                   value,
                   field: field || { type: 'text' },
-                  tableName
+                  tableName,
+                  fieldName
                 })
           );
         })
