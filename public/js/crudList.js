@@ -3550,13 +3550,10 @@ class CrudList extends React.Component {
 
     this.loadUserPreferences();
 
-    // Check URL parameters after data is loaded
+    // URL parameters will be checked in componentDidUpdate when data is available
     // This is crucial for calendar integration where we need data.structure
     // to be available before opening the create form
-    // We call it here (after await loadData()) AND in componentDidUpdate()
-    // to handle both initial mount and subsequent prop changes
-    console.log('[CrudList] About to call checkURLParameters() from componentDidMount');
-    this.checkURLParameters();
+    console.log('[CrudList] componentDidMount complete, URL parameters will be checked when data is available');
   }
 
   componentDidUpdate(prevProps, prevState) {
@@ -3574,6 +3571,15 @@ class CrudList extends React.Component {
       this.checkURLParameters();
     } else {
       console.log('[CrudList] Conditions NOT met for calling checkURLParameters()');
+      if (this.urlParametersProcessed) {
+        console.log('[CrudList] → URL parameters already processed');
+      }
+      if (prevState.data) {
+        console.log('[CrudList] → Data was already available in previous state');
+      }
+      if (!this.state.data) {
+        console.log('[CrudList] → Data not yet available in current state');
+      }
     }
   }
 
@@ -3672,10 +3678,13 @@ class CrudList extends React.Component {
   }
 
   checkURLParameters() {
+    console.log('='.repeat(80));
     console.log('[CrudList] checkURLParameters() called');
-    console.log('[CrudList] Current URL:', window.location.href);
-    console.log('[CrudList] Current window.location.search:', window.location.search);
-    console.log('[CrudList] Current state.data:', this.state.data ? 'available' : 'null');
+    console.log('[CrudList] Full URL:', window.location.href);
+    console.log('[CrudList] Pathname:', window.location.pathname);
+    console.log('[CrudList] Search string:', window.location.search);
+    console.log('[CrudList] Search length:', window.location.search.length);
+    console.log('[CrudList] State.data available:', this.state.data ? 'YES' : 'NO');
 
     // Parse URL query parameters
     const urlParams = new URLSearchParams(window.location.search);
@@ -3683,18 +3692,24 @@ class CrudList extends React.Component {
     const parentId = urlParams.get('parentId');
     const openRecordId = urlParams.get('open');
 
-    console.log('[CrudList] URL params - parent:', parent, 'parentId:', parentId, 'openRecordId:', openRecordId);
+    console.log('[CrudList] Parsed params:');
+    console.log('  - parent:', parent);
+    console.log('  - parentId:', parentId);
+    console.log('  - openRecordId:', openRecordId);
 
     // Extract all URL parameters as default values for form fields
     const defaultValues = {};
+    let paramCount = 0;
     for (const [key, value] of urlParams.entries()) {
-      console.log('[CrudList] Processing URL param:', key, '=', value);
+      paramCount++;
+      console.log(`[CrudList] URL param #${paramCount}: ${key} = ${value}`);
       // Skip special parameters: parent, parentId, open
       if (key !== 'parent' && key !== 'parentId' && key !== 'open') {
         defaultValues[key] = value;
       }
     }
 
+    console.log('[CrudList] Total URL params found:', paramCount);
     console.log('[CrudList] Extracted defaultValues:', defaultValues);
     console.log('[CrudList] defaultValues count:', Object.keys(defaultValues).length);
 
