@@ -4,7 +4,7 @@ const EntityService = require('./entityService');
 const TableDataService = require('./tableDataService');
 const PermissionService = require('./permissionService');
 const schema = require('../schema');
-const { hasCalendar } = require('../utils/dateRangeFormatter');
+const { hasCalendar, getCalendarConfig } = require('../utils/dateRangeFormatter');
 
 /**
  * CRUD Service - Business logic for CRUD operations
@@ -281,7 +281,13 @@ class CrudService {
       fields = fields.filter(f => selectedFields.includes(f));
 
       // Add _dateRange if table has calendar and it's not already in selectedFields
+      // Also hide startDate and endDate fields as _dateRange replaces them
       if (hasCalendar(table) && !fields.includes('_dateRange')) {
+        const calendarConfig = getCalendarConfig(table);
+        const startDateField = calendarConfig?.startDate || 'startDate';
+        const endDateField = calendarConfig?.endDate || 'endDate';
+
+        fields = fields.filter(f => f !== startDateField && f !== endDateField);
         fields.push('_dateRange');
       }
 
@@ -295,7 +301,13 @@ class CrudService {
     }
 
     // Add _dateRange if table has calendar
+    // Also hide startDate and endDate fields as _dateRange replaces them
     if (hasCalendar(table)) {
+      const calendarConfig = getCalendarConfig(table);
+      const startDateField = calendarConfig?.startDate || 'startDate';
+      const endDateField = calendarConfig?.endDate || 'endDate';
+
+      fields = fields.filter(f => f !== startDateField && f !== endDateField);
       fields.push('_dateRange');
     }
 

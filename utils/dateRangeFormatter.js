@@ -32,12 +32,25 @@ function formatDateRange(tableName, row) {
     return null;
   }
 
-  // Convertir en objets Date
-  const start = new Date(startDate);
-  const end = new Date(endDate);
+  // Convertir en objets Date WITHOUT timezone conversion
+  // Parse "YYYY-MM-DD HH:MM:SS" or "YYYY-MM-DDTHH:MM:SS" as LOCAL time
+  // IMPORTANT: Using new Date(string) can cause timezone issues
+  // We parse the string manually to create a Date in local timezone
+  const parseLocalDate = (dateStr) => {
+    if (!dateStr) return null;
+    const match = String(dateStr).match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2}):(\d{2})/);
+    if (!match) return null;
+    const [, year, month, day, hours, minutes, seconds] = match;
+    // Month is 0-indexed in JavaScript Date constructor
+    return new Date(parseInt(year), parseInt(month) - 1, parseInt(day),
+                    parseInt(hours), parseInt(minutes), parseInt(seconds));
+  };
+
+  const start = parseLocalDate(startDate);
+  const end = parseLocalDate(endDate);
 
   // Vérifier si les dates sont valides
-  if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+  if (!start || !end || isNaN(start.getTime()) || isNaN(end.getTime())) {
     return null;
   }
 
