@@ -3532,17 +3532,22 @@ class CrudList extends React.Component {
     };
   }
 
-  componentDidMount() {
+  async componentDidMount() {
     this.loadSchema();
 
     // If initialRecordId is provided, load only that record for fullscreen view
     if (this.props.initialRecordId) {
-      this.loadFullscreenRecord(this.props.initialRecordId);
+      await this.loadFullscreenRecord(this.props.initialRecordId);
     } else {
-      this.loadData();
+      // Wait for data to load before checking URL parameters
+      // This ensures the form can be displayed when coming from calendar
+      await this.loadData();
     }
 
     this.loadUserPreferences();
+    // Check URL parameters after data is loaded
+    // This is crucial for calendar integration where we need data.structure
+    // to be available before opening the create form
     this.checkURLParameters();
   }
 
