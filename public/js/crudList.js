@@ -4246,7 +4246,10 @@ class CrudList extends React.Component {
             console.log('[CrudList] Button render check - data:', !!data, 'permissions:', data?.permissions, 'canCreate:', data?.permissions?.canCreate);
             return data && data.permissions && data.permissions.canCreate && e('button', {
               className: 'btn-add-record',
-              onClick: this.handleAddNew
+              onClick: (e) => {
+                console.log('[CrudList] Button clicked!', e);
+                this.handleAddNew();
+              }
             }, '+ Nouveau');
           })(),
           e('input', {
