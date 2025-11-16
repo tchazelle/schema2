@@ -16,6 +16,7 @@ const { syncDatabase } = require('./services/dbSyncService');
 const authRouter = require('./routes/auth');
 const crudRouter = require('./routes/crud');
 const apiRouter = require('./routes/api');
+const attachmentsRouter = require('./routes/attachments');
 const calendarRouter = require('./routes/calendar');
 const pagesRouter = require('./routes/pages');
 
@@ -37,10 +38,14 @@ app.use(userEnrichMiddleware);
 // Servir les fichiers statiques
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Servir les fichiers uploadés (protégés par authentification)
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 // Routes
 
 app.use('/_user', authRouter);
 app.use('/_crud', crudRouter);
+app.use('/_api', attachmentsRouter);
 app.use('/_api', apiRouter);
 app.use('/_calendar', calendarRouter);
 // Route /:page doit être en dernier car c'est un catch-all
