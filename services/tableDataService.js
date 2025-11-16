@@ -4,6 +4,7 @@ const SchemaService = require('./schemaService');
 const EntityService = require('./entityService');
 const RepositoryService = require('./repositoryService');
 const {dataProxy} = require('../utils/dataProxy');
+const { enrichRowWithDateRange } = require('../utils/dateRangeFormatter');
 
 /**
  * Charge les relations d'une row de manière récursive
@@ -391,6 +392,9 @@ async function getTableData(user, tableName, options = {}) {
         filteredRow._label = labelValues.join(' ');
       }
     }
+
+    // Enrichir avec _dateRange si la table a un calendar
+    enrichRowWithDateRange(table, filteredRow);
 
     // Retirer les champs système si demandé (ownerId, granted, createdAt, updatedAt)
     if (noSystemFields) {

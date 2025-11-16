@@ -33,17 +33,15 @@ function buildSQLFieldDefinition(fieldName, fieldDef) {
     sql += ' AUTO_INCREMENT';
   }
 
-  // NOT NULL
-  if (fieldDef.isPrimary || !fieldDef.allowNull) {
-    // Les champs qui ne sont pas des relations sont NOT NULL par défaut
-    if (!fieldDef.relation) {
-      sql += ' NOT NULL';
-    }
+  // NOT NULL - Uniquement pour les clés primaires
+  // Tous les autres champs peuvent être NULL
+  if (fieldDef.isPrimary) {
+    sql += ' NOT NULL';
   }
 
   // Default value
   if (fieldDef.default !== undefined) {
-    if (fieldDef.default === 'CURRENT_TIMESTAMP' || fieldDef.default.includes('CURRENT_TIMESTAMP')) {
+    if (typeof fieldDef.default === 'string' && (fieldDef.default === 'CURRENT_TIMESTAMP' || fieldDef.default.includes('CURRENT_TIMESTAMP'))) {
       sql += ` DEFAULT ${fieldDef.default}`;
     } else if (typeof fieldDef.default === 'string') {
       sql += ` DEFAULT '${fieldDef.default}'`;
