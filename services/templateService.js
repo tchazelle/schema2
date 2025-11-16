@@ -511,7 +511,7 @@ class TemplateService {
 
         // Afficher la liste des tables
         if (creatableTables.length === 0) {
-          tableList.innerHTML = '<li class="calendar-modal-empty">Aucune table disponible pour la création d\'événements</li>';
+          tableList.innerHTML = '<li class="calendar-modal-empty">Aucune table disponible pour la création d\\'événements</li>';
         } else {
           tableList.innerHTML = creatableTables.map(table =>
             '<li class="calendar-table-item">' +
