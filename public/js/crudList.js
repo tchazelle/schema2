@@ -3502,6 +3502,9 @@ class CreateFormModal extends React.Component {
 class CrudList extends React.Component {
   constructor(props) {
     super(props);
+    // Flag to track if URL parameters have been processed
+    // This prevents processing them multiple times on re-renders
+    this.urlParametersProcessed = false;
     this.state = {
       loading: true,
       error: null,
@@ -3545,10 +3548,20 @@ class CrudList extends React.Component {
     }
 
     this.loadUserPreferences();
-    // Check URL parameters after data is loaded
+    // URL parameters will be checked in componentDidUpdate()
+    // after data is fully loaded and state is updated
     // This is crucial for calendar integration where we need data.structure
     // to be available before opening the create form
-    this.checkURLParameters();
+  }
+
+  componentDidUpdate(prevProps, prevState) {
+    // If data just became available for the first time
+    // AND we haven't processed URL parameters yet
+    // This ensures the create form can be opened with data.structure available
+    if (!prevState.data && this.state.data && !this.urlParametersProcessed) {
+      this.urlParametersProcessed = true;
+      this.checkURLParameters();
+    }
   }
 
   /**
