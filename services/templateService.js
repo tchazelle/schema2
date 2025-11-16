@@ -282,28 +282,48 @@ class TemplateService {
       document.querySelectorAll('[data-date]').forEach(el => {
         const date = new Date(el.getAttribute('data-date'));
         const diff = now - date;
-        const seconds = Math.floor(diff / 1000);
+        const absDiff = Math.abs(diff);
+        const seconds = Math.floor(absDiff / 1000);
         const minutes = Math.floor(seconds / 60);
         const hours = Math.floor(minutes / 60);
         const days = Math.floor(hours / 24);
 
-        if (seconds < 60) {
-          el.textContent = \`il y a \${seconds}s\`;
-        } else if (minutes < 60) {
-          el.textContent = \`il y a \${minutes}min\`;
-        } else if (hours < 24) {
-          el.textContent = \`il y a \${hours}h\`;
-        } else if (days < 30) {
-          el.textContent = \`il y a \${days}j\`;
+        // Gérer les dates futures (diff négatif) et passées (diff positif)
+        if (diff < 0) {
+          // Date dans le futur
+          if (seconds < 60) {
+            el.textContent = \`dans \${seconds}s\`;
+          } else if (minutes < 60) {
+            el.textContent = \`dans \${minutes}min\`;
+          } else if (hours < 24) {
+            el.textContent = \`dans \${hours}h\`;
+          } else if (days < 30) {
+            el.textContent = \`dans \${days}j\`;
+          } else {
+            el.textContent = date.toLocaleDateString('fr-FR');
+          }
         } else {
-          el.textContent = date.toLocaleDateString('fr-FR');
+          // Date dans le passé
+          if (seconds < 60) {
+            el.textContent = \`il y a \${seconds}s\`;
+          } else if (minutes < 60) {
+            el.textContent = \`il y a \${minutes}min\`;
+          } else if (hours < 24) {
+            el.textContent = \`il y a \${hours}h\`;
+          } else if (days < 30) {
+            el.textContent = \`il y a \${days}j\`;
+          } else {
+            el.textContent = date.toLocaleDateString('fr-FR');
+          }
         }
       });
 
       // Humaniser les durées
       document.querySelectorAll('[data-duration]').forEach(el => {
         const ms = parseInt(el.getAttribute('data-duration'));
-        const seconds = Math.floor(ms / 1000);
+        if (isNaN(ms)) return;
+
+        const seconds = Math.floor(Math.abs(ms) / 1000);
         const minutes = Math.floor(seconds / 60);
         const hours = Math.floor(minutes / 60);
 
@@ -490,9 +510,10 @@ class TemplateService {
   /**
    * Génère la page HTML du calendrier avec tous les événements
    * @param {Object} user - L'utilisateur connecté
+   * @param {Date} initialDate - Date initiale optionnelle pour le calendrier
    * @returns {string} - HTML complet de la page calendrier
    */
-  static htmlCalendar(user) {
+  static htmlCalendar(user, initialDate = null) {
     return `
 <!DOCTYPE html>
 <html lang="fr">
@@ -529,6 +550,8 @@ class TemplateService {
       const calendar = new FullCalendar.Calendar(calendarEl, {
         initialView: 'dayGridMonth',
         locale: 'fr',
+        firstDay: 1, // Lundi comme premier jour de la semaine (1=lundi, 0=dimanche)
+        ${initialDate ? `initialDate: '${initialDate.toISOString()}',` : ''}
         headerToolbar: {
           left: 'prev,next today',
           center: 'title',
@@ -554,6 +577,10 @@ class TemplateService {
             });
         },
         eventClick: function(info) {
+          // Sauvegarder la vue actuelle dans sessionStorage pour le retour
+          sessionStorage.setItem('calendarReturnView', calendar.view.type);
+          sessionStorage.setItem('calendarReturnDate', calendar.getDate().toISOString());
+
           // Rediriger vers la page de détail de l'événement
           if (info.event.url) {
             window.location.href = info.event.url;
@@ -564,10 +591,50 @@ class TemplateService {
           // Ajouter un tooltip avec les informations de l'événement
           info.el.title = info.event.title;
         },
+        eventContent: function(arg) {
+          // Format personnalisé: <heure début>-<heure fin> + titre
+          const start = arg.event.start;
+          const end = arg.event.end;
+          const title = arg.event.title;
+
+          let timeText = '';
+          if (start) {
+            const startTime = start.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+            timeText = startTime;
+            if (end && end.getTime() !== start.getTime()) {
+              const endTime = end.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+              timeText += '-' + endTime;
+            }
+          }
+
+          return {
+            html: '<div class="fc-event-main-frame">' +
+                  '<div class="fc-event-time">' + timeText + '</div>' +
+                  '<div class="fc-event-title-container">' +
+                  '<div class="fc-event-title">' + title + '</div>' +
+                  '</div></div>'
+          };
+        },
+        // Fixer la hauteur des cellules pour éviter les changements
         height: 'auto',
-        contentHeight: 'auto',
-        aspectRatio: 1.8
+        expandRows: false,
+        dayMaxEventRows: true,
+        dayMaxEvents: 3,
+        moreLinkClick: 'popover'
       });
+
+      // Restaurer la vue depuis sessionStorage si disponible
+      const returnView = sessionStorage.getItem('calendarReturnView');
+      const returnDate = sessionStorage.getItem('calendarReturnDate');
+      if (returnView) {
+        calendar.changeView(returnView);
+      }
+      if (returnDate) {
+        calendar.gotoDate(new Date(returnDate));
+        // Nettoyer le sessionStorage après utilisation
+        sessionStorage.removeItem('calendarReturnView');
+        sessionStorage.removeItem('calendarReturnDate');
+      }
 
       calendar.render();
 
