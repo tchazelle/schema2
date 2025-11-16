@@ -1,0 +1,183 @@
+/**
+ * Styles pour le module calendrier
+ */
+
+.calendar-container {
+  max-width: 1200px;
+  margin: 20px auto;
+  padding: 20px;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.calendar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.calendar-header h1 {
+  margin: 0;
+  font-size: 28px;
+  color: #333;
+}
+
+.calendar-stats {
+  display: flex;
+  gap: 20px;
+  font-size: 14px;
+  color: #666;
+}
+
+.calendar-stats span {
+  padding: 5px 12px;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+/* Styles pour FullCalendar */
+#calendar {
+  margin-top: 20px;
+}
+
+/* Personnalisation des événements */
+.fc-event {
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.fc-event:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Amélioration de la lisibilité */
+.fc-daygrid-day-number {
+  font-size: 14px;
+  padding: 8px;
+}
+
+.fc-col-header-cell-cushion {
+  padding: 8px;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 12px;
+}
+
+/* Styles pour les boutons */
+.fc-button {
+  background-color: #007bff;
+  border: none;
+  transition: background-color 0.2s ease;
+}
+
+.fc-button:hover {
+  background-color: #0056b3;
+}
+
+.fc-button-active {
+  background-color: #0056b3;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .calendar-container {
+    margin: 10px;
+    padding: 10px;
+  }
+
+  .calendar-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .calendar-header h1 {
+    font-size: 22px;
+  }
+
+  .calendar-stats {
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .calendar-stats span {
+    display: block;
+  }
+
+  .fc-header-toolbar {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .fc-toolbar-chunk {
+    display: flex;
+    justify-content: center;
+  }
+}
+
+/* Styles pour les différents types d'événements */
+.fc-event.fc-event-start.fc-event-end {
+  border-radius: 4px;
+}
+
+/* Animation au chargement */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.calendar-container {
+  animation: fadeIn 0.3s ease;
+}
+
+/* Amélioration de la vue liste */
+.fc-list-event:hover td {
+  background-color: #f5f5f5;
+}
+
+/* Styles pour le jour actuel */
+.fc-day-today {
+  background-color: #fff3cd !important;
+}
+
+/* Styles pour le titre de l'événement */
+.fc-event-title {
+  font-weight: 500;
+  font-size: 13px;
+}
+
+/* Amélioration du contraste */
+.fc-daygrid-day-events {
+  margin-bottom: 3px;
+}
+
+/* Message de chargement */
+.fc-event-loading {
+  text-align: center;
+  padding: 20px;
+  color: #666;
+}
+
+/* Gestion des événements multiples dans une journée */
+.fc-daygrid-event-harness {
+  margin-bottom: 2px;
+}
+
+/* Amélioration de l'affichage de l'heure */
+.fc-event-time {
+  font-size: 12px;
+  font-weight: 600;
+}

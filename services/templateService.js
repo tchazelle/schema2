@@ -5,6 +5,7 @@
 
 const schema = require('../schema.js');
 const mustache = require('mustache');
+const CalendarService = require('./calendarService');
 
 class TemplateService {
 
@@ -83,26 +84,39 @@ class TemplateService {
   }
 
   static htmlMenuTable(accessibleTables) {
-    return accessibleTables?.length > 0 
+    return accessibleTables?.length > 0
       ? `<div class="sidebar-section">
           <h3>Tables</h3>
           <ul>
-            ${accessibleTables.map(table => `<li><a href="/_crud/${table}">${table}</a></li>`).join('')} 
+            ${accessibleTables.map(table => `<li><a href="/_crud/${table}">${table}</a></li>`).join('')}
           </ul>
         </div>`
       : ""
   }
-  static htmlMenu(pages, accessibleTables) { 
-    return this.htmlMenuPages(pages) 
-    +this.htmlMenuTable(accessibleTables)
+
+  static htmlMenuCalendar(hasCalendarAccess) {
+    return hasCalendarAccess
+      ? `<div class="sidebar-section">
+          <h3>Outils</h3>
+          <ul>
+            <li><a href="/_calendar">📅 Calendrier</a></li>
+          </ul>
+        </div>`
+      : ""
+  }
+
+  static htmlMenu(pages, accessibleTables, hasCalendarAccess) {
+    return this.htmlMenuPages(pages)
+    + this.htmlMenuCalendar(hasCalendarAccess)
+    + this.htmlMenuTable(accessibleTables)
   }
   
-  static htmlSidebar(pages, accessibleTables) {
+  static htmlSidebar(pages, accessibleTables, hasCalendarAccess = false) {
     return `<nav class="sidebar" id="sidebar">
       <button class="sidebar-close" onclick="closeMenu()" aria-label="Fermer le menu">✖️</button>
-      ${this.htmlMenu(pages, accessibleTables)}
+      ${this.htmlMenu(pages, accessibleTables, hasCalendarAccess)}
     </nav>`
-  }b
+  }
   static htmlUserMenu(user) {
   return `<div class="user-menu">
   
@@ -158,16 +172,24 @@ class TemplateService {
     </script>`
   }
 
-  static htmlHeader(user, pages, accessibleTables) { return `
+  static htmlHeader(user, pages, accessibleTables, hasCalendarAccess = null) {
+    // Calculer automatiquement hasCalendarAccess si non fourni
+    if (hasCalendarAccess === null && user) {
+      hasCalendarAccess = CalendarService.hasCalendarAccess(user);
+    } else if (hasCalendarAccess === null) {
+      hasCalendarAccess = false;
+    }
+
+    return `
     <header>
-    
+
       <div class="logo">${schema.appName}</div>
-      ${this.htmlSidebar(pages, accessibleTables)}
+      ${this.htmlSidebar(pages, accessibleTables, hasCalendarAccess)}
       <div class="overlay" id="overlay" onclick="closeMenu()"></div>
       <div class="header-right">
         ${this.htmlUserMenu(user)}
         </div>
-        
+
         <!-- Menu hamburger -->
         <button class="menu-toggle" onclick="toggleMenu()">☰</button>
       </div>
@@ -457,6 +479,112 @@ class TemplateService {
       table: '${table}',
       initialRecordId: ${recordId}
     }));
+  </script>
+
+  ${this.scriptHumanize()}
+</body>
+</html>
+    `;
+  }
+
+  /**
+   * Génère la page HTML du calendrier avec tous les événements
+   * @param {Object} user - L'utilisateur connecté
+   * @returns {string} - HTML complet de la page calendrier
+   */
+  static htmlCalendar(user) {
+    return `
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Calendrier - ${schema.appName}</title>
+  ${this.htmlCssFiles()}
+  <link rel="stylesheet" href="/css/calendar.css">
+
+  <!-- FullCalendar CSS -->
+  <link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css' rel='stylesheet' />
+</head>
+<body>
+
+  ${this.htmlHeader(user, [], [])}
+  ${this.htmlLogin()}
+
+  <main class="calendar-container">
+    <div class="calendar-header">
+      <h1>Calendrier</h1>
+      <div class="calendar-stats" id="calendarStats"></div>
+    </div>
+    <div id="calendar"></div>
+  </main>
+
+  <!-- FullCalendar JS -->
+  <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const calendarEl = document.getElementById('calendar');
+
+      const calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'dayGridMonth',
+        locale: 'fr',
+        headerToolbar: {
+          left: 'prev,next today',
+          center: 'title',
+          right: 'dayGridMonth,timeGridWeek,timeGridDay,listMonth'
+        },
+        buttonText: {
+          today: "Aujourd'hui",
+          month: 'Mois',
+          week: 'Semaine',
+          day: 'Jour',
+          list: 'Liste'
+        },
+        events: function(info, successCallback, failureCallback) {
+          // Charger les événements depuis l'API
+          fetch('/_calendar/events?start=' + info.startStr + '&end=' + info.endStr)
+            .then(response => response.json())
+            .then(data => {
+              successCallback(data);
+            })
+            .catch(error => {
+              console.error('Erreur lors du chargement des événements:', error);
+              failureCallback(error);
+            });
+        },
+        eventClick: function(info) {
+          // Rediriger vers la page de détail de l'événement
+          if (info.event.url) {
+            window.location.href = info.event.url;
+            info.jsEvent.preventDefault();
+          }
+        },
+        eventDidMount: function(info) {
+          // Ajouter un tooltip avec les informations de l'événement
+          info.el.title = info.event.title;
+        },
+        height: 'auto',
+        contentHeight: 'auto',
+        aspectRatio: 1.8
+      });
+
+      calendar.render();
+
+      // Charger les statistiques
+      fetch('/_calendar/stats')
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            const statsEl = document.getElementById('calendarStats');
+            statsEl.innerHTML = \`
+              <span>\${data.data.totalEvents} événements</span>
+              <span>\${data.data.accessibleTables} / \${data.data.totalTables} tables accessibles</span>
+            \`;
+          }
+        })
+        .catch(error => console.error('Erreur lors du chargement des statistiques:', error));
+    });
   </script>
 
   ${this.scriptHumanize()}

@@ -1,0 +1,96 @@
+const express = require('express');
+const router = express.Router();
+const CalendarService = require('../services/calendarService');
+const TemplateService = require('../services/templateService');
+const UIService = require('../services/uiService');
+
+/**
+ * GET /_calendar
+ * Affiche le calendrier avec tous les événements accessibles par l'utilisateur
+ */
+router.get('/', async (req, res) => {
+  try {
+    const user = req.user;
+
+    // Vérifier si l'utilisateur a accès au calendrier
+    if (!CalendarService.hasCalendarAccess(user)) {
+      return res.status(403).json(UIService.jsonError('Accès au calendrier non autorisé'));
+    }
+
+    // Si le paramètre ?json=1 est présent, retourner du JSON
+    if (req.query.json === '1') {
+      const events = await CalendarService.getCalendarEvents(user);
+      const stats = await CalendarService.getCalendarStats(user);
+
+      return res.json(UIService.jsonSuccess({
+        events,
+        stats,
+        tables: CalendarService.getCalendarTables()
+      }));
+    }
+
+    // Sinon, afficher la page HTML du calendrier
+    const html = TemplateService.htmlCalendar(user);
+    res.send(html);
+
+  } catch (error) {
+    console.error('Erreur lors de l\'affichage du calendrier:', error);
+    res.status(500).json(UIService.jsonError('Erreur serveur lors de l\'affichage du calendrier'));
+  }
+});
+
+/**
+ * GET /_calendar/events
+ * API pour récupérer les événements du calendrier (format JSON)
+ */
+router.get('/events', async (req, res) => {
+  try {
+    const user = req.user;
+
+    // Vérifier si l'utilisateur a accès au calendrier
+    if (!CalendarService.hasCalendarAccess(user)) {
+      return res.status(403).json(UIService.jsonError('Accès au calendrier non autorisé'));
+    }
+
+    // Récupérer les paramètres de filtrage
+    const { start, end } = req.query;
+
+    const options = {};
+    if (start) options.startDate = start;
+    if (end) options.endDate = end;
+
+    // Récupérer les événements
+    const events = await CalendarService.getCalendarEvents(user, options);
+
+    res.json(events);
+
+  } catch (error) {
+    console.error('Erreur lors de la récupération des événements:', error);
+    res.status(500).json(UIService.jsonError('Erreur serveur lors de la récupération des événements'));
+  }
+});
+
+/**
+ * GET /_calendar/stats
+ * Retourne les statistiques du calendrier
+ */
+router.get('/stats', async (req, res) => {
+  try {
+    const user = req.user;
+
+    // Vérifier si l'utilisateur a accès au calendrier
+    if (!CalendarService.hasCalendarAccess(user)) {
+      return res.status(403).json(UIService.jsonError('Accès au calendrier non autorisé'));
+    }
+
+    const stats = await CalendarService.getCalendarStats(user);
+
+    res.json(UIService.jsonSuccess(stats));
+
+  } catch (error) {
+    console.error('Erreur lors de la récupération des statistiques:', error);
+    res.status(500).json(UIService.jsonError('Erreur serveur lors de la récupération des statistiques'));
+  }
+});
+
+module.exports = router;

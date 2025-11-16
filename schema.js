@@ -75,6 +75,12 @@ module.exports = {
 
   },
 
+  calendar: {
+    granted: {
+      admin: ["read", "write"]
+    }
+  },
+
   renderer: {
     image: "<img class='field-label image {{key}}' src='{{value}}' alt='{{value}}' />",
     email: "<a class='field-label email {{key}}' href='mailto:{{value}}'> 📧 {{value}}</a>",
@@ -344,6 +350,56 @@ module.exports = {
         fileType: { type: "varchar" }, // Type MIME (image/jpeg, application/pdf, etc.)
         fileSize: { type: "integer" }, // Taille en octets
         filePath: { type: "varchar", renderer: "filePreview" }, // Chemin du fichier sur le système de fichiers
+        // + commonFields
+      }
+    },
+    Event: {
+      // Configuration de table selon schema.org Event
+      displayFields: ["name", "startDate"],
+      searchFields: ["name", "description", "location"],
+      pageSize: 50,
+      granted: {
+        "member": ["read"],
+        "admin": ["read", "create", "update", "delete", "publish"]
+      },
+      calendar: {
+        bgColor: "coral",
+        startDate: "startDate", // valeur par défaut
+        endDate: "endDate" // valeur par défaut
+      },
+      fields: {
+        id: { type: "integer", isPrimary: true, autoIncrement: true },
+        name: { type: "varchar" }, // schemaorgProperty: name - Nom de l'événement
+        description: { type: "text" }, // schemaorgProperty: description
+        startDate: { type: "datetime", renderer: "datetime" }, // schemaorgProperty: startDate
+        endDate: { type: "datetime", renderer: "datetime" }, // schemaorgProperty: endDate
+        location: { type: "varchar" }, // schemaorgProperty: location (peut être un lieu ou une adresse)
+        organizer: {
+          type: "integer",
+          relation: "Organization",
+          foreignKey: "id",
+          arrayName: "organizedEvents",
+          relationshipStrength: "Weak"
+        }, // schemaorgProperty: organizer
+        performer: {
+          type: "integer",
+          relation: "Organization",
+          foreignKey: "id",
+          arrayName: "performedEvents",
+          relationshipStrength: "Weak"
+        }, // schemaorgProperty: performer (peut être Person ou Organization)
+        url: { type: "varchar", renderer: "url" }, // schemaorgProperty: url
+        image: { type: "varchar", renderer: "image" }, // schemaorgProperty: image
+        eventStatus: {
+          type: "enum",
+          values: ["EventScheduled", "EventCancelled", "EventPostponed", "EventRescheduled"],
+          default: "EventScheduled"
+        }, // schemaorgProperty: eventStatus
+        eventAttendanceMode: {
+          type: "enum",
+          values: ["OfflineEventAttendanceMode", "OnlineEventAttendanceMode", "MixedEventAttendanceMode"],
+          default: "OfflineEventAttendanceMode"
+        }, // schemaorgProperty: eventAttendanceMode
         // + commonFields
       }
     },
