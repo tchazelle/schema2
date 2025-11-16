@@ -663,10 +663,9 @@ class TemplateService {
         .then(data => {
           if (data.success) {
             const statsEl = document.getElementById('calendarStats');
-            statsEl.innerHTML = \`
-              <span>\${data.data.totalEvents} événements</span>
-              <span>\${data.data.accessibleTables} / \${data.data.totalTables} tables accessibles</span>
-            \`;
+            statsEl.innerHTML =
+              '<span>' + data.data.totalEvents + ' événements</span>' +
+              '<span>' + data.data.accessibleTables + ' / ' + data.data.totalTables + ' tables accessibles</span>';
           }
         })
         .catch(error => console.error('Erreur lors du chargement des statistiques:', error));
