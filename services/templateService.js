@@ -555,9 +555,12 @@ class TemplateService {
       // Fonction pour créer un événement
       function createEvent(tableName, date) {
         if (!date) {
+          console.error('Erreur: Aucune date sélectionnée');
           alert('Erreur: Aucune date sélectionnée');
           return;
         }
+
+        console.log('createEvent called:', { tableName, date, dateType: typeof date });
 
         // Sauvegarder la vue actuelle pour le retour
         sessionStorage.setItem('calendarReturnView', calendar.view.type);
@@ -570,15 +573,17 @@ class TemplateService {
         /*
         // Pour les champs datetime, on ajoute l'heure 09:00
         const match = date.match(/^(\d{4})-(\d{2})-(\d{2})/);
-        console.log("calendar.getDate()", calendar.getDate().toISOString())
-      
+
         if (match) {
           const [, year, month, day] = match;
           const dateTimeISO = year + '-' + month + '-' + day + 'T09:00';
           const url = '/_crud/' + tableName + '?startDate=' + encodeURIComponent(dateTimeISO);
+          console.log('Redirecting to:', url);
           window.location.href = url;
         } else {
-          // Fallback if date format is unexpected
+          // Fallback si vraiment impossible de parser la date
+          console.error('Impossible de construire dateTimeISO, fallback sans date');
+          alert('Erreur: Format de date invalide. Redirection sans date pré-remplie.');
           window.location.href = '/_crud/' + tableName;
         }
           */
