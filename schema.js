@@ -427,5 +427,27 @@ module.exports = {
         // + commonFields
       }
     },
+    Todo: {
+      // Table de gestion des tâches à faire
+      displayFields: ["name"],
+      searchFields: ["name", "description"],
+      pageSize: 100,
+      granted: {
+        "admin": ["read", "create", "update", "delete", "publish"]
+      },
+      calendar: {
+        bgColor: "lightblue",
+        startDate: "startDate",
+        endDate: "endDate"
+      },
+      fields: {
+        id: { type: "integer", isPrimary: true, autoIncrement: true },
+        name: { type: "varchar" }, // Nom de la tâche
+        description: { type: "text" }, // Description de la tâche
+        startDate: { type: "datetime", renderer: "datetime" }, // Date de début
+        endDate: { type: "datetime", renderer: "datetime" }, // Date de fin
+        // + commonFields
+      }
+    },
   }
 };
