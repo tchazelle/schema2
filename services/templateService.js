@@ -457,12 +457,110 @@ class TemplateService {
     <div id="calendar"></div>
   </main>
 
+  <!-- Modale de sélection de table pour création d'événement -->
+  <div class="calendar-modal-overlay" id="calendarModal">
+    <div class="calendar-modal">
+      <div class="calendar-modal-header">
+        <h3>Créer un événement</h3>
+        <button class="calendar-modal-close" id="closeModal">&times;</button>
+      </div>
+      <div class="calendar-modal-date" id="modalDate"></div>
+      <div class="calendar-modal-body">
+        <p>Sélectionnez le type d'événement à créer :</p>
+        <ul class="calendar-table-list" id="tableList"></ul>
+      </div>
+    </div>
+  </div>
+
   <!-- FullCalendar JS -->
   <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
 
   <script>
     document.addEventListener('DOMContentLoaded', function() {
       const calendarEl = document.getElementById('calendar');
+      const modalOverlay = document.getElementById('calendarModal');
+      const closeModalBtn = document.getElementById('closeModal');
+      const modalDate = document.getElementById('modalDate');
+      const tableList = document.getElementById('tableList');
+      let selectedDate = null;
+      let creatableTables = [];
+
+      // Charger la liste des tables créables
+      fetch('/_calendar/tables')
+        .then(response => response.json())
+        .then(data => {
+          if (data.success && data.data) {
+            creatableTables = data.data;
+          }
+        })
+        .catch(error => console.error('Erreur lors du chargement des tables:', error));
+
+      // Fonction pour ouvrir la modale
+      function openModal(date) {
+        selectedDate = date;
+
+        // Formater la date pour l'affichage
+        const dateObj = new Date(date);
+        const dateStr = dateObj.toLocaleDateString('fr-FR', {
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        });
+        modalDate.innerHTML = '<strong>Date sélectionnée :</strong> ' + dateStr;
+
+        // Afficher la liste des tables
+        if (creatableTables.length === 0) {
+          tableList.innerHTML = '<li class="calendar-modal-empty">Aucune table disponible pour la création d\'événements</li>';
+        } else {
+          tableList.innerHTML = creatableTables.map(table =>
+            '<li class="calendar-table-item">' +
+            '<button class="calendar-table-button" data-table="' + table.name + '">' +
+            table.name +
+            '</button></li>'
+          ).join('');
+
+          // Ajouter les événements sur les boutons
+          tableList.querySelectorAll('.calendar-table-button').forEach(btn => {
+            btn.addEventListener('click', function() {
+              const tableName = this.getAttribute('data-table');
+              createEvent(tableName, selectedDate);
+            });
+          });
+        }
+
+        modalOverlay.classList.add('active');
+      }
+
+      // Fonction pour fermer la modale
+      function closeModal() {
+        modalOverlay.classList.remove('active');
+        selectedDate = null;
+      }
+
+      // Fonction pour créer un événement
+      function createEvent(tableName, date) {
+        // Sauvegarder la vue actuelle pour le retour
+        sessionStorage.setItem('calendarReturnView', calendar.view.type);
+        sessionStorage.setItem('calendarReturnDate', calendar.getDate().toISOString());
+
+        // Construire l'URL avec la date pré-remplie
+        // Pour les champs datetime, on ajoute l'heure 09:00
+        const dateObj = new Date(date);
+        dateObj.setHours(9, 0, 0, 0);
+        const dateTimeISO = dateObj.toISOString().slice(0, 16);
+        const url = '/_crud/' + tableName + '?startDate=' + dateTimeISO;
+
+        window.location.href = url;
+      }
+
+      // Événements de fermeture de la modale
+      closeModalBtn.addEventListener('click', closeModal);
+      modalOverlay.addEventListener('click', function(e) {
+        if (e.target === modalOverlay) {
+          closeModal();
+        }
+      });
 
       const calendar = new FullCalendar.Calendar(calendarEl, {
         initialView: 'dayGridMonth',
@@ -480,6 +578,10 @@ class TemplateService {
           week: 'Semaine',
           day: 'Jour',
           list: 'Liste'
+        },
+        dateClick: function(info) {
+          // Ouvrir la modale de sélection de table
+          openModal(info.dateStr);
         },
         events: function(info, successCallback, failureCallback) {
           // Charger les événements depuis l'API

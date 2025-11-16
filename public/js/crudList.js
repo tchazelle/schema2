@@ -3092,7 +3092,7 @@ class CreateFormModal extends React.Component {
   constructor(props) {
     super(props);
 
-    const { structure, parentTable, parentId } = props;
+    const { structure, parentTable, parentId, defaultValues } = props;
 
     // Initialize form data with default values
     const formData = {};
@@ -3114,8 +3114,13 @@ class CreateFormModal extends React.Component {
         }
       }
 
+      // Set default values from URL parameters (e.g., startDate from calendar)
+      if (defaultValues && defaultValues[fieldName] !== undefined) {
+        formData[fieldName] = defaultValues[fieldName];
+      }
+
       // Set default values based on field type
-      if (!formData[fieldName]) {
+      if (!formData[fieldName] && formData[fieldName] !== 0) {
         if (field.type === 'boolean') {
           formData[fieldName] = false;
         } else if (field.type === 'integer') {
@@ -3509,6 +3514,7 @@ class CrudList extends React.Component {
       showCreateForm: false,
       createFormParentTable: null,
       createFormParentId: null,
+      createFormDefaultValues: {},
       showAdvancedSearch: false,
       advancedSearchCriteria: null,
       showAdvancedSort: false,
@@ -3628,12 +3634,28 @@ class CrudList extends React.Component {
     const parent = urlParams.get('parent');
     const parentId = urlParams.get('parentId');
 
+    // Extract all URL parameters as default values for form fields
+    const defaultValues = {};
+    for (const [key, value] of urlParams.entries()) {
+      // Skip parent and parentId as they're handled separately
+      if (key !== 'parent' && key !== 'parentId') {
+        defaultValues[key] = value;
+      }
+    }
+
     // If parent and parentId are provided, open create form automatically
     if (parent && parentId) {
       this.setState({
         showCreateForm: true,
         createFormParentTable: parent,
-        createFormParentId: parseInt(parentId)
+        createFormParentId: parseInt(parentId),
+        createFormDefaultValues: defaultValues
+      });
+    } else if (Object.keys(defaultValues).length > 0) {
+      // If there are default values but no parent, still open the form
+      this.setState({
+        showCreateForm: true,
+        createFormDefaultValues: defaultValues
       });
     }
   }
@@ -3816,26 +3838,47 @@ class CrudList extends React.Component {
     this.setState(prev => ({ showDeleteButtons: !prev.showDeleteButtons }));
   }
 
-  handleAddNew = (parentTable = null, parentId = null) => {
+  handleAddNew = (parentTable = null, parentId = null, defaultValues = {}) => {
     this.setState({
       showCreateForm: true,
       createFormParentTable: parentTable,
-      createFormParentId: parentId
+      createFormParentId: parentId,
+      createFormDefaultValues: defaultValues
     });
   }
 
   handleCloseCreateForm = () => {
-    this.setState({
-      showCreateForm: false,
-      createFormParentTable: null,
-      createFormParentId: null
-    });
+    // Check if we came from calendar
+    const returnView = sessionStorage.getItem('calendarReturnView');
+    const returnDate = sessionStorage.getItem('calendarReturnDate');
+
+    if (returnView && returnDate) {
+      // Return to calendar with saved view and date
+      window.location.href = '/_calendar';
+    } else {
+      // Just close the form
+      this.setState({
+        showCreateForm: false,
+        createFormParentTable: null,
+        createFormParentId: null,
+        createFormDefaultValues: {}
+      });
+    }
   }
 
   handleCreateSuccess = () => {
-    // Reload data after successful creation
-    this.loadData();
-    this.handleCloseCreateForm();
+    // Check if we came from calendar
+    const returnView = sessionStorage.getItem('calendarReturnView');
+    const returnDate = sessionStorage.getItem('calendarReturnDate');
+
+    if (returnView && returnDate) {
+      // Return to calendar with saved view and date
+      window.location.href = '/_calendar';
+    } else {
+      // Reload data after successful creation
+      this.loadData();
+      this.handleCloseCreateForm();
+    }
   }
 
   handleShowAdvancedSearch = () => {
@@ -4212,6 +4255,7 @@ class CrudList extends React.Component {
         permissions: data.permissions,
         parentTable: createFormParentTable,
         parentId: createFormParentId,
+        defaultValues: createFormDefaultValues,
         onClose: this.handleCloseCreateForm,
         onSuccess: this.handleCreateSuccess
       }),

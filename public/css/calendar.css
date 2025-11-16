@@ -181,3 +181,155 @@
   font-size: 12px;
   font-weight: 600;
 }
+
+/* Modale de sélection de table pour création d'événement */
+.calendar-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  animation: fadeIn 0.2s ease;
+}
+
+.calendar-modal-overlay.active {
+  display: flex;
+}
+
+.calendar-modal {
+  background-color: #fff;
+  border-radius: 8px;
+  padding: 24px;
+  max-width: 400px;
+  width: 90%;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.calendar-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.calendar-modal-header h3 {
+  margin: 0;
+  font-size: 20px;
+  color: #333;
+}
+
+.calendar-modal-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: #666;
+  cursor: pointer;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.calendar-modal-close:hover {
+  background-color: #f0f0f0;
+  color: #333;
+}
+
+.calendar-modal-date {
+  margin-bottom: 16px;
+  padding: 12px;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+  font-size: 14px;
+  color: #666;
+  text-align: center;
+}
+
+.calendar-modal-date strong {
+  color: #333;
+}
+
+.calendar-modal-body {
+  margin-bottom: 16px;
+}
+
+.calendar-modal-body p {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  color: #666;
+}
+
+.calendar-table-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.calendar-table-item {
+  margin-bottom: 8px;
+}
+
+.calendar-table-button {
+  width: 100%;
+  padding: 12px 16px;
+  background-color: #007bff;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+  text-align: left;
+}
+
+.calendar-table-button:hover {
+  background-color: #0056b3;
+  transform: translateX(4px);
+}
+
+.calendar-table-button:active {
+  transform: translateX(2px);
+}
+
+.calendar-modal-empty {
+  padding: 20px;
+  text-align: center;
+  color: #999;
+  font-style: italic;
+}
+
+/* Cursor pointer sur les jours cliquables */
+.fc-daygrid-day {
+  cursor: pointer;
+}
+
+.fc-daygrid-day:hover .fc-daygrid-day-number {
+  background-color: #f0f0f0;
+  border-radius: 50%;
+}
