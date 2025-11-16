@@ -511,6 +511,7 @@ class TemplateService {
 
       // Fonction pour ouvrir la modale
       function openModal(date) {
+        console.log('[Calendar] openModal called with date:', date);
         selectedDate = date;
 
         // Formater la date pour l'affichage
@@ -525,8 +526,10 @@ class TemplateService {
 
         // Afficher la liste des tables
         if (creatableTables.length === 0) {
+          console.log('[Calendar] No creatable tables available');
           tableList.innerHTML = '<li class="calendar-modal-empty">Aucune table disponible pour la création d\\'événements</li>';
         } else {
+          console.log('[Calendar] Rendering buttons for tables:', creatableTables.map(t => t.name));
           tableList.innerHTML = creatableTables.map(table =>
             '<li class="calendar-table-item">' +
             '<button type="button" class="calendar-table-button" data-table="' + table.name + '">' +
@@ -535,15 +538,21 @@ class TemplateService {
           ).join('');
 
           // Ajouter les événements sur les boutons
-          tableList.querySelectorAll('.calendar-table-button').forEach(btn => {
-            btn.addEventListener('click', function() {
+          const buttons = tableList.querySelectorAll('.calendar-table-button');
+          console.log('[Calendar] Found', buttons.length, 'buttons to attach click handlers');
+          buttons.forEach((btn, index) => {
+            console.log('[Calendar] Attaching click handler to button', index, 'for table:', btn.getAttribute('data-table'));
+            btn.addEventListener('click', function(event) {
+              console.log('[Calendar] Button clicked! Event target:', event.target);
               const tableName = this.getAttribute('data-table');
+              console.log('[Calendar] About to call createEvent with table:', tableName, 'date:', selectedDate);
               createEvent(tableName, selectedDate);
             });
           });
         }
 
         modalOverlay.classList.add('active');
+        console.log('[Calendar] Modal is now active');
       }
 
       // Fonction pour fermer la modale
@@ -554,11 +563,20 @@ class TemplateService {
 
       // Fonction pour créer un événement
       function createEvent(tableName, date) {
-        console.log('[Calendar] createEvent called with:', { tableName, date });
+        console.log('='.repeat(80));
+        console.log('[Calendar] ✅ createEvent() CALLED!');
+        console.log('[Calendar] Parameters:', { tableName, date, typeOfDate: typeof date });
+
+        if (!date) {
+          console.error('[Calendar] ❌ ERROR: date is null or undefined!');
+          alert('Erreur: Aucune date sélectionnée');
+          return;
+        }
 
         // Sauvegarder la vue actuelle pour le retour
         sessionStorage.setItem('calendarReturnView', calendar.view.type);
         sessionStorage.setItem('calendarReturnDate', calendar.getDate().toISOString());
+        console.log('[Calendar] Session storage saved');
 
         // Construire l'URL avec la date pré-remplie
         // Pour les champs datetime, on ajoute l'heure 09:00
@@ -570,12 +588,17 @@ class TemplateService {
           const [, year, month, day] = match;
           const dateTimeISO = year + '-' + month + '-' + day + 'T09:00';
           const url = '/_crud/' + tableName + '?startDate=' + encodeURIComponent(dateTimeISO);
-          console.log('[Calendar] Navigating to URL:', url);
+          console.log('[Calendar] ✅ URL constructed:', url);
+          console.log('[Calendar] 🚀 NAVIGATING NOW to:', url);
+          console.log('='.repeat(80));
           window.location.href = url;
         } else {
           // Fallback if date format is unexpected
-          console.warn('[Calendar] Date format did not match, navigating without startDate:', date);
-          window.location.href = '/_crud/' + tableName;
+          console.warn('[Calendar] ⚠️ Date format did not match, navigating without startDate:', date);
+          const fallbackUrl = '/_crud/' + tableName;
+          console.log('[Calendar] Fallback URL:', fallbackUrl);
+          console.log('='.repeat(80));
+          window.location.href = fallbackUrl;
         }
       }
 
@@ -605,6 +628,7 @@ class TemplateService {
           list: 'Liste'
         },
         dateClick: function(info) {
+          console.log('[Calendar] Date clicked:', info.dateStr);
           // Ouvrir la modale de sélection de table
           openModal(info.dateStr);
         },
