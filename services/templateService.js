@@ -599,6 +599,7 @@ class TemplateService {
       const calendar = new FullCalendar.Calendar(calendarEl, {
         initialView: 'dayGridMonth',
         locale: 'fr',
+        timeZone: 'local', // Interpréter les dates en heure locale (pas UTC)
         firstDay: 1, // Lundi comme premier jour de la semaine (1=lundi, 0=dimanche)
         ${initialDate ? `initialDate: '${initialDate.toISOString()}',` : ''}
         headerToolbar: {
