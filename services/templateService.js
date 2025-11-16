@@ -268,84 +268,6 @@ class TemplateService {
   </script>`;
   }
 
-  /**
-   * Génère le script client pour humaniser les dates
-   * @returns {string} - HTML avec le script
-   */
-  static scriptHumanize() {
-    return `<script>
-    // Fonction pour humaniser les dates et durées
-    function humanize() {
-      const now = new Date();
-
-      // Humaniser les dates
-      document.querySelectorAll('[data-date]').forEach(el => {
-        const date = new Date(el.getAttribute('data-date'));
-        const diff = now - date;
-        const absDiff = Math.abs(diff);
-        const seconds = Math.floor(absDiff / 1000);
-        const minutes = Math.floor(seconds / 60);
-        const hours = Math.floor(minutes / 60);
-        const days = Math.floor(hours / 24);
-
-        // Gérer les dates futures (diff négatif) et passées (diff positif)
-        if (diff < 0) {
-          // Date dans le futur
-          if (seconds < 60) {
-            el.textContent = \`dans \${seconds}s\`;
-          } else if (minutes < 60) {
-            el.textContent = \`dans \${minutes}min\`;
-          } else if (hours < 24) {
-            el.textContent = \`dans \${hours}h\`;
-          } else if (days < 30) {
-            el.textContent = \`dans \${days}j\`;
-          } else {
-            el.textContent = date.toLocaleDateString('fr-FR');
-          }
-        } else {
-          // Date dans le passé
-          if (seconds < 60) {
-            el.textContent = \`il y a \${seconds}s\`;
-          } else if (minutes < 60) {
-            el.textContent = \`il y a \${minutes}min\`;
-          } else if (hours < 24) {
-            el.textContent = \`il y a \${hours}h\`;
-          } else if (days < 30) {
-            el.textContent = \`il y a \${days}j\`;
-          } else {
-            el.textContent = date.toLocaleDateString('fr-FR');
-          }
-        }
-      });
-
-      // Humaniser les durées
-      document.querySelectorAll('[data-duration]').forEach(el => {
-        const ms = parseInt(el.getAttribute('data-duration'));
-        if (isNaN(ms)) return;
-
-        const seconds = Math.floor(Math.abs(ms) / 1000);
-        const minutes = Math.floor(seconds / 60);
-        const hours = Math.floor(minutes / 60);
-
-        if (hours > 0) {
-          el.textContent = \`\${hours}h \${minutes % 60}min\`;
-        } else if (minutes > 0) {
-          el.textContent = \`\${minutes}min \${seconds % 60}s\`;
-        } else {
-          el.textContent = \`\${seconds}s\`;
-        }
-      });
-    }
-    // Appeler au chargement
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', humanize);
-    } else {
-      humanize();
-    }
-    // Rafraîchir toutes les minutes
-    setInterval(humanize, 60000);
-  </script>`;
-  }
 
   /**
    * Génère la page HTML complète avec header, menu et contenu
@@ -387,7 +309,6 @@ class TemplateService {
   <main class="container">
     ${main}
   </main>
-  ${this.scriptHumanize()}
 </body>
 </html>
     `;
@@ -439,8 +360,6 @@ class TemplateService {
     const root = ReactDOM.createRoot(document.getElementById('root'));
     root.render(React.createElement(CrudList, { table: '${table}' }));
   </script>
-
-  ${this.scriptHumanize()}
 </body>
 </html>
     `;
@@ -500,8 +419,6 @@ class TemplateService {
       initialRecordId: ${recordId}
     }));
   </script>
-
-  ${this.scriptHumanize()}
 </body>
 </html>
     `;
@@ -653,8 +570,6 @@ class TemplateService {
         .catch(error => console.error('Erreur lors du chargement des statistiques:', error));
     });
   </script>
-
-  ${this.scriptHumanize()}
 </body>
 </html>
     `;
