@@ -698,9 +698,9 @@ class EditForm extends React.Component {
           this.setState({ saveStatus: 'idle' });
         }, 2000);
 
-        // Notify parent of successful save
+        // Notify parent of successful save (only send changed field to avoid full re-render)
         if (this.props.onSave) {
-          this.props.onSave(this.state.formData);
+          this.props.onSave({ [fieldName]: value });
         }
 
         // Clear pending save
@@ -1227,10 +1227,12 @@ class TableRow extends React.Component {
       }
     }));
 
-    // Notify parent to refresh list
-    if (this.props.onUpdate) {
-      this.props.onUpdate();
-    }
+    // Don't notify parent on every field change (causes list refresh)
+    // Parent refresh is only needed on delete or create, not on field updates
+    // The autosave already updates the DB, so the data is persisted
+    // if (this.props.onUpdate) {
+    //   this.props.onUpdate();
+    // }
   }
 
   handleDelete = async (e) => {
@@ -3622,11 +3624,20 @@ class CrudList extends React.Component {
 
   /**
    * Update fullscreen record after edit
+   * Updated to avoid unnecessary reloads - just update local state
    */
-  updateFullscreenRecord = () => {
-    if (this.state.fullscreenRecordId) {
-      this.loadFullscreenRecord(this.state.fullscreenRecordId);
+  updateFullscreenRecord = (updatedData) => {
+    if (this.state.fullscreenRecordId && updatedData) {
+      // Update only the changed fields in local state
+      // This prevents full reload and clignotement
+      this.setState(prev => ({
+        fullscreenRecord: {
+          ...prev.fullscreenRecord,
+          ...updatedData
+        }
+      }));
     }
+    // If called without data, do nothing (field-level autosave handles updates)
   }
 
   checkURLParameters() {
