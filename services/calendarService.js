@@ -111,6 +111,7 @@ class CalendarService {
           ORDER BY ${startDateField} ASC
         `;
 
+        console.log(`[CalendarService] SQL Query: ${query.trim()} [${queryParams.join(', ')}]`);
         const [rows] = await pool.query(query, queryParams);
 
         // Filtrer les rows selon les permissions (row-level security)
@@ -192,6 +193,83 @@ class CalendarService {
     stats.totalEvents = events.length;
 
     return stats;
+  }
+
+  /**
+   * Met à jour les dates d'un événement après un drag-and-drop
+   * @param {Object} user - Utilisateur connecté
+   * @param {string} tableName - Nom de la table
+   * @param {number} eventId - ID de l'événement
+   * @param {string} newStartDate - Nouvelle date de début (ISO format)
+   * @param {string} newEndDate - Nouvelle date de fin (ISO format)
+   * @returns {Object} - { success, error?, status? }
+   */
+  static async updateEventDates(user, tableName, eventId, newStartDate, newEndDate) {
+    try {
+      console.log(`[CalendarService] updateEventDates - Table: ${tableName}, ID: ${eventId}`);
+
+      // Vérifier que la table existe et a une configuration calendar
+      const tableConfig = SchemaService.getTableConfig(tableName);
+      if (!tableConfig) {
+        return { success: false, error: 'Table non trouvée', status: 404 };
+      }
+
+      if (!tableConfig.calendar) {
+        return { success: false, error: 'Cette table n\'a pas de configuration calendrier', status: 400 };
+      }
+
+      // Vérifier les permissions de l'utilisateur sur cette table
+      if (!PermissionService.hasPermission(user, tableName, 'update')) {
+        return { success: false, error: 'Vous n\'avez pas la permission de modifier cette table', status: 403 };
+      }
+
+      // Récupérer l'événement existant
+      const query = `SELECT * FROM ${tableName} WHERE id = ?`;
+      console.log(`[CalendarService] SQL Query: ${query} [${eventId}]`);
+      const [rows] = await pool.query(query, [eventId]);
+
+      if (rows.length === 0) {
+        return { success: false, error: 'Événement non trouvé', status: 404 };
+      }
+
+      const event = rows[0];
+
+      // Vérifier les permissions au niveau de la row (row-level security)
+      const canAccess = await EntityService.canAccessEntity(user, tableName, event);
+      if (!canAccess) {
+        return { success: false, error: 'Vous n\'avez pas accès à cet événement', status: 403 };
+      }
+
+      // Récupérer les noms des champs de date depuis la config calendar
+      const calendarConfig = tableConfig.calendar;
+      const startDateField = calendarConfig.startDate || 'startDate';
+      const endDateField = calendarConfig.endDate || 'endDate';
+
+      // Construire l'objet de mise à jour
+      const updates = {};
+      updates[startDateField] = newStartDate;
+      if (newEndDate) {
+        updates[endDateField] = newEndDate;
+      }
+
+      // Construire la requête UPDATE
+      const setClause = Object.keys(updates).map(field => `${field} = ?`).join(', ');
+      const values = Object.values(updates);
+      values.push(eventId);
+
+      const updateQuery = `UPDATE ${tableName} SET ${setClause} WHERE id = ?`;
+      console.log(`[CalendarService] SQL Query: ${updateQuery} [${values.join(', ')}]`);
+
+      await pool.query(updateQuery, values);
+
+      console.log(`[CalendarService] Événement ${eventId} mis à jour avec succès`);
+
+      return { success: true };
+
+    } catch (error) {
+      console.error('[CalendarService] Erreur lors de la mise à jour des dates:', error);
+      return { success: false, error: error.message, status: 500 };
+    }
   }
 }
 

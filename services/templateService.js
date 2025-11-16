@@ -613,6 +613,96 @@ class TemplateService {
           day: 'Jour',
           list: 'Liste'
         },
+        // Activer le drag-and-drop
+        editable: true,
+        eventStartEditable: true,
+        eventDurationEditable: true,
+        // Gestion du drag-and-drop
+        eventDrop: function(info) {
+          console.log('[Calendar] Événement déplacé:', {
+            id: info.event.id,
+            table: info.event.extendedProps.table,
+            oldStart: info.oldEvent.start,
+            newStart: info.event.start,
+            oldEnd: info.oldEvent.end,
+            newEnd: info.event.end
+          });
+
+          // Préparer les données pour l'API
+          const eventData = {
+            startDate: info.event.start.toISOString(),
+            endDate: info.event.end ? info.event.end.toISOString() : info.event.start.toISOString()
+          };
+
+          // Envoyer la mise à jour au serveur
+          fetch('/_calendar/events/' + info.event.extendedProps.table + '/' + info.event.id, {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(eventData)
+          })
+          .then(response => response.json())
+          .then(data => {
+            if (data.success) {
+              console.log('[Calendar] Mise à jour réussie');
+            } else {
+              console.error('[Calendar] Erreur lors de la mise à jour:', data.error);
+              // Annuler le changement en cas d'erreur
+              info.revert();
+              alert('Erreur lors de la mise à jour de l\\'événement: ' + (data.error || 'Erreur inconnue'));
+            }
+          })
+          .catch(error => {
+            console.error('[Calendar] Erreur réseau:', error);
+            // Annuler le changement en cas d'erreur
+            info.revert();
+            alert('Erreur lors de la mise à jour de l\\'événement');
+          });
+        },
+        // Gestion du redimensionnement
+        eventResize: function(info) {
+          console.log('[Calendar] Événement redimensionné:', {
+            id: info.event.id,
+            table: info.event.extendedProps.table,
+            oldStart: info.oldEvent.start,
+            newStart: info.event.start,
+            oldEnd: info.oldEvent.end,
+            newEnd: info.event.end
+          });
+
+          // Préparer les données pour l'API
+          const eventData = {
+            startDate: info.event.start.toISOString(),
+            endDate: info.event.end ? info.event.end.toISOString() : info.event.start.toISOString()
+          };
+
+          // Envoyer la mise à jour au serveur
+          fetch('/_calendar/events/' + info.event.extendedProps.table + '/' + info.event.id, {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(eventData)
+          })
+          .then(response => response.json())
+          .then(data => {
+            if (data.success) {
+              console.log('[Calendar] Mise à jour réussie');
+            } else {
+              console.error('[Calendar] Erreur lors de la mise à jour:', data.error);
+              // Annuler le changement en cas d'erreur
+              info.revert();
+              alert('Erreur lors de la mise à jour de l\\'événement: ' + (data.error || 'Erreur inconnue'));
+            }
+          })
+          .catch(error => {
+            console.error('[Calendar] Erreur réseau:', error);
+            // Annuler le changement en cas d'erreur
+            info.revert();
+            alert('Erreur lors de la mise à jour de l\\'événement');
+          });
+        },
         dateClick: function(info) {
           openModal(info.dateStr);
         },

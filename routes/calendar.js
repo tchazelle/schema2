@@ -37,6 +37,39 @@ router.get('/events', async (req, res) => {
 });
 
 /**
+ * PATCH /_calendar/events/:table/:id
+ * Met à jour un événement après un drag-and-drop
+ */
+router.patch('/events/:table/:id', async (req, res) => {
+  try {
+    const user = req.user;
+    const { table, id } = req.params;
+    const { startDate, endDate } = req.body;
+
+    console.log('[CALENDAR DRAG-DROP] Début de la mise à jour:', { table, id, startDate, endDate });
+
+    // Vérifier si l'utilisateur a accès au calendrier
+    if (!CalendarService.hasCalendarAccess(user)) {
+      return res.status(403).json(UIService.jsonError('Accès au calendrier non autorisé'));
+    }
+
+    // Mettre à jour l'événement
+    const result = await CalendarService.updateEventDates(user, table, id, startDate, endDate);
+
+    if (!result.success) {
+      return res.status(result.status || 500).json(UIService.jsonError(result.error));
+    }
+
+    console.log('[CALENDAR DRAG-DROP] Mise à jour réussie');
+    res.json(UIService.jsonSuccess({ message: 'Événement mis à jour avec succès' }));
+
+  } catch (error) {
+    console.error('[CALENDAR DRAG-DROP] Erreur lors de la mise à jour de l\'événement:', error);
+    res.status(500).json(UIService.jsonError('Erreur serveur lors de la mise à jour de l\'événement'));
+  }
+});
+
+/**
  * GET /_calendar/stats
  * Retourne les statistiques du calendrier
  */
