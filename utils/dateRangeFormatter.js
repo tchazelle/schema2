@@ -39,9 +39,18 @@ function formatDateRange(tableName, row) {
   const parseLocalDate = (dateStr) => {
     if (!dateStr) return null;
 
-    // Handle Date objects directly (MySQL2 may return Date objects)
+    // Handle Date objects directly (MySQL2 may return Date objects in UTC)
+    // We need to reinterpret UTC as local time (e.g., 9:00 UTC → 9:00 local)
     if (dateStr instanceof Date) {
-      return dateStr;
+      // Extract UTC components and create a new Date in local timezone
+      return new Date(
+        dateStr.getUTCFullYear(),
+        dateStr.getUTCMonth(),
+        dateStr.getUTCDate(),
+        dateStr.getUTCHours(),
+        dateStr.getUTCMinutes(),
+        dateStr.getUTCSeconds()
+      );
     }
 
     // Parse string dates
