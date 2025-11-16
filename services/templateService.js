@@ -554,9 +554,12 @@ class TemplateService {
       // Fonction pour créer un événement
       function createEvent(tableName, date) {
         if (!date) {
+          console.error('Erreur: Aucune date sélectionnée');
           alert('Erreur: Aucune date sélectionnée');
           return;
         }
+
+        console.log('createEvent called:', { tableName, date, dateType: typeof date });
 
         // Sauvegarder la vue actuelle pour le retour
         sessionStorage.setItem('calendarReturnView', calendar.view.type);
@@ -564,15 +567,47 @@ class TemplateService {
 
         // Construire l'URL avec la date pré-remplie
         // Pour les champs datetime, on ajoute l'heure 09:00
-        const match = date.match(/^(\d{4})-(\d{2})-(\d{2})/);
+        let dateTimeISO;
 
-        if (match) {
-          const [, year, month, day] = match;
-          const dateTimeISO = year + '-' + month + '-' + day + 'T09:00';
+        // Convertir la date en format ISO si ce n'est pas déjà le cas
+        if (typeof date === 'string') {
+          // Si c'est déjà une chaîne, essayer de la parser
+          const match = date.match(/^(\d{4})-(\d{2})-(\d{2})/);
+          if (match) {
+            const [, year, month, day] = match;
+            dateTimeISO = year + '-' + month + '-' + day + 'T09:00';
+          } else {
+            // Essayer de créer un objet Date à partir de la chaîne
+            try {
+              const dateObj = new Date(date);
+              if (!isNaN(dateObj.getTime())) {
+                const year = dateObj.getFullYear();
+                const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+                const day = String(dateObj.getDate()).padStart(2, '0');
+                dateTimeISO = year + '-' + month + '-' + day + 'T09:00';
+              }
+            } catch (e) {
+              console.error('Impossible de parser la date:', date, e);
+            }
+          }
+        } else if (date instanceof Date) {
+          // Si c'est un objet Date
+          const year = date.getFullYear();
+          const month = String(date.getMonth() + 1).padStart(2, '0');
+          const day = String(date.getDate()).padStart(2, '0');
+          dateTimeISO = year + '-' + month + '-' + day + 'T09:00';
+        }
+
+        console.log('dateTimeISO constructed:', dateTimeISO);
+
+        if (dateTimeISO) {
           const url = '/_crud/' + tableName + '?startDate=' + encodeURIComponent(dateTimeISO);
+          console.log('Redirecting to:', url);
           window.location.href = url;
         } else {
-          // Fallback if date format is unexpected
+          // Fallback si vraiment impossible de parser la date
+          console.error('Impossible de construire dateTimeISO, fallback sans date');
+          alert('Erreur: Format de date invalide. Redirection sans date pré-remplie.');
           window.location.href = '/_crud/' + tableName;
         }
       }
