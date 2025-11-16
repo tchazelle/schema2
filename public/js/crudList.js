@@ -95,19 +95,27 @@ class FieldRenderer extends React.Component {
 
       case 'date':
       case 'datetime':
-        const date = new Date(value);
-        // Use local time components to avoid timezone shifts
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-
+        // Parse date as STRING to avoid timezone conversion
+        // MySQL returns dates as "YYYY-MM-DD HH:MM:SS" or "YYYY-MM-DD"
         let formatted;
         if (renderer === 'datetime') {
-          const hours = String(date.getHours()).padStart(2, '0');
-          const minutes = String(date.getMinutes()).padStart(2, '0');
-          formatted = `${day}/${month}/${year} ${hours}:${minutes}`;
+          // Parse "2025-11-16 16:00:00" or "2025-11-16T16:00:00"
+          const match = String(value).match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})/);
+          if (match) {
+            const [, year, month, day, hours, minutes] = match;
+            formatted = `${day}/${month}/${year} ${hours}:${minutes}`;
+          } else {
+            formatted = String(value);
+          }
         } else {
-          formatted = `${day}/${month}/${year}`;
+          // Parse "2025-11-16"
+          const match = String(value).match(/^(\d{4})-(\d{2})-(\d{2})/);
+          if (match) {
+            const [, year, month, day] = match;
+            formatted = `${day}/${month}/${year}`;
+          } else {
+            formatted = String(value);
+          }
         }
 
         return e('time', {
@@ -853,20 +861,26 @@ class EditForm extends React.Component {
   formatDateForInput = (value, type) => {
     if (!value) return '';
 
-    const date = new Date(value);
-
-    // Use local timezone instead of UTC to avoid timezone shifts
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-
+    // Parse date as STRING to avoid timezone conversion
+    // MySQL returns dates as "YYYY-MM-DD HH:MM:SS" or "YYYY-MM-DD"
     if (type === 'datetime') {
-      const hours = String(date.getHours()).padStart(2, '0');
-      const minutes = String(date.getMinutes()).padStart(2, '0');
-      return `${year}-${month}-${day}T${hours}:${minutes}`;
+      // Parse "2025-11-16 16:00:00" or "2025-11-16T16:00:00"
+      const match = String(value).match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})/);
+      if (match) {
+        const [, year, month, day, hours, minutes] = match;
+        return `${year}-${month}-${day}T${hours}:${minutes}`;
+      }
     } else {
-      return `${year}-${month}-${day}`;
+      // Parse "2025-11-16"
+      const match = String(value).match(/^(\d{4})-(\d{2})-(\d{2})/);
+      if (match) {
+        const [, year, month, day] = match;
+        return `${year}-${month}-${day}`;
+      }
     }
+
+    // Fallback to original value if parsing fails
+    return String(value);
   }
 
   getSaveIndicatorText = () => {

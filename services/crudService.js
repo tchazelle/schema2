@@ -347,12 +347,28 @@ class CrudService {
       return { value: null, formatted: '', renderer: 'text' };
     }
 
-    // Handle dates
+    // Handle dates - parse as STRING to avoid timezone conversion
     if (field.type === 'date' || field.type === 'datetime') {
-      const date = new Date(value);
-      const formatted = country === 'FR'
-        ? date.toLocaleDateString('fr-FR')
-        : date.toLocaleDateString();
+      let formatted;
+      if (field.type === 'datetime') {
+        // Parse "2025-11-16 16:00:00" or "2025-11-16T16:00:00"
+        const match = String(value).match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})/);
+        if (match) {
+          const [, year, month, day, hours, minutes] = match;
+          formatted = country === 'FR' ? `${day}/${month}/${year} ${hours}:${minutes}` : `${month}/${day}/${year} ${hours}:${minutes}`;
+        } else {
+          formatted = String(value);
+        }
+      } else {
+        // Parse "2025-11-16"
+        const match = String(value).match(/^(\d{4})-(\d{2})-(\d{2})/);
+        if (match) {
+          const [, year, month, day] = match;
+          formatted = country === 'FR' ? `${day}/${month}/${year}` : `${month}/${day}/${year}`;
+        } else {
+          formatted = String(value);
+        }
+      }
       return { value, formatted, renderer: 'date' };
     }
 

@@ -560,12 +560,17 @@ class TemplateService {
 
         // Construire l'URL avec la date pré-remplie
         // Pour les champs datetime, on ajoute l'heure 09:00
-        const dateObj = new Date(date);
-        dateObj.setHours(9, 0, 0, 0);
-        const dateTimeISO = dateObj.toISOString().slice(0, 16);
-        const url = '/_crud/' + tableName + '?startDate=' + dateTimeISO;
-
-        window.location.href = url;
+        // Parse date string WITHOUT timezone conversion
+        const match = date.match(/^(\d{4})-(\d{2})-(\d{2})/);
+        if (match) {
+          const [, year, month, day] = match;
+          const dateTimeISO = year + '-' + month + '-' + day + 'T09:00';
+          const url = '/_crud/' + tableName + '?startDate=' + dateTimeISO;
+          window.location.href = url;
+        } else {
+          // Fallback if date format is unexpected
+          window.location.href = '/_crud/' + tableName;
+        }
       }
 
       // Événements de fermeture de la modale
