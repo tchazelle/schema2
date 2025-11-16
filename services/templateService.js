@@ -495,6 +495,24 @@ class TemplateService {
       let selectedDate = null;
       let creatableTables = [];
 
+      /**
+       * Convertit un objet Date en format ISO local (sans conversion UTC)
+       * Format: YYYY-MM-DDTHH:MM:SS (sans le 'Z')
+       * Exemple: new Date('2025-11-16 14:00') -> '2025-11-16T14:00:00'
+       */
+      function dateToLocalISO(date) {
+        if (!date) return null;
+
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        const seconds = String(date.getSeconds()).padStart(2, '0');
+
+        return year + '-' + month + '-' + day + 'T' + hours + ':' + minutes + ':' + seconds;
+      }
+
       // Charger la liste des tables créables
       fetch('/_calendar/tables')
         .then(response => response.json())
@@ -629,10 +647,10 @@ class TemplateService {
             newEnd: info.event.end
           });
 
-          // Préparer les données pour l'API
+          // Préparer les données pour l'API (en heure locale, pas UTC)
           const eventData = {
-            startDate: info.event.start.toISOString(),
-            endDate: info.event.end ? info.event.end.toISOString() : info.event.start.toISOString()
+            startDate: dateToLocalISO(info.event.start),
+            endDate: info.event.end ? dateToLocalISO(info.event.end) : dateToLocalISO(info.event.start)
           };
 
           // Envoyer la mise à jour au serveur
@@ -672,10 +690,10 @@ class TemplateService {
             newEnd: info.event.end
           });
 
-          // Préparer les données pour l'API
+          // Préparer les données pour l'API (en heure locale, pas UTC)
           const eventData = {
-            startDate: info.event.start.toISOString(),
-            endDate: info.event.end ? info.event.end.toISOString() : info.event.start.toISOString()
+            startDate: dateToLocalISO(info.event.start),
+            endDate: info.event.end ? dateToLocalISO(info.event.end) : dateToLocalISO(info.event.start)
           };
 
           // Envoyer la mise à jour au serveur

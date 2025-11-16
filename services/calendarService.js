@@ -125,12 +125,30 @@ class CalendarService {
 
         // Transformer les rows en événements calendrier
         for (const row of accessibleRows) {
+          // Formater les dates pour FullCalendar
+          // MySQL retourne les dates au format 'YYYY-MM-DD HH:MM:SS'
+          // On les convertit au format ISO 'YYYY-MM-DDTHH:MM:SS' pour que FullCalendar
+          // les interprète correctement en heure locale avec timeZone: 'local'
+          const formatDateForCalendar = (dateValue) => {
+            if (!dateValue) return null;
+
+            // Si c'est déjà un objet Date
+            if (dateValue instanceof Date) {
+              return dateValue.toISOString().slice(0, 19); // Format ISO sans 'Z'
+            }
+
+            // Si c'est une string MySQL (YYYY-MM-DD HH:MM:SS)
+            const dateStr = String(dateValue);
+            // Remplacer l'espace par 'T' pour obtenir le format ISO local
+            return dateStr.replace(' ', 'T');
+          };
+
           const event = {
             id: row.id,
             table: tableName,
             title: this.buildEventTitle(row, tableInfo.displayFields),
-            start: row[startDateField],
-            end: row[endDateField] || row[startDateField], // Si pas de endDate, utiliser startDate
+            start: formatDateForCalendar(row[startDateField]),
+            end: formatDateForCalendar(row[endDateField] || row[startDateField]), // Si pas de endDate, utiliser startDate
             backgroundColor: bgColor,
             borderColor: bgColor,
             url: `/_crud/${tableName}/${row.id}`,
