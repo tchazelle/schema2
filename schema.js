@@ -77,7 +77,7 @@ module.exports = {
 
   calendar: {
     granted: {
-      admin: ["read", "write"]
+      admin: ["read", "create"]
     },
     firstDayInWeek:1 // 1 = Lundi, 0 = Dimanche
   },
