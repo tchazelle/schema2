@@ -99,6 +99,28 @@ class CrudService {
     let finalOrderBy = orderBy;
     let finalOrder = order;
 
+    // Replace _dateRange with actual database field (startDate) if table has calendar
+    // _dateRange is a virtual computed field added after SQL query, so it can't be used in ORDER BY
+    if (hasCalendar(table)) {
+      const calendarConfig = getCalendarConfig(table);
+      const startDateField = calendarConfig.startDate || 'startDate';
+
+      // Replace in simple orderBy
+      if (finalOrderBy === '_dateRange') {
+        finalOrderBy = startDateField;
+      }
+
+      // Replace in advancedSort array
+      if (advancedSort && advancedSort.length > 0) {
+        advancedSort = advancedSort.map(criterion => {
+          if (criterion.field === '_dateRange') {
+            return { ...criterion, field: startDateField };
+          }
+          return criterion;
+        });
+      }
+    }
+
     if (advancedSort && advancedSort.length > 0) {
       // Build multi-criteria ORDER BY clause with JOIN support for relations
       const sortClauses = advancedSort
