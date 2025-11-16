@@ -85,7 +85,7 @@ router.get('/tables', async (req, res) => {
     });
 
     console.log('[Calendar] Creatable tables for user:', creatableTables.map(t => t.name));
-    res.json(UIService.jsonSuccess(creatableTables));
+    res.json(UIService.jsonSuccess({ data: creatableTables }));
 
   } catch (error) {
     console.error('Erreur lors de la récupération des tables:', error);
