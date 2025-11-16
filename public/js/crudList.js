@@ -3536,6 +3536,7 @@ class CrudList extends React.Component {
   }
 
   async componentDidMount() {
+    console.log('[CrudList] componentDidMount() called');
     this.loadSchema();
 
     // If initialRecordId is provided, load only that record for fullscreen view
@@ -3548,19 +3549,31 @@ class CrudList extends React.Component {
     }
 
     this.loadUserPreferences();
-    // URL parameters will be checked in componentDidUpdate()
-    // after data is fully loaded and state is updated
+
+    // Check URL parameters after data is loaded
     // This is crucial for calendar integration where we need data.structure
     // to be available before opening the create form
+    // We call it here (after await loadData()) AND in componentDidUpdate()
+    // to handle both initial mount and subsequent prop changes
+    console.log('[CrudList] About to call checkURLParameters() from componentDidMount');
+    this.checkURLParameters();
   }
 
   componentDidUpdate(prevProps, prevState) {
+    console.log('[CrudList] componentDidUpdate() called');
+    console.log('[CrudList] prevState.data:', prevState.data ? 'available' : 'null');
+    console.log('[CrudList] this.state.data:', this.state.data ? 'available' : 'null');
+    console.log('[CrudList] urlParametersProcessed:', this.urlParametersProcessed);
+
     // If data just became available for the first time
     // AND we haven't processed URL parameters yet
     // This ensures the create form can be opened with data.structure available
     if (!prevState.data && this.state.data && !this.urlParametersProcessed) {
+      console.log('[CrudList] Conditions met, calling checkURLParameters()');
       this.urlParametersProcessed = true;
       this.checkURLParameters();
+    } else {
+      console.log('[CrudList] Conditions NOT met for calling checkURLParameters()');
     }
   }
 
@@ -3659,11 +3672,17 @@ class CrudList extends React.Component {
   }
 
   checkURLParameters() {
+    console.log('[CrudList] checkURLParameters() called');
+    console.log('[CrudList] Current URL:', window.location.href);
+    console.log('[CrudList] Current state.data:', this.state.data ? 'available' : 'null');
+
     // Parse URL query parameters
     const urlParams = new URLSearchParams(window.location.search);
     const parent = urlParams.get('parent');
     const parentId = urlParams.get('parentId');
     const openRecordId = urlParams.get('open');
+
+    console.log('[CrudList] URL params - parent:', parent, 'parentId:', parentId, 'openRecordId:', openRecordId);
 
     // Extract all URL parameters as default values for form fields
     const defaultValues = {};
@@ -3674,8 +3693,12 @@ class CrudList extends React.Component {
       }
     }
 
+    console.log('[CrudList] Extracted defaultValues:', defaultValues);
+    console.log('[CrudList] defaultValues count:', Object.keys(defaultValues).length);
+
     // If 'open' parameter is provided, load that record in fullscreen mode
     if (openRecordId) {
+      console.log('[CrudList] Opening record in fullscreen mode:', openRecordId);
       this.setState({
         fullscreenRecordId: parseInt(openRecordId)
       });
@@ -3685,6 +3708,7 @@ class CrudList extends React.Component {
 
     // If parent and parentId are provided, open create form automatically
     if (parent && parentId) {
+      console.log('[CrudList] Opening create form with parent:', parent, parentId);
       this.setState({
         showCreateForm: true,
         createFormParentTable: parent,
@@ -3693,10 +3717,13 @@ class CrudList extends React.Component {
       });
     } else if (Object.keys(defaultValues).length > 0) {
       // If there are default values but no parent, still open the form
+      console.log('[CrudList] Opening create form with default values:', defaultValues);
       this.setState({
         showCreateForm: true,
         createFormDefaultValues: defaultValues
       });
+    } else {
+      console.log('[CrudList] No URL parameters to process');
     }
   }
 
@@ -4291,17 +4318,21 @@ class CrudList extends React.Component {
       }),
 
       // Create form modal
-      showCreateForm && data && e(CreateFormModal, {
-        tableName: table,
-        structure: data.structure,
-        tableConfig: data.tableConfig,
-        permissions: data.permissions,
-        parentTable: createFormParentTable,
-        parentId: createFormParentId,
-        defaultValues: createFormDefaultValues,
-        onClose: this.handleCloseCreateForm,
-        onSuccess: this.handleCreateSuccess
-      }),
+      (() => {
+        console.log('[CrudList] Render - showCreateForm:', showCreateForm, 'data:', data ? 'available' : 'null');
+        console.log('[CrudList] Render - createFormDefaultValues:', createFormDefaultValues);
+        return showCreateForm && data && e(CreateFormModal, {
+          tableName: table,
+          structure: data.structure,
+          tableConfig: data.tableConfig,
+          permissions: data.permissions,
+          parentTable: createFormParentTable,
+          parentId: createFormParentId,
+          defaultValues: createFormDefaultValues,
+          onClose: this.handleCloseCreateForm,
+          onSuccess: this.handleCreateSuccess
+        });
+      })(),
 
       // Advanced search modal
       showAdvancedSearch && data && e(AdvancedSearchModal, {
