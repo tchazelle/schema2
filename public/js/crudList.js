@@ -1503,7 +1503,13 @@ class TableHeader extends React.Component {
         e('th', { key: 'granted-header', style: { width: '40px', textAlign: 'center' }, title: 'Statut de publication' }, '📋'),
         fields.map(fieldName => {
           const field = structure.fields[fieldName];
-          const label = field?.label || fieldName;
+
+          // Special label for _dateRange
+          let label = field?.label || fieldName;
+          if (fieldName === '_dateRange') {
+            label = 'Période';
+          }
+
           const isSorted = orderBy === fieldName;
           // Hide sort icon when advanced sort is active
           const sortIcon = (!hasAdvancedSort && isSorted) ? (order === 'ASC' ? ' ▲' : ' ▼') : '';
@@ -1700,7 +1706,12 @@ class TableRow extends React.Component {
           const field = structure.fields[fieldName];
           const value = row[fieldName];
           const relationData = row._relations && row._relations[fieldName];
-          const label = field?.label || fieldName;
+
+          // Special label for _dateRange
+          let label = field?.label || fieldName;
+          if (fieldName === '_dateRange') {
+            label = 'Période';
+          }
 
           return e('td', {
             key: fieldName,
@@ -1954,6 +1965,11 @@ class RowDetailView extends React.Component {
       !this.isParentField(f)
     );
 
+    // Add _dateRange at the beginning if it exists in row
+    if (row._dateRange && !allFields.includes('_dateRange')) {
+      allFields.unshift('_dateRange');
+    }
+
     // Collect all 1:N relations defined in schema (even if empty)
     // Maintain order from schema definition
     const relations1N = [];
@@ -2024,17 +2040,25 @@ class RowDetailView extends React.Component {
         allFields.map(fieldName => {
           const field = structure.fields[fieldName];
           const value = row[fieldName];
-          const label = field?.label || fieldName;
+
+          // Special label for _dateRange
+          let label = field?.label || fieldName;
+          if (fieldName === '_dateRange') {
+            label = 'Période';
+          }
 
           const relationN1 = row._relations && row._relations[fieldName] && !Array.isArray(row._relations[fieldName])
             ? row._relations[fieldName]
             : null;
 
+          // Don't allow editing _dateRange (it's a computed field)
+          const isClickable = permissions && permissions.canUpdate && fieldName !== '_dateRange';
+
           return e('div', {
             key: fieldName,
             className: 'detail-field',
-            style: permissions && permissions.canUpdate ? { cursor: 'pointer' } : {},
-            onClick: (e) => handleFieldClick(fieldName, e)
+            style: isClickable ? { cursor: 'pointer' } : {},
+            onClick: isClickable ? (e) => handleFieldClick(fieldName, e) : undefined
           },
             e('label', { className: 'detail-label' }, label),
             e('div', { className: 'detail-value' },
@@ -2046,7 +2070,7 @@ class RowDetailView extends React.Component {
                   })
                 : e(FieldRenderer, {
                     value,
-                    field,
+                    field: field || { type: 'text' },
                     tableName
                   })
             )
