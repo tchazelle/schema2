@@ -472,7 +472,7 @@ class TemplateService {
     <div class="calendar-modal">
       <div class="calendar-modal-header">
         <h3>Créer un événement</h3>
-        <button class="calendar-modal-close" id="closeModal">&times;</button>
+        <button type="button" class="calendar-modal-close" id="closeModal">&times;</button>
       </div>
       <div class="calendar-modal-date" id="modalDate"></div>
       <div class="calendar-modal-body">
@@ -529,7 +529,7 @@ class TemplateService {
         } else {
           tableList.innerHTML = creatableTables.map(table =>
             '<li class="calendar-table-item">' +
-            '<button class="calendar-table-button" data-table="' + table.name + '">' +
+            '<button type="button" class="calendar-table-button" data-table="' + table.name + '">' +
             table.name +
             '</button></li>'
           ).join('');
@@ -686,11 +686,13 @@ class TemplateService {
       fetch('/_calendar/stats')
         .then(response => response.json())
         .then(data => {
-          if (data.success) {
+          if (data.success && data.data) {
             const statsEl = document.getElementById('calendarStats');
             statsEl.innerHTML =
               '<span>' + data.data.totalEvents + ' événements</span>' +
               '<span>' + data.data.accessibleTables + ' / ' + data.data.totalTables + ' tables accessibles</span>';
+          } else {
+            console.warn('[Calendar] Stats response invalid:', data);
           }
         })
         .catch(error => console.error('Erreur lors du chargement des statistiques:', error));
