@@ -11,6 +11,38 @@ const EntityService = require('./entityService');
 
 class CalendarService {
   /**
+   * Convertit une date ISO 8601 en format MySQL DATETIME
+   * @param {string} isoDate - Date au format ISO 8601 (ex: 2025-11-07T09:00:00.000Z)
+   * @returns {string} - Date au format MySQL DATETIME (ex: 2025-11-07 09:00:00)
+   */
+  static convertISOToMySQLDateTime(isoDate) {
+    if (!isoDate) return null;
+
+    try {
+      const date = new Date(isoDate);
+
+      // Vérifier que la date est valide
+      if (isNaN(date.getTime())) {
+        console.error(`[CalendarService] Date invalide: ${isoDate}`);
+        return null;
+      }
+
+      // Formater en MySQL DATETIME (YYYY-MM-DD HH:MM:SS)
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      const seconds = String(date.getSeconds()).padStart(2, '0');
+
+      return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+    } catch (error) {
+      console.error(`[CalendarService] Erreur lors de la conversion de la date ${isoDate}:`, error);
+      return null;
+    }
+  }
+
+  /**
    * Vérifie si l'utilisateur a accès au calendrier
    * @param {Object} user - Utilisateur connecté
    * @returns {boolean} - true si l'utilisateur a accès
@@ -245,11 +277,25 @@ class CalendarService {
       const startDateField = calendarConfig.startDate || 'startDate';
       const endDateField = calendarConfig.endDate || 'endDate';
 
+      // Convertir les dates ISO en format MySQL DATETIME
+      const mysqlStartDate = this.convertISOToMySQLDateTime(newStartDate);
+      const mysqlEndDate = newEndDate ? this.convertISOToMySQLDateTime(newEndDate) : null;
+
+      if (!mysqlStartDate) {
+        return { success: false, error: 'Format de date de début invalide', status: 400 };
+      }
+
+      console.log(`[CalendarService] Conversion des dates:`);
+      console.log(`  - startDate: ${newStartDate} → ${mysqlStartDate}`);
+      if (newEndDate) {
+        console.log(`  - endDate: ${newEndDate} → ${mysqlEndDate}`);
+      }
+
       // Construire l'objet de mise à jour
       const updates = {};
-      updates[startDateField] = newStartDate;
-      if (newEndDate) {
-        updates[endDateField] = newEndDate;
+      updates[startDateField] = mysqlStartDate;
+      if (mysqlEndDate) {
+        updates[endDateField] = mysqlEndDate;
       }
 
       // Construire la requête UPDATE
