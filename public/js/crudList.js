@@ -1430,7 +1430,21 @@ class EditForm extends React.Component {
               },
                 e('span', { className: 'relation-toggle' }, isOpen ? '▼' : '▶'),
                 e('strong', null, relName),
-                e('span', { className: 'relation-count badge' }, count)
+                e('span', { className: 'relation-count badge' }, count),
+                // Add calendar icon if related table has calendar configuration
+                (() => {
+                  const relatedTableConfig = SCHEMA_CONFIG?.tables?.[relatedTable];
+                  if (relatedTableConfig?.calendar) {
+                    return e('a', {
+                      href: '/_calendar',
+                      onClick: (ev) => ev.stopPropagation(),
+                      className: 'field-icon-link',
+                      title: 'Voir le calendrier',
+                      style: { marginLeft: '4px', fontSize: '0.9em', textDecoration: 'none' }
+                    }, '📅');
+                  }
+                  return null;
+                })()
               ),
               // Right side: "+ ajouter" button
               e('div', { style: { display: 'flex', alignItems: 'center', gap: '8px' } },
@@ -2029,10 +2043,26 @@ class RowDetailView extends React.Component {
     const { row, structure, tableName, permissions, onEdit, parentTable, hideRelations1N } = this.props;
     const { openRelations } = this.state;
 
-    const allFields = Object.keys(structure.fields).filter(f =>
-      !['id', 'ownerId', 'granted', 'createdAt', 'updatedAt'].includes(f) &&
-      !this.isParentField(f)
-    );
+    // Get calendar config from structure if available
+    const hasCalendar = structure.calendar;
+    const startDateField = hasCalendar ? (structure.calendar.startDate || 'startDate') : null;
+    const endDateField = hasCalendar ? (structure.calendar.endDate || 'endDate') : null;
+
+    const allFields = Object.keys(structure.fields).filter(f => {
+      // Filter out system fields
+      if (['id', 'ownerId', 'granted', 'createdAt', 'updatedAt'].includes(f)) {
+        return false;
+      }
+      // Filter out parent fields
+      if (this.isParentField(f)) {
+        return false;
+      }
+      // Filter out startDate and endDate if table has calendar and _dateRange is present
+      if (row._dateRange && hasCalendar && (f === startDateField || f === endDateField)) {
+        return false;
+      }
+      return true;
+    });
 
     // Add _dateRange at the beginning if it exists in row
     if (row._dateRange && !allFields.includes('_dateRange')) {
@@ -2168,7 +2198,21 @@ class RowDetailView extends React.Component {
               },
                 e('span', { className: 'relation-toggle' }, isOpen ? '▼' : '▶'),
                 e('strong', null, relName),
-                e('span', { className: 'relation-count badge' }, count)
+                e('span', { className: 'relation-count badge' }, count),
+                // Add calendar icon if related table has calendar configuration
+                (() => {
+                  const relatedTableConfig = SCHEMA_CONFIG?.tables?.[relatedTable];
+                  if (relatedTableConfig?.calendar) {
+                    return e('a', {
+                      href: '/_calendar',
+                      onClick: (ev) => ev.stopPropagation(),
+                      className: 'field-icon-link',
+                      title: 'Voir le calendrier',
+                      style: { marginLeft: '4px', fontSize: '0.9em', textDecoration: 'none' }
+                    }, '📅');
+                  }
+                  return null;
+                })()
               ),
               // Right side: "+ ajouter" button and three-dots menu
               e('div', { style: { display: 'flex', alignItems: 'center', gap: '8px' } },
@@ -2333,10 +2377,34 @@ class SubList extends React.Component {
 
     // Get all fields from first row
     const firstRow = rows[0];
-    const allFields = Object.keys(firstRow).filter(f =>
-      !f.startsWith('_') &&
-      !this.isParentField(f, parentTable)
-    );
+
+    // Check if table has calendar config
+    const hasCalendar = structure.calendar;
+    const startDateField = hasCalendar ? (structure.calendar.startDate || 'startDate') : null;
+    const endDateField = hasCalendar ? (structure.calendar.endDate || 'endDate') : null;
+    const hasDateRange = firstRow._dateRange;
+
+    const allFieldsRaw = Object.keys(firstRow).filter(f => {
+      // Filter out fields starting with underscore (except _dateRange)
+      if (f.startsWith('_') && f !== '_dateRange') {
+        return false;
+      }
+      // Filter out parent fields
+      if (this.isParentField(f, parentTable)) {
+        return false;
+      }
+      // Filter out startDate and endDate if table has calendar and _dateRange is present
+      if (hasDateRange && hasCalendar && (f === startDateField || f === endDateField)) {
+        return false;
+      }
+      return true;
+    });
+
+    // Ensure _dateRange is at the beginning if present
+    let allFields = allFieldsRaw;
+    if (hasDateRange && allFields.includes('_dateRange')) {
+      allFields = ['_dateRange', ...allFields.filter(f => f !== '_dateRange')];
+    }
 
     // Filter fields based on display mode
     let fields;
@@ -2346,6 +2414,13 @@ class SubList extends React.Component {
       fields = allFields;
     } else if (displayMode === 'custom' && selectedFields && selectedFields.length > 0) {
       fields = selectedFields.filter(f => allFields.includes(f));
+      // Ensure _dateRange is included and at the beginning if present
+      if (hasDateRange && !fields.includes('_dateRange')) {
+        fields.unshift('_dateRange');
+      } else if (hasDateRange && fields.includes('_dateRange')) {
+        // Move _dateRange to beginning
+        fields = ['_dateRange', ...fields.filter(f => f !== '_dateRange')];
+      }
     } else {
       // default: exclude system fields
       fields = allFields.filter(f =>
@@ -4720,7 +4795,24 @@ class CrudList extends React.Component {
       // Header
       e('div', { className: 'crud-header' },
         e('div', { className: 'crud-title-container' },
-          e('h1', { className: 'crud-title' }, '📋 ', table),
+          e('h1', { className: 'crud-title' },
+            '📋 ',
+            table,
+            // Add calendar icon if table has calendar configuration
+            (() => {
+              const tableConfig = data?.structure?.calendar;
+              if (tableConfig) {
+                return e('a', {
+                  href: '/_calendar',
+                  onClick: (ev) => ev.stopPropagation(),
+                  className: 'field-icon-link',
+                  title: 'Voir le calendrier',
+                  style: { marginLeft: '10px', fontSize: '0.8em', textDecoration: 'none' }
+                }, '📅');
+              }
+              return null;
+            })()
+          ),
           sortRepresentation && e('span', {
             className: 'sort-indicator',
             onClick: hasAdvancedSort ? this.handleShowAdvancedSort : null,
