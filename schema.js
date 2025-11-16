@@ -52,7 +52,7 @@ module.exports = {
     granted: { // niveau maximum de protection par defaut
       "dev": ["read", "create", "update", "delete", "publish"]
     },
-    hasAttachmentsTab: false, // peut-on attacher des pièces jointes à chaque row ?
+    hasAttachmentsTab: true, // peut-on attacher des pièces jointes à chaque row ?
   },
 
   users: { // comment trouver les users ?
@@ -348,7 +348,6 @@ module.exports = {
     Attachment: {
       // ... defaultConfigTable
       granted: {"inherit":"rowLink"}, // cas particulier , autorisation = celle de rowLink
-      hasAttachmentsTab: false, // Table de liaison - pas besoin d'attachments
       hasAttachmentsTab: false, // Les attachments eux-mêmes n'ont pas besoin d'attachments
       fields: {
         id: { type: "integer", isPrimary: true, autoIncrement: true },
@@ -358,6 +357,43 @@ module.exports = {
         fileSize: { type: "integer" }, // Taille en octets
         filePath: { type: "varchar", renderer: "filePreview" }, // Chemin du fichier sur le système de fichiers
         // + commonFields
+      }
+    },
+    Notes: {
+      // ... defaultConfigTable
+     
+      granted: {
+        "promo": ["read", "create", "update", "delete"],
+        "road": ["read", "create", "update", "delete"],
+        "admin": ["publish"]
+      },  
+      fields: {
+        id: { type: "integer", isPrimary: true, autoIncrement: true },
+      
+        name: { type:   "varchar" },
+        description: { type: "text" },
+        // ... commonFields
+      }
+    },
+    Todo: {
+      // ... defaultConfigTable
+      calendar: {
+        bgColor: "aquamarine",
+        startDate: "startDate", // valeur par défaut
+        endDate: "endDate" // valeur par défaut
+      }, 
+      granted: {
+        "promo": ["read", "create", "update", "delete"],
+        "road": ["read", "create", "update", "delete"],
+        "admin": ["publish"]
+      },  
+      fields: {
+        id: { type: "integer", isPrimary: true, autoIncrement: true },
+        startDate: { type: "datetime", renderer: "datetime" }, // schemaorgProperty: startDate
+        endDate: { type: "datetime", renderer: "datetime" }, // schemaorgProperty: endDate
+        name: { type:   "varchar" },
+        description: { type: "text" },
+        // ... commonFields
       }
     },
     Event: {
@@ -377,10 +413,10 @@ module.exports = {
       },
       fields: {
         id: { type: "integer", isPrimary: true, autoIncrement: true },
-        name: { type: "varchar" }, // schemaorgProperty: name - Nom de l'événement
-        description: { type: "text" }, // schemaorgProperty: description
         startDate: { type: "datetime", renderer: "datetime" }, // schemaorgProperty: startDate
         endDate: { type: "datetime", renderer: "datetime" }, // schemaorgProperty: endDate
+        name: { type: "varchar" }, // schemaorgProperty: name - Nom de l'événement
+        description: { type: "text" }, // schemaorgProperty: description
         location: { type: "varchar" }, // schemaorgProperty: location (peut être un lieu ou une adresse)
         organizer: {
           type: "integer",
