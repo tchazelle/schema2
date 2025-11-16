@@ -5,65 +5,9 @@ const TemplateService = require('../services/templateService');
 const UIService = require('../services/uiService');
 
 /**
- * GET /_calendar
- * GET /_calendar/:year
- * GET /_calendar/:year/:month
- * GET /_calendar/:year/:month/:day
- * Affiche le calendrier avec tous les événements accessibles par l'utilisateur
- * Les paramètres year, month, day sont optionnels et permettent de naviguer vers une date spécifique
- */
-router.get(['/', '/:year', '/:year/:month', '/:year/:month/:day'], async (req, res) => {
-  try {
-    const user = req.user;
-    const { year, month, day } = req.params;
-
-    // Vérifier si l'utilisateur a accès au calendrier
-    if (!CalendarService.hasCalendarAccess(user)) {
-      return res.status(403).json(UIService.jsonError('Accès au calendrier non autorisé'));
-    }
-
-    // Construire la date initiale si des paramètres sont fournis
-    let initialDate = null;
-    if (year) {
-      const y = parseInt(year);
-      const m = month ? parseInt(month) - 1 : 0; // Mois en JS commence à 0
-      const d = day ? parseInt(day) : 1;
-
-      // Valider la date
-      if (!isNaN(y) && !isNaN(m) && !isNaN(d)) {
-        initialDate = new Date(y, m, d);
-        if (isNaN(initialDate.getTime())) {
-          initialDate = null; // Date invalide
-        }
-      }
-    }
-
-    // Si le paramètre ?json=1 est présent, retourner du JSON
-    if (req.query.json === '1') {
-      const events = await CalendarService.getCalendarEvents(user);
-      const stats = await CalendarService.getCalendarStats(user);
-
-      return res.json(UIService.jsonSuccess({
-        events,
-        stats,
-        tables: CalendarService.getCalendarTables(),
-        initialDate: initialDate ? initialDate.toISOString() : null
-      }));
-    }
-
-    // Sinon, afficher la page HTML du calendrier
-    const html = TemplateService.htmlCalendar(user, initialDate);
-    res.send(html);
-
-  } catch (error) {
-    console.error('Erreur lors de l\'affichage du calendrier:', error);
-    res.status(500).json(UIService.jsonError('Erreur serveur lors de l\'affichage du calendrier'));
-  }
-});
-
-/**
  * GET /_calendar/events
  * API pour récupérer les événements du calendrier (format JSON)
+ * IMPORTANT: Cette route doit être AVANT les routes avec paramètres /:year
  */
 router.get('/events', async (req, res) => {
   try {
@@ -141,6 +85,64 @@ router.get('/tables', async (req, res) => {
   } catch (error) {
     console.error('Erreur lors de la récupération des tables:', error);
     res.status(500).json(UIService.jsonError('Erreur serveur lors de la récupération des tables'));
+  }
+});
+
+/**
+ * GET /_calendar
+ * GET /_calendar/:year
+ * GET /_calendar/:year/:month
+ * GET /_calendar/:year/:month/:day
+ * Affiche le calendrier avec tous les événements accessibles par l'utilisateur
+ * Les paramètres year, month, day sont optionnels et permettent de naviguer vers une date spécifique
+ * IMPORTANT: Cette route doit être APRÈS les routes spécifiques (/events, /stats, /tables)
+ */
+router.get(['/', '/:year', '/:year/:month', '/:year/:month/:day'], async (req, res) => {
+  try {
+    const user = req.user;
+    const { year, month, day } = req.params;
+
+    // Vérifier si l'utilisateur a accès au calendrier
+    if (!CalendarService.hasCalendarAccess(user)) {
+      return res.status(403).json(UIService.jsonError('Accès au calendrier non autorisé'));
+    }
+
+    // Construire la date initiale si des paramètres sont fournis
+    let initialDate = null;
+    if (year) {
+      const y = parseInt(year);
+      const m = month ? parseInt(month) - 1 : 0; // Mois en JS commence à 0
+      const d = day ? parseInt(day) : 1;
+
+      // Valider la date
+      if (!isNaN(y) && !isNaN(m) && !isNaN(d)) {
+        initialDate = new Date(y, m, d);
+        if (isNaN(initialDate.getTime())) {
+          initialDate = null; // Date invalide
+        }
+      }
+    }
+
+    // Si le paramètre ?json=1 est présent, retourner du JSON
+    if (req.query.json === '1') {
+      const events = await CalendarService.getCalendarEvents(user);
+      const stats = await CalendarService.getCalendarStats(user);
+
+      return res.json(UIService.jsonSuccess({
+        events,
+        stats,
+        tables: CalendarService.getCalendarTables(),
+        initialDate: initialDate ? initialDate.toISOString() : null
+      }));
+    }
+
+    // Sinon, afficher la page HTML du calendrier
+    const html = TemplateService.htmlCalendar(user, initialDate);
+    res.send(html);
+
+  } catch (error) {
+    console.error('Erreur lors de l\'affichage du calendrier:', error);
+    res.status(500).json(UIService.jsonError('Erreur serveur lors de l\'affichage du calendrier'));
   }
 });
 
