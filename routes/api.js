@@ -161,6 +161,28 @@ router.post('/:tableName', async (req, res) => {
       data.granted = 'draft';
     }
 
+    // Convert datetime fields from ISO format to MySQL format WITHOUT timezone conversion
+    const tableSchema = schema.tables[table];
+    if (tableSchema && tableSchema.fields) {
+      for (const [key, value] of Object.entries(data)) {
+        const field = tableSchema.fields[key];
+        if (field && (field.type === 'datetime' || field.type === 'date') && value) {
+          if (typeof value === 'string' && value.includes('T')) {
+            // Parse ISO format (2025-11-16T16:00:00 or 2025-11-16T16:00) as a STRING
+            const match = value.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?/);
+            if (match) {
+              const [, year, month, day, hours, minutes, seconds = '00'] = match;
+              if (field.type === 'datetime') {
+                data[key] = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+              } else {
+                data[key] = `${year}-${month}-${day}`;
+              }
+            }
+          }
+        }
+      }
+    }
+
     // Insert record
     const [result] = await pool.query(`INSERT INTO \`${table}\` SET ?`, [data]);
 
@@ -234,21 +256,15 @@ router.put('/:tableName/:id', async (req, res) => {
         if (tableSchema.fields[key] && !tableSchema.fields[key].as && !tableSchema.fields[key].calculate) {
           const field = tableSchema.fields[key];
 
-          // Convert ISO datetime to MySQL format
+          // Convert ISO datetime to MySQL format WITHOUT timezone conversion
+          // CRITICAL: We treat dates as LOCAL strings, not as UTC timestamps
           if ((field.type === 'datetime' || field.type === 'date') && value) {
             if (typeof value === 'string' && value.includes('T')) {
-              // Convert ISO format (2025-11-02T10:32:00) to MySQL format (2025-11-02 10:32:00)
-              const date = new Date(value);
-              if (!isNaN(date.getTime())) {
-                // Use LOCAL methods to preserve the user's timezone
-                // This ensures the date/time displayed matches what was entered
-                const year = date.getFullYear();
-                const month = String(date.getMonth() + 1).padStart(2, '0');
-                const day = String(date.getDate()).padStart(2, '0');
-                const hours = String(date.getHours()).padStart(2, '0');
-                const minutes = String(date.getMinutes()).padStart(2, '0');
-                const seconds = String(date.getSeconds()).padStart(2, '0');
-
+              // Parse ISO format (2025-11-16T16:00:00 or 2025-11-16T16:00) as a STRING
+              // WITHOUT using new Date() which would apply timezone conversion
+              const match = value.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?/);
+              if (match) {
+                const [, year, month, day, hours, minutes, seconds = '00'] = match;
                 if (field.type === 'datetime') {
                   validFields[key] = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
                 } else {
