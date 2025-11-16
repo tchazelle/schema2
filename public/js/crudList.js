@@ -3674,6 +3674,7 @@ class CrudList extends React.Component {
   checkURLParameters() {
     console.log('[CrudList] checkURLParameters() called');
     console.log('[CrudList] Current URL:', window.location.href);
+    console.log('[CrudList] Current window.location.search:', window.location.search);
     console.log('[CrudList] Current state.data:', this.state.data ? 'available' : 'null');
 
     // Parse URL query parameters
@@ -3687,6 +3688,7 @@ class CrudList extends React.Component {
     // Extract all URL parameters as default values for form fields
     const defaultValues = {};
     for (const [key, value] of urlParams.entries()) {
+      console.log('[CrudList] Processing URL param:', key, '=', value);
       // Skip special parameters: parent, parentId, open
       if (key !== 'parent' && key !== 'parentId' && key !== 'open') {
         defaultValues[key] = value;
