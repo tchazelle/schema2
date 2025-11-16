@@ -3536,6 +3536,7 @@ class CrudList extends React.Component {
   }
 
   async componentDidMount() {
+    console.log('[CrudList] componentDidMount() called');
     this.loadSchema();
 
     // If initialRecordId is provided, load only that record for fullscreen view
@@ -3548,10 +3549,14 @@ class CrudList extends React.Component {
     }
 
     this.loadUserPreferences();
-    // URL parameters will be checked in componentDidUpdate()
-    // after data is fully loaded and state is updated
+
+    // Check URL parameters after data is loaded
     // This is crucial for calendar integration where we need data.structure
     // to be available before opening the create form
+    // We call it here (after await loadData()) AND in componentDidUpdate()
+    // to handle both initial mount and subsequent prop changes
+    console.log('[CrudList] About to call checkURLParameters() from componentDidMount');
+    this.checkURLParameters();
   }
 
   componentDidUpdate(prevProps, prevState) {
