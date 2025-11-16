@@ -925,24 +925,6 @@ class EditForm extends React.Component {
         });
       }
 
-      // Fallback: Get 1:N relations from fields with arrayName (old method)
-      if (relations1N.length === 0) {
-        Object.entries(structure.fields).forEach(([fieldName, field]) => {
-          if (field.arrayName) {
-            const relName = field.arrayName;
-            const relData = (row._relations && row._relations[relName]) || [];
-            const relatedTable = field.relation;
-
-            relations1N.push({
-              name: relName,
-              data: Array.isArray(relData) ? relData : [],
-              relatedTable: relatedTable,
-              relationshipStrength: field.relationshipStrength
-            });
-          }
-        });
-      }
-
       // Also include any 1:N relations from row._relations not yet in relations1N
       if (row._relations) {
         Object.entries(row._relations).forEach(([key, value]) => {
@@ -4083,23 +4065,26 @@ class CrudList extends React.Component {
       }
 
       // Display fullscreen modal with the record
-      return e(RowDetailModal, {
-        row: fullscreenRecord,
-        tableName: table,
-        tableConfig: data.tableConfig || {},
-        structure: data.structure || {},
-        permissions: data.permissions || {},
-        editMode: fullscreenRecordEditMode,
-        loading: false,
-        focusFieldName: null,
-        onClose: this.closeFullscreenModal,
-        onEnterEditMode: () => this.setState({ fullscreenRecordEditMode: true }),
-        onExitEditMode: () => this.setState({ fullscreenRecordEditMode: false }),
-        onSave: this.updateFullscreenRecord,
-        onUpdate: this.updateFullscreenRecord,
-        parentTable: null,
-        hideRelations1N: false
-      });
+      // Wrap in crud-list-container to ensure proper CSS and layout
+      return e('div', { className: 'crud-list-container' },
+        e(RowDetailModal, {
+          row: fullscreenRecord,
+          tableName: table,
+          tableConfig: data.tableConfig || {},
+          structure: data.structure || {},
+          permissions: data.permissions || {},
+          editMode: fullscreenRecordEditMode,
+          loading: false,
+          focusFieldName: null,
+          onClose: this.closeFullscreenModal,
+          onEnterEditMode: () => this.setState({ fullscreenRecordEditMode: true }),
+          onExitEditMode: () => this.setState({ fullscreenRecordEditMode: false }),
+          onSave: this.updateFullscreenRecord,
+          onUpdate: this.updateFullscreenRecord,
+          parentTable: null,
+          hideRelations1N: false
+        })
+      );
     }
 
     const sortRepresentation = this.getSortRepresentation();
