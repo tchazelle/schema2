@@ -340,6 +340,7 @@ class TemplateService {
   <title>CRUD - ${table} - ${schema.appName}</title>
   ${this.htmlCssFiles()}
   <link rel="stylesheet" href="/css/crud.css">
+  <link rel="stylesheet" href="/css/calendar-date-range.css">
 
   <!-- React from CDN (production) -->
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
@@ -406,6 +407,7 @@ class TemplateService {
   <title>${table} #${recordId} - ${schema.appName}</title>
   ${this.htmlCssFiles()}
   <link rel="stylesheet" href="/css/crud.css">
+  <link rel="stylesheet" href="/css/calendar-date-range.css">
 
   <!-- React from CDN (production) -->
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>

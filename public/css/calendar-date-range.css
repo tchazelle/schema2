@@ -1,0 +1,215 @@
+/**
+ * CalendarDateRangeTool Component Styles
+ * Smart date range picker for calendar events
+ */
+
+/* ========================================
+   MAIN CONTAINER
+   ======================================== */
+
+.calendar-date-range-tool {
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.calendar-date-range-wrapper {
+  width: 100%;
+}
+
+/* ========================================
+   MODE SELECTOR
+   ======================================== */
+
+.date-range-mode-selector {
+  margin-bottom: 16px;
+}
+
+.date-range-mode-selector .edit-field-label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 500;
+  font-size: 14px;
+  color: #495057;
+}
+
+.date-range-mode-selector .mode-select {
+  width: 100%;
+  max-width: 400px;
+  font-size: 14px;
+  padding: 8px 12px;
+}
+
+/* ========================================
+   DURATION MODE
+   ======================================== */
+
+.date-range-duration {
+  margin-top: 12px;
+}
+
+.duration-input-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.duration-input {
+  width: 120px !important;
+  flex-shrink: 0;
+}
+
+.duration-presets {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.btn-duration-preset {
+  background: #fff;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  padding: 6px 12px;
+  font-size: 13px;
+  cursor: pointer;
+  color: #495057;
+  transition: all 0.2s ease;
+}
+
+.btn-duration-preset:hover {
+  background: #e9ecef;
+  border-color: #adb5bd;
+}
+
+.btn-duration-preset:active {
+  background: #dee2e6;
+  transform: scale(0.98);
+}
+
+/* ========================================
+   END TIME MODE
+   ======================================== */
+
+.date-range-endtime {
+  margin-top: 12px;
+}
+
+.date-range-endtime .edit-field-input {
+  max-width: 200px;
+}
+
+/* ========================================
+   PREVIEW
+   ======================================== */
+
+.date-range-preview {
+  margin-top: 16px;
+  padding: 12px;
+  background: #fff;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #495057;
+}
+
+.date-range-preview .preview-label {
+  font-weight: 500;
+  color: #212529;
+  margin-right: 8px;
+}
+
+.date-range-preview .preview-value {
+  color: #007bff;
+  font-weight: 500;
+  font-family: 'Courier New', monospace;
+}
+
+/* ========================================
+   FIELD OVERRIDES (for fields inside the tool)
+   ======================================== */
+
+.calendar-date-range-tool .edit-field {
+  margin-bottom: 12px;
+}
+
+.calendar-date-range-tool .edit-field:last-child {
+  margin-bottom: 0;
+}
+
+.calendar-date-range-tool .edit-field-label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 500;
+  font-size: 14px;
+  color: #495057;
+}
+
+.calendar-date-range-tool .edit-field-input,
+.calendar-date-range-tool .edit-field-select {
+  width: 100%;
+  max-width: 400px;
+  padding: 8px 12px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 14px;
+  color: #495057;
+  background: #fff;
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.calendar-date-range-tool .edit-field-input:focus,
+.calendar-date-range-tool .edit-field-select:focus {
+  outline: none;
+  border-color: #80bdff;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.15);
+}
+
+/* ========================================
+   RESPONSIVE
+   ======================================== */
+
+@media (max-width: 768px) {
+  .duration-input-group {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .duration-input {
+    width: 100% !important;
+  }
+
+  .duration-presets {
+    width: 100%;
+  }
+
+  .calendar-date-range-tool .edit-field-input,
+  .calendar-date-range-tool .edit-field-select {
+    max-width: 100%;
+  }
+
+  .date-range-mode-selector .mode-select {
+    max-width: 100%;
+  }
+}
+
+/* ========================================
+   ANIMATION
+   ======================================== */
+
+@keyframes fadeInSlide {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.calendar-date-range-tool > * {
+  animation: fadeInSlide 0.3s ease-out;
+}
