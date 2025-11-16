@@ -33,7 +33,7 @@ async function loadRelationsForRow(user, tableName, row, options = {}) {
     if (relationsN1[fieldName]) {
       const relConfig = relationsN1[fieldName];
       const foreignValue = row[fieldName];
-      console.log("relConfig", relConfig)
+      //console.log("relConfig", relConfig)
       if (foreignValue) {
         // Charger l'enregistrement lié
         const [relatedRows] = await pool.query(
