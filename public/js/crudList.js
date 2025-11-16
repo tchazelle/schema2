@@ -3597,11 +3597,20 @@ class CrudList extends React.Component {
   }
 
   /**
-   * Close fullscreen modal and navigate back to list view
+   * Close fullscreen modal and navigate back to list view or calendar
    */
   closeFullscreenModal = () => {
-    // Navigate back to table list view
-    window.location.href = `/_crud/${this.props.table}`;
+    // Check if we came from calendar (sessionStorage set in calendar eventClick)
+    const returnView = sessionStorage.getItem('calendarReturnView');
+    const returnDate = sessionStorage.getItem('calendarReturnDate');
+
+    if (returnView && returnDate) {
+      // Return to calendar with saved view and date
+      window.location.href = '/_calendar';
+    } else {
+      // Navigate back to table list view
+      window.location.href = `/_crud/${this.props.table}`;
+    }
   }
 
   /**
