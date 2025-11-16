@@ -69,17 +69,22 @@ router.get('/tables', async (req, res) => {
 
     // Vérifier si l'utilisateur a accès au calendrier
     if (!CalendarService.hasCalendarAccess(user)) {
+      console.log('[Calendar] User has no calendar access:', user ? user.id : 'anonymous');
       return res.status(403).json(UIService.jsonError('Accès au calendrier non autorisé'));
     }
 
     const PermissionService = require('../services/permissionService');
     const calendarTables = CalendarService.getCalendarTables();
+    console.log('[Calendar] All calendar tables:', calendarTables.map(t => t.name));
 
     // Filtrer les tables où l'utilisateur a le droit de créer
-    const creatableTables = calendarTables.filter(tableInfo =>
-      PermissionService.hasPermission(user, tableInfo.name, 'create')
-    );
+    const creatableTables = calendarTables.filter(tableInfo => {
+      const hasCreatePerm = PermissionService.hasPermission(user, tableInfo.name, 'create');
+      console.log(`[Calendar] User ${user ? user.id : 'anonymous'} create permission for ${tableInfo.name}:`, hasCreatePerm);
+      return hasCreatePerm;
+    });
 
+    console.log('[Calendar] Creatable tables for user:', creatableTables.map(t => t.name));
     res.json(UIService.jsonSuccess(creatableTables));
 
   } catch (error) {
