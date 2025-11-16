@@ -4,7 +4,7 @@ const SchemaService = require('./schemaService');
 const EntityService = require('./entityService');
 const RepositoryService = require('./repositoryService');
 const {dataProxy} = require('../utils/dataProxy');
-const { enrichRowWithDateRange } = require('../utils/dateRangeFormatter');
+const { enrichRowWithDateRange, hasCalendar, getCalendarConfig } = require('../utils/dateRangeFormatter');
 
 /**
  * Charge les relations d'une row de manière récursive
@@ -308,8 +308,18 @@ async function getTableData(user, tableName, options = {}) {
   query += ` WHERE ${where}`;
 
   // Ajouter ORDER BY si spécifié
-  if (orderBy) {
-    query += ` ORDER BY ${orderBy}`;
+  // Replace _dateRange with actual database field if needed (_dateRange is a virtual computed field)
+  let finalOrderBy = orderBy;
+  if (orderBy && orderBy.includes('_dateRange') && hasCalendar(table)) {
+    const calendarConfig = getCalendarConfig(table);
+    const startDateField = calendarConfig.startDate || 'startDate';
+    // Replace _dateRange with the actual startDate field
+    // Handle both simple field and prefixed field (e.g., "Todo._dateRange" -> "Todo.startDate")
+    finalOrderBy = orderBy.replace(/_dateRange/g, startDateField);
+  }
+
+  if (finalOrderBy) {
+    query += ` ORDER BY ${finalOrderBy}`;
     // Only add direction if order is provided and not empty (for advanced sort, direction is already in orderBy)
     if (order && order !== '') {
       const orderDirection = order.toUpperCase() === 'DESC' ? 'DESC' : 'ASC';

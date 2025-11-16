@@ -351,49 +351,110 @@ module.exports = {
       hasAttachmentsTab: false, // Les attachments eux-mêmes n'ont pas besoin d'attachments
       fields: {
         id: { type: "integer", isPrimary: true, autoIncrement: true },
-        rowLink: { type: "varchar", renderer: "rowLink" }, // Lien vers l'enregistrement parent (ex: "Person/1")
+        rowLink: { type: "varchar", renderer: "rowLink" }, // Lien vers l'enregistrement parent (ex: "Person/1") - DEPRECATED: utiliser les relations ci-dessous
         fileName: { type: "varchar" }, // Nom du fichier original
         fileType: { type: "varchar" }, // Type MIME (image/jpeg, application/pdf, etc.)
         fileSize: { type: "integer" }, // Taille en octets
         filePath: { type: "varchar", renderer: "filePreview" }, // Chemin du fichier sur le système de fichiers
+
+        // Relations 1:N avec toutes les tables ayant hasAttachmentsTab: true
+        idPage: {
+          type: "integer",
+          relation: "Page",
+          foreignKey: "id",
+          arrayName: "attachments",
+          relationshipStrength: "Strong",
+          defaultSort: { field: "createdAt", order: "DESC" }
+        },
+        idSection: {
+          type: "integer",
+          relation: "Section",
+          foreignKey: "id",
+          arrayName: "attachments",
+          relationshipStrength: "Strong",
+          defaultSort: { field: "createdAt", order: "DESC" }
+        },
+        idPerson: {
+          type: "integer",
+          relation: "Person",
+          foreignKey: "id",
+          arrayName: "attachments",
+          relationshipStrength: "Strong",
+          defaultSort: { field: "createdAt", order: "DESC" }
+        },
+        idOrganization: {
+          type: "integer",
+          relation: "Organization",
+          foreignKey: "id",
+          arrayName: "attachments",
+          relationshipStrength: "Strong",
+          defaultSort: { field: "createdAt", order: "DESC" }
+        },
+        idCommunicateAction: {
+          type: "integer",
+          relation: "CommunicateAction",
+          foreignKey: "id",
+          arrayName: "attachments",
+          relationshipStrength: "Strong",
+          defaultSort: { field: "createdAt", order: "DESC" }
+        },
+        idProject: {
+          type: "integer",
+          relation: "Project",
+          foreignKey: "id",
+          arrayName: "attachments",
+          relationshipStrength: "Strong",
+          defaultSort: { field: "createdAt", order: "DESC" }
+        },
+        idContrat: {
+          type: "integer",
+          relation: "Contrat",
+          foreignKey: "id",
+          arrayName: "attachments",
+          relationshipStrength: "Strong",
+          defaultSort: { field: "createdAt", order: "DESC" }
+        },
+        idNotes: {
+          type: "integer",
+          relation: "Notes",
+          foreignKey: "id",
+          arrayName: "attachments",
+          relationshipStrength: "Strong",
+          defaultSort: { field: "createdAt", order: "DESC" }
+        },
+        idMusicAlbum: {
+          type: "integer",
+          relation: "MusicAlbum",
+          foreignKey: "id",
+          arrayName: "attachments",
+          relationshipStrength: "Strong",
+          defaultSort: { field: "createdAt", order: "DESC" }
+        },
+        idMusicRecording: {
+          type: "integer",
+          relation: "MusicRecording",
+          foreignKey: "id",
+          arrayName: "attachments",
+          relationshipStrength: "Strong",
+          defaultSort: { field: "createdAt", order: "DESC" }
+        },
+        idEvent: {
+          type: "integer",
+          relation: "Event",
+          foreignKey: "id",
+          arrayName: "attachments",
+          relationshipStrength: "Strong",
+          defaultSort: { field: "createdAt", order: "DESC" }
+        },
+        idTodo: {
+          type: "integer",
+          relation: "Todo",
+          foreignKey: "id",
+          arrayName: "attachments",
+          relationshipStrength: "Strong",
+          defaultSort: { field: "createdAt", order: "DESC" }
+        },
         // + commonFields
-      }
-    },
-    Notes: {
-      // ... defaultConfigTable
-     
-      granted: {
-        "promo": ["read", "create", "update", "delete"],
-        "road": ["read", "create", "update", "delete"],
-        "admin": ["publish"]
-      },  
-      fields: {
-        id: { type: "integer", isPrimary: true, autoIncrement: true },
-      
-        name: { type:   "varchar" },
-        description: { type: "text" },
-        // ... commonFields
-      }
-    },
-    Todo: {
-      // ... defaultConfigTable
-      calendar: {
-        bgColor: "aquamarine",
-        startDate: "startDate", // valeur par défaut
-        endDate: "endDate" // valeur par défaut
-      }, 
-      granted: {
-        "promo": ["read", "create", "update", "delete"],
-        "road": ["read", "create", "update", "delete"],
-        "admin": ["publish"]
-      },  
-      fields: {
-        id: { type: "integer", isPrimary: true, autoIncrement: true },
-        startDate: { type: "datetime", renderer: "datetime" }, // schemaorgProperty: startDate
-        endDate: { type: "datetime", renderer: "datetime" }, // schemaorgProperty: endDate
-        name: { type:   "varchar" },
-        description: { type: "text" },
-        // ... commonFields
       }
     },
     Event: {
