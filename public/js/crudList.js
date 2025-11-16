@@ -3906,11 +3906,14 @@ class CrudList extends React.Component {
   }
 
   handleAddNew = (parentTable = null, parentId = null, defaultValues = {}) => {
+    console.log('[CrudList] handleAddNew called - parentTable:', parentTable, 'parentId:', parentId, 'defaultValues:', defaultValues);
     this.setState({
       showCreateForm: true,
       createFormParentTable: parentTable,
       createFormParentId: parentId,
       createFormDefaultValues: defaultValues
+    }, () => {
+      console.log('[CrudList] State updated - showCreateForm:', this.state.showCreateForm);
     });
   }
 
@@ -4239,10 +4242,13 @@ class CrudList extends React.Component {
           )
         ),
         e('div', { className: 'crud-actions' },
-          data && data.permissions && data.permissions.canCreate && e('button', {
-            className: 'btn-add-record',
-            onClick: this.handleAddNew
-          }, '+ Nouveau'),
+          (() => {
+            console.log('[CrudList] Button render check - data:', !!data, 'permissions:', data?.permissions, 'canCreate:', data?.permissions?.canCreate);
+            return data && data.permissions && data.permissions.canCreate && e('button', {
+              className: 'btn-add-record',
+              onClick: this.handleAddNew
+            }, '+ Nouveau');
+          })(),
           e('input', {
             type: 'text',
             className: 'search-input',
