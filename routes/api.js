@@ -174,6 +174,12 @@ router.post('/:tableName', async (req, res) => {
               data[key] = null;
             }
           }
+          // Handle enum and set fields: convert empty strings to null
+          else if (field.type === 'enum' || field.type === 'set') {
+            if (value === '' || (typeof value === 'string' && value.trim() === '')) {
+              data[key] = null;
+            }
+          }
           // Handle datetime/date fields
           else if (field.type === 'datetime' || field.type === 'date') {
             // Handle empty string: convert to null for MySQL compatibility
@@ -271,6 +277,14 @@ router.put('/:tableName/:id', async (req, res) => {
 
           // Handle integer fields: convert empty strings to null
           if (field.type === 'integer') {
+            if (value === '' || (typeof value === 'string' && value.trim() === '')) {
+              validFields[key] = null;
+            } else {
+              validFields[key] = value;
+            }
+          }
+          // Handle enum and set fields: convert empty strings to null
+          else if (field.type === 'enum' || field.type === 'set') {
             if (value === '' || (typeof value === 'string' && value.trim() === '')) {
               validFields[key] = null;
             } else {
