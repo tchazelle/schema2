@@ -347,7 +347,7 @@ module.exports = {
     },
     Attachment: {
       // ... defaultConfigTable
-      granted: {"inherit":"rowLink"}, // cas particulier , autorisation = celle de rowLink
+    
       hasAttachmentsTab: false, // Les attachments eux-mêmes n'ont pas besoin d'attachments
       fields: {
         id: { type: "integer", isPrimary: true, autoIncrement: true },
