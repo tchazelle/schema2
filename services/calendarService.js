@@ -84,13 +84,21 @@ class CalendarService {
       const queryParams = [];
 
       // Filtrer par dates si spécifié
+      // Un événement est visible si :
+      // - Il commence pendant la période OU
+      // - Il se termine pendant la période OU
+      // - Il englobe toute la période
       if (startDate && endDate) {
-        whereClause = `WHERE ${startDateField} >= ? AND ${startDateField} <= ?`;
-        queryParams.push(startDate, endDate);
+        // L'événement chevauche la période si :
+        // (startDate <= period.end) ET (endDate >= period.start)
+        whereClause = `WHERE ${startDateField} <= ? AND (${endDateField} >= ? OR ${endDateField} IS NULL)`;
+        queryParams.push(endDate, startDate);
       } else if (startDate) {
-        whereClause = `WHERE ${startDateField} >= ?`;
+        // Événements qui se terminent après startDate
+        whereClause = `WHERE ${endDateField} >= ? OR ${endDateField} IS NULL`;
         queryParams.push(startDate);
       } else if (endDate) {
+        // Événements qui commencent avant endDate
         whereClause = `WHERE ${startDateField} <= ?`;
         queryParams.push(endDate);
       }

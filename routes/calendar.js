@@ -115,4 +115,33 @@ router.get('/stats', async (req, res) => {
   }
 });
 
+/**
+ * GET /_calendar/tables
+ * Retourne la liste des tables accessibles pour la création d'événements
+ */
+router.get('/tables', async (req, res) => {
+  try {
+    const user = req.user;
+
+    // Vérifier si l'utilisateur a accès au calendrier
+    if (!CalendarService.hasCalendarAccess(user)) {
+      return res.status(403).json(UIService.jsonError('Accès au calendrier non autorisé'));
+    }
+
+    const PermissionService = require('../services/permissionService');
+    const calendarTables = CalendarService.getCalendarTables();
+
+    // Filtrer les tables où l'utilisateur a le droit de créer
+    const creatableTables = calendarTables.filter(tableInfo =>
+      PermissionService.hasPermission(user, tableInfo.name, 'create')
+    );
+
+    res.json(UIService.jsonSuccess(creatableTables));
+
+  } catch (error) {
+    console.error('Erreur lors de la récupération des tables:', error);
+    res.status(500).json(UIService.jsonError('Erreur serveur lors de la récupération des tables'));
+  }
+});
+
 module.exports = router;
