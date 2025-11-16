@@ -4118,6 +4118,7 @@ class CrudList extends React.Component {
       showCreateForm,
       createFormParentTable,
       createFormParentId,
+      createFormDefaultValues,
       showAdvancedSearch,
       advancedSearchCriteria,
       showAdvancedSort,
