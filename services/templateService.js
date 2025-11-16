@@ -518,16 +518,15 @@ class TemplateService {
           day: 'numeric'
         });
         modalDate.innerHTML = '<strong>Date sélectionnée :</strong> ' + dateStr;
-        const dataForCreate = dateObj.toISOString().slice(0,11)+"09:00" // ajouter par TC
+        const dateForCreate = dateObj.toISOString().slice(0,11)+"09:00" // ajouter par TC
         // Afficher la liste des tables
         if (creatableTables.length === 0) {
           tableList.innerHTML = '<li class="calendar-modal-empty">Aucune table disponible pour la création d\\'événements</li>';
         } else {
           tableList.innerHTML = creatableTables.map(table =>
             '<li class="calendar-table-item">' +
-            '<button type="button" class="calendar-table-button" data-date="'+dataForCreate+'" data-table="' + table.name + '">' +
-            table.name 
-            '</button></li>'
+            '<button type="button" class="calendar-table-button" data-date="' + dateForCreate + '" data-table="' + table.name + '">' +
+            table.name +  '</button></li>'
           ).join('');
 
           // Ajouter les événements sur les boutons
