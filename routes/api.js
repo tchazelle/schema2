@@ -166,8 +166,11 @@ router.post('/:tableName', async (req, res) => {
     if (tableSchema && tableSchema.fields) {
       for (const [key, value] of Object.entries(data)) {
         const field = tableSchema.fields[key];
-        if (field && (field.type === 'datetime' || field.type === 'date') && value) {
-          if (typeof value === 'string' && value.includes('T')) {
+        if (field && (field.type === 'datetime' || field.type === 'date')) {
+          // Handle empty string: convert to null for MySQL compatibility
+          if (value === '' || (typeof value === 'string' && value.trim() === '')) {
+            data[key] = null;
+          } else if (value && typeof value === 'string' && value.includes('T')) {
             // Parse ISO format (2025-11-16T16:00:00 or 2025-11-16T16:00) as a STRING
             const match = value.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?/);
             if (match) {
@@ -258,8 +261,11 @@ router.put('/:tableName/:id', async (req, res) => {
 
           // Convert ISO datetime to MySQL format WITHOUT timezone conversion
           // CRITICAL: We treat dates as LOCAL strings, not as UTC timestamps
-          if ((field.type === 'datetime' || field.type === 'date') && value) {
-            if (typeof value === 'string' && value.includes('T')) {
+          if (field.type === 'datetime' || field.type === 'date') {
+            // Handle empty string: convert to null for MySQL compatibility
+            if (value === '' || (typeof value === 'string' && value.trim() === '')) {
+              validFields[key] = null;
+            } else if (value && typeof value === 'string' && value.includes('T')) {
               // Parse ISO format (2025-11-16T16:00:00 or 2025-11-16T16:00) as a STRING
               // WITHOUT using new Date() which would apply timezone conversion
               const match = value.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?/);
