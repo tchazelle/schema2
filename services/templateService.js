@@ -543,6 +543,9 @@ class TemplateService {
           buttons.forEach((btn, index) => {
             console.log('[Calendar] Attaching click handler to button', index, 'for table:', btn.getAttribute('data-table'));
             btn.addEventListener('click', function(event) {
+              // Prevent any default behavior and stop event bubbling
+              event.preventDefault();
+              event.stopPropagation();
               console.log('[Calendar] Button clicked! Event target:', event.target);
               const tableName = this.getAttribute('data-table');
               console.log('[Calendar] About to call createEvent with table:', tableName, 'date:', selectedDate);
