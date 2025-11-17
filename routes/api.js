@@ -415,4 +415,278 @@ router.delete('/:tableName/:id', async (req, res) => {
   }
 });
 
+/**
+ * POST /_api/:table/:id/duplicate
+ * Duplicate a record (without relations)
+ */
+router.post('/:tableName/:id/duplicate', async (req, res) => {
+  try {
+    const { tableName, id } = req.params;
+    const user = req.user;
+    const PermissionService = require('../services/permissionService');
+    const EntityService = require('../services/entityService');
+    const SchemaService = require('../services/schemaService');
+
+    // Normalize table name
+    const table = SchemaService.getTableName(tableName);
+    if (!table) {
+      return res.status(404).json({ success: false, error: 'Table non trouvée' });
+    }
+
+    // Check read permission (to access source record)
+    if (!PermissionService.hasPermission(user, table, 'read')) {
+      return res.status(403).json({ success: false, error: 'Permission refusée' });
+    }
+
+    // Check create permission (to create duplicate)
+    if (!PermissionService.hasPermission(user, table, 'create')) {
+      return res.status(403).json({ success: false, error: 'Permission de création refusée' });
+    }
+
+    // Get existing record
+    const [existingRows] = await pool.query(`SELECT * FROM \`${table}\` WHERE id = ?`, [id]);
+    if (existingRows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Enregistrement non trouvé' });
+    }
+
+    const sourceRecord = existingRows[0];
+
+    // Check row-level access
+    const canAccess = await EntityService.canAccessEntity(user, table, sourceRecord);
+    if (!canAccess) {
+      return res.status(403).json({ success: false, error: 'Accès refusé à cet enregistrement' });
+    }
+
+    // Prepare duplicate data (exclude system fields)
+    const duplicateData = { ...sourceRecord };
+    delete duplicateData.id; // Will be auto-generated
+    delete duplicateData.createdAt; // Will be auto-set
+    delete duplicateData.updatedAt; // Will be auto-set
+
+    // Set new owner and granted status
+    if (user && user.id) {
+      duplicateData.ownerId = user.id;
+    }
+    duplicateData.granted = 'draft'; // Always start as draft
+
+    // Get table schema to filter only valid fields
+    const tableSchema = schema.tables[table];
+    if (tableSchema && tableSchema.fields) {
+      // Remove computed fields
+      for (const [key, field] of Object.entries(tableSchema.fields)) {
+        if (field.as || field.calculate) {
+          delete duplicateData[key];
+        }
+      }
+    }
+
+    // Insert duplicate record
+    const [result] = await pool.query(`INSERT INTO \`${table}\` SET ?`, [duplicateData]);
+
+    res.json({
+      success: true,
+      id: result.insertId,
+      message: 'Enregistrement dupliqué avec succès'
+    });
+
+  } catch (error) {
+    console.error('Erreur lors de la duplication:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erreur serveur lors de la duplication',
+      details: error.message
+    });
+  }
+});
+
+/**
+ * POST /_api/:table/:id/duplicate-with-relations
+ * Duplicate a record with selected 1:N relations
+ * Body: { relations: ['TableName1', 'TableName2'] }
+ */
+router.post('/:tableName/:id/duplicate-with-relations', async (req, res) => {
+  try {
+    const { tableName, id } = req.params;
+    const { relations = [] } = req.body;
+    const user = req.user;
+    const PermissionService = require('../services/permissionService');
+    const EntityService = require('../services/entityService');
+    const SchemaService = require('../services/schemaService');
+
+    // Normalize table name
+    const table = SchemaService.getTableName(tableName);
+    if (!table) {
+      return res.status(404).json({ success: false, error: 'Table non trouvée' });
+    }
+
+    // Check read permission (to access source record)
+    if (!PermissionService.hasPermission(user, table, 'read')) {
+      return res.status(403).json({ success: false, error: 'Permission refusée' });
+    }
+
+    // Check create permission (to create duplicate)
+    if (!PermissionService.hasPermission(user, table, 'create')) {
+      return res.status(403).json({ success: false, error: 'Permission de création refusée' });
+    }
+
+    // Get existing record
+    const [existingRows] = await pool.query(`SELECT * FROM \`${table}\` WHERE id = ?`, [id]);
+    if (existingRows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Enregistrement non trouvé' });
+    }
+
+    const sourceRecord = existingRows[0];
+
+    // Check row-level access
+    const canAccess = await EntityService.canAccessEntity(user, table, sourceRecord);
+    if (!canAccess) {
+      return res.status(403).json({ success: false, error: 'Accès refusé à cet enregistrement' });
+    }
+
+    // Prepare duplicate data (exclude system fields)
+    const duplicateData = { ...sourceRecord };
+    delete duplicateData.id;
+    delete duplicateData.createdAt;
+    delete duplicateData.updatedAt;
+
+    // Set new owner and granted status
+    if (user && user.id) {
+      duplicateData.ownerId = user.id;
+    }
+    duplicateData.granted = 'draft';
+
+    // Get table schema to filter only valid fields
+    const tableSchema = schema.tables[table];
+    if (tableSchema && tableSchema.fields) {
+      // Remove computed fields
+      for (const [key, field] of Object.entries(tableSchema.fields)) {
+        if (field.as || field.calculate) {
+          delete duplicateData[key];
+        }
+      }
+    }
+
+    // Insert duplicate record
+    const [result] = await pool.query(`INSERT INTO \`${table}\` SET ?`, [duplicateData]);
+    const newId = result.insertId;
+
+    // Track duplicated relations count
+    let duplicatedRelationsCount = 0;
+    const relationResults = {};
+
+    // Duplicate selected 1:N relations
+    if (relations && relations.length > 0) {
+      for (const relTableName of relations) {
+        try {
+          // Normalize relation table name
+          const relTable = SchemaService.getTableName(relTableName);
+          if (!relTable) {
+            relationResults[relTableName] = { success: false, error: 'Table non trouvée' };
+            continue;
+          }
+
+          // Check permissions for relation table
+          if (!PermissionService.hasPermission(user, relTable, 'read') ||
+              !PermissionService.hasPermission(user, relTable, 'create')) {
+            relationResults[relTableName] = { success: false, error: 'Permissions insuffisantes' };
+            continue;
+          }
+
+          // Find the foreign key field that points to our table
+          const relTableSchema = schema.tables[relTable];
+          if (!relTableSchema || !relTableSchema.fields) {
+            relationResults[relTableName] = { success: false, error: 'Schema non trouvé' };
+            continue;
+          }
+
+          let foreignKeyField = null;
+          for (const [fieldName, fieldDef] of Object.entries(relTableSchema.fields)) {
+            if (fieldDef.relation === table) {
+              foreignKeyField = fieldName;
+              break;
+            }
+          }
+
+          if (!foreignKeyField) {
+            relationResults[relTableName] = { success: false, error: 'Clé étrangère non trouvée' };
+            continue;
+          }
+
+          // Get all related records
+          const [relatedRows] = await pool.query(
+            `SELECT * FROM \`${relTable}\` WHERE \`${foreignKeyField}\` = ?`,
+            [id]
+          );
+
+          let duplicatedCount = 0;
+
+          // Duplicate each related record
+          for (const relatedRow of relatedRows) {
+            // Check if user can access this related row
+            const canAccessRelated = await EntityService.canAccessEntity(user, relTable, relatedRow);
+            if (!canAccessRelated) {
+              continue; // Skip records user can't access
+            }
+
+            // Prepare duplicate data
+            const relDuplicateData = { ...relatedRow };
+            delete relDuplicateData.id;
+            delete relDuplicateData.createdAt;
+            delete relDuplicateData.updatedAt;
+
+            // Update foreign key to point to new parent
+            relDuplicateData[foreignKeyField] = newId;
+
+            // Set new owner and granted status
+            if (user && user.id) {
+              relDuplicateData.ownerId = user.id;
+            }
+            relDuplicateData.granted = 'draft';
+
+            // Remove computed fields
+            for (const [key, field] of Object.entries(relTableSchema.fields)) {
+              if (field.as || field.calculate) {
+                delete relDuplicateData[key];
+              }
+            }
+
+            // Insert duplicate
+            await pool.query(`INSERT INTO \`${relTable}\` SET ?`, [relDuplicateData]);
+            duplicatedCount++;
+          }
+
+          relationResults[relTableName] = {
+            success: true,
+            count: duplicatedCount,
+            total: relatedRows.length
+          };
+          duplicatedRelationsCount += duplicatedCount;
+
+        } catch (relError) {
+          console.error(`Erreur lors de la duplication de la relation ${relTableName}:`, relError);
+          relationResults[relTableName] = {
+            success: false,
+            error: relError.message
+          };
+        }
+      }
+    }
+
+    res.json({
+      success: true,
+      id: newId,
+      message: `Enregistrement dupliqué avec succès. ${duplicatedRelationsCount} relation(s) dupliquée(s).`,
+      relationResults
+    });
+
+  } catch (error) {
+    console.error('Erreur lors de la duplication avec relations:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erreur serveur lors de la duplication',
+      details: error.message
+    });
+  }
+});
+
 module.exports = router;
