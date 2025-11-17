@@ -477,16 +477,29 @@ async function getTableData(user, tableName, options = {}) {
       const values = filteredRows.map(row => row[fieldName]).filter(val => val !== null && val !== undefined);
 
       if (values.length > 0) {
+        let statValue;
         switch (statType) {
           case 'sum':
-            stats[fieldName] = values.reduce((acc, val) => acc + parseFloat(val || 0), 0);
+            statValue = values.reduce((acc, val) => acc + parseFloat(val || 0), 0);
+            stats[fieldName] = {
+              type: 'sum',
+              value: statValue
+            };
             break;
           case 'average':
+          case 'avg':
             const sum = values.reduce((acc, val) => acc + parseFloat(val || 0), 0);
-            stats[fieldName] = sum / values.length;
+            statValue = sum / values.length;
+            stats[fieldName] = {
+              type: 'avg',
+              value: statValue
+            };
             break;
           case 'count':
-            stats[fieldName] = values.length;
+            stats[fieldName] = {
+              type: 'count',
+              value: values.length
+            };
             break;
           default:
             console.warn(`[TableDataService] Unknown stat type: ${statType}`);
