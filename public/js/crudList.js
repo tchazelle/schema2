@@ -40,7 +40,7 @@ function buildCardTitle(row, tableName, tableConfig) {
  */
 class FieldRenderer extends React.Component {
   render() {
-    const { value, field, tableName, fieldName } = this.props;
+    const { value, field, tableName, fieldName, row, tableConfig } = this.props;
 
     if (value === null || value === undefined) {
       return e('span', { className: 'field-value empty' }, '-');
@@ -48,22 +48,19 @@ class FieldRenderer extends React.Component {
 
     // Special handling for _dateRange field
     if (fieldName === '_dateRange') {
-      // Extract year and month from the date range value
-      // Format: "15 janv. 2024 14:30→18:00" or "15 janv. 2024 14:30→16 janv. 2024 10:00"
-      const yearMonthMatch = value.match(/(\d{4})/);
-      const monthNames = {
-        'janv.': '01', 'févr.': '02', 'mars': '03', 'avr.': '04',
-        'mai': '05', 'juin': '06', 'juil.': '07', 'août': '08',
-        'sept.': '09', 'oct.': '10', 'nov.': '11', 'déc.': '12'
-      };
-
+      // Build precise calendar link from startDate field
       let calendarUrl = '/_calendar';
-      if (yearMonthMatch) {
-        const year = yearMonthMatch[1];
-        // Try to find month name in the value
-        const monthMatch = value.match(/(\w+\.?)\s+\d{4}/);
-        if (monthMatch && monthNames[monthMatch[1]]) {
-          const month = monthNames[monthMatch[1]];
+
+      // Get startDate field name from tableConfig.calendar or default to 'startDate'
+      const startDateField = tableConfig?.calendar?.startDate || 'startDate';
+      const startDateValue = row?.[startDateField];
+
+      if (startDateValue) {
+        // Parse startDate to extract year and month
+        const startDate = new Date(startDateValue);
+        if (!isNaN(startDate.getTime())) {
+          const year = startDate.getFullYear();
+          const month = String(startDate.getMonth() + 1).padStart(2, '0');
           calendarUrl = `/_calendar/${year}/${month}`;
         }
       }
@@ -975,7 +972,8 @@ class EditForm extends React.Component {
       errors: {},
       openRelations: new Set(), // Track which 1:n relations are expanded
       dirtyFields: new Set(), // Track which fields have been modified
-      showAttachments: false // Track if attachments section is expanded
+      showAttachments: false, // Track if attachments section is expanded
+      attachmentCount: 0 // Track number of attachments
     };
 
     this.saveTimeout = null;
@@ -984,7 +982,7 @@ class EditForm extends React.Component {
     this.pendingSaves = new Map(); // Track pending saves per field
   }
 
-  componentDidMount() {
+  async componentDidMount() {
     // Open "Strong" relations by default, keep "Weak" relations closed
     const { structure } = this.props;
     const strongRelations = new Set();
@@ -998,6 +996,9 @@ class EditForm extends React.Component {
     }
 
     this.setState({ openRelations: strongRelations });
+
+    // Load attachment count
+    await this.loadAttachmentCount();
 
     // Auto-focus the specified field or first editable field
     const { focusFieldName } = this.props;
@@ -1025,6 +1026,19 @@ class EditForm extends React.Component {
   componentWillUnmount() {
     if (this.saveTimeout) {
       clearTimeout(this.saveTimeout);
+    }
+  }
+
+  loadAttachmentCount = async () => {
+    const { tableName, row } = this.props;
+    try {
+      const response = await fetch(`/_api/${tableName}/${row.id}/attachments`);
+      const data = await response.json();
+      if (data.success) {
+        this.setState({ attachmentCount: data.attachments?.length || 0 });
+      }
+    } catch (error) {
+      console.error('Error loading attachment count:', error);
     }
   }
 
@@ -1165,6 +1179,17 @@ class EditForm extends React.Component {
       const startFieldDef = structure.fields[startDateField];
       const endFieldDef = structure.fields[endDateField];
 
+      // Build precise calendar link from startValue
+      let calendarUrl = '/_calendar';
+      if (startValue) {
+        const startDate = new Date(startValue);
+        if (!isNaN(startDate.getTime())) {
+          const year = startDate.getFullYear();
+          const month = String(startDate.getMonth() + 1).padStart(2, '0');
+          calendarUrl = `/_calendar/${year}/${month}`;
+        }
+      }
+
       return e('div', { key: '_dateRange', className: 'edit-field' },
         e('label', {
           className: 'edit-field-label',
@@ -1180,7 +1205,7 @@ class EditForm extends React.Component {
           'Période',
           ' ',
           e('a', {
-            href: '/_calendar',
+            href: calendarUrl,
             onClick: (ev) => ev.stopPropagation(),
             className: 'field-icon-link',
             title: 'Voir le calendrier',
@@ -1419,7 +1444,7 @@ class EditForm extends React.Component {
 
   render() {
     const { structure, onClose, row, tableName, tableConfig, permissions, hideRelations1N = false, parentTable } = this.props;
-    const { saveStatus, errors, formData, openRelations, showAttachments } = this.state;
+    const { saveStatus, errors, formData, openRelations, showAttachments, attachmentCount } = this.state;
 
     // Get calendar config from structure if available
     const hasCalendar = structure.calendar;
@@ -1612,13 +1637,14 @@ class EditForm extends React.Component {
           },
             e('span', { className: 'relation-toggle' }, showAttachments ? '▼' : '▶'),
             e('strong', null, 'Pièces jointes'),
-            e('span', { className: 'relation-count badge', style: { fontSize: '14px' } }, '📎')
+            e('span', { className: 'relation-count badge' }, attachmentCount || 0)
           )
         ),
         showAttachments && e(AttachmentsTab, {
           tableName: tableName,
           rowId: row.id,
-          permissions: permissions
+          permissions: permissions,
+          onAttachmentChange: () => this.loadAttachmentCount()
         })
       )
     );
@@ -1905,24 +1931,17 @@ class TableRow extends React.Component {
           // Check if table has calendar configuration
           const tableConfig = SCHEMA_CONFIG?.tables?.[tableName];
           if (tableConfig?.calendar) {
-            // Extract year and month from _dateRange if available
-            const dateRangeValue = row._dateRange;
-            if (dateRangeValue) {
-              const yearMonthMatch = dateRangeValue.match(/(\d{4})/);
-              const monthNames = {
-                'janv.': '01', 'févr.': '02', 'mars': '03', 'avr.': '04',
-                'mai': '05', 'juin': '06', 'juil.': '07', 'août': '08',
-                'sept.': '09', 'oct.': '10', 'nov.': '11', 'déc.': '12'
-              };
+            // Build precise calendar link from startDate field
+            const startDateField = tableConfig.calendar.startDate || 'startDate';
+            const startDateValue = row[startDateField];
 
+            if (startDateValue) {
               let calendarUrl = '/_calendar';
-              if (yearMonthMatch) {
-                const year = yearMonthMatch[1];
-                const monthMatch = dateRangeValue.match(/(\w+\.?)\s+\d{4}/);
-                if (monthMatch && monthNames[monthMatch[1]]) {
-                  const month = monthNames[monthMatch[1]];
-                  calendarUrl = `/_calendar/${year}/${month}`;
-                }
+              const startDate = new Date(startDateValue);
+              if (!isNaN(startDate.getTime())) {
+                const year = startDate.getFullYear();
+                const month = String(startDate.getMonth() + 1).padStart(2, '0');
+                calendarUrl = `/_calendar/${year}/${month}`;
               }
 
               return e('a', {
@@ -1948,8 +1967,8 @@ class TableRow extends React.Component {
             label = 'Période';
           }
 
-          // Special width constraint for _dateRange column
-          const style = fieldName === '_dateRange' ? { maxWidth: '22rem' } : {};
+          // Special width constraint for _dateRange column (reduced from 22rem to 16rem)
+          const style = fieldName === '_dateRange' ? { maxWidth: '16rem' } : {};
 
           return e('td', {
             key: fieldName,
@@ -1966,7 +1985,9 @@ class TableRow extends React.Component {
                   value,
                   field: field || { type: 'text' },
                   tableName,
-                  fieldName
+                  fieldName,
+                  row,
+                  tableConfig
                 })
           );
         })
@@ -2212,6 +2233,10 @@ class AttachmentsTab extends React.Component {
         if (data.success) {
           // Reload attachments
           await this.loadAttachments();
+          // Notify parent to update count
+          if (this.props.onAttachmentChange) {
+            this.props.onAttachmentChange();
+          }
         } else {
           alert(`Erreur lors de l'upload de ${file.name}: ${data.error}`);
         }
@@ -2240,6 +2265,10 @@ class AttachmentsTab extends React.Component {
       if (data.success) {
         // Reload attachments
         await this.loadAttachments();
+        // Notify parent to update count
+        if (this.props.onAttachmentChange) {
+          this.props.onAttachmentChange();
+        }
       } else {
         alert(`Erreur lors de la suppression: ${data.error}`);
       }
@@ -2275,46 +2304,49 @@ class AttachmentsTab extends React.Component {
 
     switch (previewType) {
       case 'image':
-        return e('div', { className: 'attachment-preview' },
-          e('img', {
-            src: `${downloadUrl}?inline=1`,
-            alt: fileName,
-            style: { maxWidth: '100%', maxHeight: '300px', borderRadius: '4px' }
-          })
-        );
+        return e('img', {
+          src: `${downloadUrl}?inline=1`,
+          alt: fileName,
+          style: {
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover'
+          }
+        });
 
       case 'audio':
-        return e('div', { className: 'attachment-preview' },
+        return e('div', { style: { width: '100%', padding: '20px' } },
+          e('div', { style: { fontSize: '48px', textAlign: 'center', marginBottom: '10px' } }, icon),
           e('audio', {
             controls: true,
-            style: { width: '100%', maxWidth: '400px' }
+            style: { width: '100%' }
           },
             e('source', { src: `${downloadUrl}?inline=1` })
           )
         );
 
       case 'video':
-        return e('div', { className: 'attachment-preview' },
-          e('video', {
-            controls: true,
-            style: { maxWidth: '100%', maxHeight: '400px', borderRadius: '4px' }
-          },
-            e('source', { src: `${downloadUrl}?inline=1` })
-          )
+        return e('video', {
+          controls: true,
+          style: {
+            width: '100%',
+            height: '100%',
+            objectFit: 'contain'
+          }
+        },
+          e('source', { src: `${downloadUrl}?inline=1` })
         );
 
       case 'pdf':
-        return e('div', { className: 'attachment-preview' },
-          e('iframe', {
-            src: `${downloadUrl}?inline=1`,
-            style: { width: '100%', height: '500px', border: '1px solid #ddd', borderRadius: '4px' }
-          })
+        return e('div', { style: { padding: '40px', textAlign: 'center' } },
+          e('div', { style: { fontSize: '64px', color: '#dc3545' } }, '📕'),
+          e('div', { style: { marginTop: '10px', color: '#666', fontSize: '14px' } }, 'PDF')
         );
 
       default:
-        return e('div', { className: 'attachment-no-preview', style: { padding: '20px', textAlign: 'center', color: '#666' } },
-          e('div', { style: { fontSize: '48px' } }, icon),
-          e('div', { style: { marginTop: '10px' } }, 'Aucun aperçu disponible')
+        return e('div', { style: { padding: '40px', textAlign: 'center' } },
+          e('div', { style: { fontSize: '64px' } }, icon),
+          e('div', { style: { marginTop: '10px', color: '#999', fontSize: '12px' } }, 'Aperçu non disponible')
         );
     }
   }
@@ -2368,43 +2400,104 @@ class AttachmentsTab extends React.Component {
         className: 'no-attachments',
         style: { padding: '20px', textAlign: 'center', color: '#999' }
       }, 'Aucune pièce jointe')
-        : e('div', { className: 'attachments-list' },
+        : e('div', { className: 'attachments-list', style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '16px' } },
           attachments.map(att => e('div', {
             key: att.id,
-            className: 'attachment-item',
+            className: 'attachment-card',
             style: {
-              border: '1px solid #ddd',
+              border: '1px solid #e0e0e0',
               borderRadius: '8px',
-              padding: '15px',
-              marginBottom: '15px'
+              overflow: 'hidden',
+              backgroundColor: '#fff',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+              transition: 'all 0.2s',
+              cursor: 'pointer',
+              display: 'flex',
+              flexDirection: 'column'
+            },
+            onClick: () => {
+              // Navigate to attachment edit form
+              window.location.href = `/_crud/Attachment/${att.id}`;
+            },
+            onMouseEnter: (e) => {
+              e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+              e.currentTarget.style.transform = 'translateY(-2px)';
+            },
+            onMouseLeave: (e) => {
+              e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+              e.currentTarget.style.transform = 'translateY(0)';
             }
           },
-            // Header: filename, size, actions
+            // Preview section (top)
             e('div', {
-              className: 'attachment-header',
-              style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }
+              className: 'attachment-preview-section',
+              style: {
+                minHeight: '150px',
+                maxHeight: '200px',
+                overflow: 'hidden',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: '#f8f9fa',
+                borderBottom: '1px solid #e0e0e0'
+              }
             },
-              e('div', { style: { flex: 1 } },
-                e('div', { style: { fontWeight: 'bold', marginBottom: '4px' } },
-                  att.icon + ' ' + att.fileName
-                ),
-                e('div', { style: { fontSize: '12px', color: '#666' } },
-                  att.fileSizeFormatted + ' • ' + new Date(att.createdAt).toLocaleDateString('fr-FR')
-                )
+              this.renderPreview(att)
+            ),
+            // Info section (bottom)
+            e('div', {
+              className: 'attachment-info',
+              style: { padding: '12px', flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }
+            },
+              // Filename
+              e('div', {
+                style: {
+                  fontWeight: '600',
+                  fontSize: '14px',
+                  color: '#212529',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap'
+                },
+                title: att.fileName
+              }, att.icon + ' ' + att.fileName),
+              // Meta info
+              e('div', {
+                style: {
+                  fontSize: '12px',
+                  color: '#6c757d',
+                  display: 'flex',
+                  gap: '8px',
+                  alignItems: 'center'
+                }
+              },
+                e('span', null, att.fileSizeFormatted),
+                e('span', null, '•'),
+                e('span', null, new Date(att.createdAt).toLocaleDateString('fr-FR'))
               ),
-              e('div', { style: { display: 'flex', gap: '8px' } },
+              // Action buttons
+              e('div', {
+                style: {
+                  display: 'flex',
+                  gap: '8px',
+                  marginTop: '8px'
+                }
+              },
                 // Download button
                 e('a', {
                   href: att.downloadUrl,
                   download: att.fileName,
-                  className: 'btn-download',
+                  className: 'btn-download-card',
                   style: {
+                    flex: 1,
                     padding: '6px 12px',
                     backgroundColor: '#007bff',
                     color: 'white',
                     textDecoration: 'none',
                     borderRadius: '4px',
-                    fontSize: '12px'
+                    fontSize: '12px',
+                    textAlign: 'center',
+                    fontWeight: '500'
                   },
                   onClick: (ev) => ev.stopPropagation()
                 }, '⬇️ Télécharger'),
@@ -2414,7 +2507,7 @@ class AttachmentsTab extends React.Component {
                     ev.stopPropagation();
                     this.handleDelete(att.id, att.fileName);
                   },
-                  className: 'btn-delete',
+                  className: 'btn-delete-card',
                   style: {
                     padding: '6px 12px',
                     backgroundColor: '#dc3545',
@@ -2422,13 +2515,12 @@ class AttachmentsTab extends React.Component {
                     border: 'none',
                     borderRadius: '4px',
                     cursor: 'pointer',
-                    fontSize: '12px'
+                    fontSize: '12px',
+                    fontWeight: '500'
                   }
-                }, '🗑️ Supprimer')
+                }, '🗑️')
               )
-            ),
-            // Preview
-            this.renderPreview(att)
+            )
           ))
         )
     );
@@ -2653,7 +2745,10 @@ class RowDetailView extends React.Component {
                 : e(FieldRenderer, {
                     value,
                     field: field || { type: 'text' },
-                    tableName
+                    tableName,
+                    fieldName,
+                    row,
+                    tableConfig
                   })
             )
           );
