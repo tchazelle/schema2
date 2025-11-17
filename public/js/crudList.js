@@ -1155,6 +1155,43 @@ class EditForm extends React.Component {
     const { formData, errors } = this.state;
     const { structure, tableConfig, permissions } = this.props;
     const value = formData[fieldName];
+
+    // Special handling for _dateRange virtual field
+    if (fieldName === '_dateRange' && tableConfig.calendar) {
+      const startDateField = tableConfig.calendar.startDate || 'startDate';
+      const endDateField = tableConfig.calendar.endDate || 'endDate';
+      const startValue = formData[startDateField];
+      const endValue = formData[endDateField];
+      const startFieldDef = structure.fields[startDateField];
+      const endFieldDef = structure.fields[endDateField];
+
+      return e('div', { key: '_dateRange', className: 'edit-field' },
+        e('label', {
+          className: 'edit-field-label',
+          style: { cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' },
+          onClick: () => {
+            // Focus on the startDate field when clicking the label
+            const startDateInput = this.fieldRefs[startDateField];
+            if (startDateInput && startDateInput.focus) {
+              startDateInput.focus();
+            }
+          }
+        },
+          '📅 Période',
+          e('span', { style: { fontSize: '10px', color: '#6c757d', fontWeight: 400 } }, '(cliquer pour modifier)')
+        ),
+        e(CalendarDateRangeTool, {
+          startValue: startValue,
+          endValue: endValue,
+          startLabel: startFieldDef?.label || startDateField,
+          endLabel: endFieldDef?.label || endDateField,
+          onChangeRange: (newStartValue, newEndValue) => {
+            this.handleDateRangeChange(startDateField, endDateField, newStartValue, newEndValue);
+          }
+        })
+      );
+    }
+
     const label = field.label || fieldName;
 
     // Check if this table has calendar configuration
@@ -1667,9 +1704,13 @@ class TableHeader extends React.Component {
           // Hide sort icon when advanced sort is active
           const sortIcon = (!hasAdvancedSort && isSorted) ? (order === 'ASC' ? ' ▲' : ' ▼') : '';
 
+          // Special width constraint for _dateRange column
+          const style = fieldName === '_dateRange' ? { maxWidth: '22rem' } : {};
+
           return e('th', {
             key: fieldName,
             className: `sortable ${isSorted && !hasAdvancedSort ? 'sorted' : ''}`,
+            style: style,
             onClick: () => onSort(fieldName)
           }, label, sortIcon);
         })
@@ -1899,9 +1940,13 @@ class TableRow extends React.Component {
             label = 'Période';
           }
 
+          // Special width constraint for _dateRange column
+          const style = fieldName === '_dateRange' ? { maxWidth: '22rem' } : {};
+
           return e('td', {
             key: fieldName,
-            'data-label': label  // Add data-label for responsive cards
+            'data-label': label,  // Add data-label for responsive cards
+            style: style
           },
             relationData
               ? e(RelationRenderer, {
