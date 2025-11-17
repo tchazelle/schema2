@@ -6,6 +6,7 @@ const schema = require('../schema.js');
 const { getTableData } = require('../services/tableDataService');
 const SchemaService = require('../services/schemaService');
 const PermissionService = require('../services/permissionService');
+const { GRANTED_VALUES, isPublishedRole, extractRoleFromGranted } = require('../constants/permissions');
 
 /**
  * GET /_api/search/:table
@@ -684,6 +685,123 @@ router.post('/:tableName/:id/duplicate-with-relations', async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Erreur serveur lors de la duplication',
+      details: error.message
+    });
+  }
+});
+
+/**
+ * POST /_api/:parentTable/:parentId/extend-authorization/:childTable
+ * Extend the authorization (granted field) from parent to all linked child records
+ */
+router.post('/:parentTable/:parentId/extend-authorization/:childTable', async (req, res) => {
+  try {
+    const { parentTable: parentTableParam, parentId, childTable: childTableParam } = req.params;
+    const user = req.user;
+
+    // Normalize table names
+    const parentTable = SchemaService.getTableName(parentTableParam);
+    const childTable = SchemaService.getTableName(childTableParam);
+
+    if (!parentTable || !childTable) {
+      return res.status(404).json({
+        success: false,
+        error: 'Table non trouvée'
+      });
+    }
+
+    // Check if user has update permission on parent table
+    if (!PermissionService.hasPermission(user, parentTable, 'update')) {
+      return res.status(403).json({
+        success: false,
+        error: 'Permission refusée - vous n\'avez pas les droits de modification sur la table parent'
+      });
+    }
+
+    // Check if user has update permission on child table
+    if (!PermissionService.hasPermission(user, childTable, 'update')) {
+      return res.status(403).json({
+        success: false,
+        error: `Permission refusée - vous n'avez pas les droits de modification sur la table ${childTable}`
+      });
+    }
+
+    // Get parent record
+    const [parentRows] = await pool.query(
+      `SELECT * FROM ${parentTable} WHERE id = ?`,
+      [parentId]
+    );
+
+    if (parentRows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Fiche parent non trouvée'
+      });
+    }
+
+    const parentRecord = parentRows[0];
+    const parentGranted = parentRecord.granted;
+
+    // Get child table configuration
+    const childTableConfig = schema.tables[childTable];
+    if (!childTableConfig) {
+      return res.status(404).json({
+        success: false,
+        error: `Configuration de la table ${childTable} non trouvée`
+      });
+    }
+
+    // Check if child table supports the granted value
+    // For "published @role", check if the role has permissions in the child table
+    if (isPublishedRole(parentGranted)) {
+      const role = extractRoleFromGranted(parentGranted);
+      const childGrantedConfig = childTableConfig.granted || {};
+
+      if (!childGrantedConfig[role]) {
+        return res.status(400).json({
+          success: false,
+          error: `La table ${childTable} n'accepte pas le niveau d'autorisation "published @${role}". Les rôles autorisés sont: ${Object.keys(childGrantedConfig).join(', ')}`
+        });
+      }
+    }
+
+    // Find the foreign key field in child table that references parent table
+    let foreignKeyField = null;
+    const childFields = childTableConfig.fields || {};
+
+    // Search for a field that has a relation to the parent table
+    for (const [fieldName, fieldConfig] of Object.entries(childFields)) {
+      if (fieldConfig.relation === parentTable) {
+        foreignKeyField = fieldName;
+        break;
+      }
+    }
+
+    if (!foreignKeyField) {
+      return res.status(400).json({
+        success: false,
+        error: `Aucune relation trouvée entre ${childTable} et ${parentTable}`
+      });
+    }
+
+    // Update all child records with the parent's granted value
+    const [result] = await pool.query(
+      `UPDATE ${childTable} SET granted = ? WHERE ${foreignKeyField} = ?`,
+      [parentGranted, parentId]
+    );
+
+    res.json({
+      success: true,
+      message: `Autorisation étendue à ${result.affectedRows} fiche(s)`,
+      updatedCount: result.affectedRows,
+      grantedValue: parentGranted
+    });
+
+  } catch (error) {
+    console.error('Erreur lors de l\'extension d\'autorisation:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erreur serveur lors de l\'extension d\'autorisation',
       details: error.message
     });
   }
