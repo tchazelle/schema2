@@ -319,7 +319,6 @@ module.exports = {
         "public" : ["read"],
         "admin": ["read", "create", "update", "delete", "publish"]
       },
-      
       hasAttachmentsTab: false, // Table de liaison - pas besoin d'attachments
       fields: {
         id: { type: "integer", isPrimary: true, autoIncrement: true },

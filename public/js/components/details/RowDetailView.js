@@ -92,8 +92,35 @@ class RowDetailView extends React.Component {
     return lowerField.includes(lowerParent) || lowerField === `id${lowerParent}`;
   }
 
+  handleExtendAuthorizationForRelation = async (relatedTable, relationName) => {
+    const { tableName, row } = this.props;
+
+    if (!confirm(`Étendre l'autorisation de la fiche ${tableName} à toutes les fiches ${relatedTable} liées ?`)) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/_api/${tableName}/${row.id}/extend-authorization/${relatedTable}`, {
+        method: 'POST'
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        alert(`✓ Autorisation étendue à ${data.updatedCount} fiche(s) ${relatedTable}`);
+        // Reload the page to refresh data
+        window.location.reload();
+      } else {
+        alert(`Erreur: ${data.error || 'Échec de l\'extension'}`);
+      }
+    } catch (error) {
+      console.error('Error extending authorization:', error);
+      alert('Erreur lors de l\'extension de l\'autorisation');
+    }
+  }
+
   render() {
-    const { row, structure, tableName, permissions, onEdit, parentTable, hideRelations1N } = this.props;
+    const { row, structure, tableName, permissions, onEdit, parentTable, hideRelations1N, onSubRecordUpdate } = this.props;
     const { openRelations, showAttachments, attachmentCount } = this.state;
 
     // Check if table has attachments enabled
@@ -310,7 +337,7 @@ class RowDetailView extends React.Component {
                   return null;
                 })()
               ),
-              // Right side: "+ ajouter" button and three-dots menu
+              // Right side: "+ ajouter" button and three-dots menu on same line
               e('div', { style: { display: 'flex', alignItems: 'center', gap: '8px' } },
                 e('button', {
                   className: 'btn-add-relation-item',
@@ -319,7 +346,17 @@ class RowDetailView extends React.Component {
                     window.open(`/_crud/${relatedTable}?parent=${tableName}&parentId=${row.id}`, '_blank');
                   },
                   title: count === 0 ? `Créer la première fiche ${relatedTable}` : `Ajouter un ${relatedTable}`
-                }, count === 0 ? '+ Créer la première fiche' : '+ Ajouter')
+                }, count === 0 ? '+ Créer la première fiche' : '+ Ajouter'),
+                // Three-dots menu
+                e(ThreeDotsMenu, {
+                  isSubList: true,
+                  tableName: relatedTable,
+                  showDeleteButtons: false,
+                  onToggleDelete: null, // Will be handled by SubList
+                  onAdvancedSort: null, // Will be handled by SubList
+                  onLinkToTable: () => window.open(`/_crud/${relatedTable}`, '_blank'),
+                  onExtendAuthorization: () => this.handleExtendAuthorizationForRelation(relatedTable, relName)
+                })
               )
             ),
             isOpen && e('div', { className: 'relation-list' },
@@ -330,7 +367,8 @@ class RowDetailView extends React.Component {
                 parentId: row.id,
                 relationName: relName,
                 hideHeader: false,
-                defaultSort: relation.defaultSort
+                defaultSort: relation.defaultSort,
+                onSubRecordUpdate: onSubRecordUpdate
               })
             )
           );

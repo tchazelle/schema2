@@ -137,7 +137,8 @@ class RowDetailModal extends React.Component {
       onSave,
       onUpdate,
       parentTable,
-      hideRelations1N
+      hideRelations1N,
+      onSubRecordUpdate
     } = this.props;
 
     const cardTitle = buildCardTitle(row, tableName, tableConfig);
@@ -268,10 +269,12 @@ class RowDetailModal extends React.Component {
               )
             ),
             // Close button (X exits edit mode if in edit, otherwise closes modal)
+            // Special case: if parentTable is set and in edit mode, close the entire modal
+            // instead of going back to detail view (for sub-records)
             e('button', {
               className: 'modal-close-detail',
-              onClick: editMode ? onExitEditMode : onClose,
-              title: editMode ? 'Retour à la fiche' : 'Fermer (Echap)'
+              onClick: editMode ? (parentTable ? onClose : onExitEditMode) : onClose,
+              title: editMode ? (parentTable ? 'Retour à la fiche parent' : 'Retour à la fiche') : 'Fermer (Echap)'
             }, '✖')
           )
         ),
@@ -300,7 +303,8 @@ class RowDetailModal extends React.Component {
                   permissions,
                   onEdit: onEnterEditMode,
                   parentTable,
-                  hideRelations1N
+                  hideRelations1N,
+                  onSubRecordUpdate
                 })
         )
       ),

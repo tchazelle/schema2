@@ -64,9 +64,16 @@ class TableRow extends React.Component {
   handleKeyDown(event) {
     // Close on ESC key if this row is expanded
     if (event.key === 'Escape' && this.state.expanded) {
-      // If in edit mode, close the form first (exit edit mode)
+      // If in edit mode
       if (this.state.editMode) {
-        this.setState({ editMode: false });
+        // Special case: if this is a sub-record (parentTable is set),
+        // close the entire modal instead of just exiting edit mode
+        if (this.props.parentTable) {
+          this.setState({ expanded: false, editMode: false });
+        } else {
+          // For main records, just exit edit mode
+          this.setState({ editMode: false });
+        }
       } else {
         // If not in edit mode, close the detail view
         this.setState({ expanded: false });
@@ -76,7 +83,7 @@ class TableRow extends React.Component {
 
   toggleExpand = async () => {
     const { expanded, fullData, editMode } = this.state;
-    const { row, tableName, parentTable } = this.props;
+    const { row, tableName, parentTable, permissions } = this.props;
 
     // If in edit mode, clicking should not toggle
     if (editMode) return;
@@ -92,7 +99,10 @@ class TableRow extends React.Component {
         if (data.success && data.rows && data.rows.length > 0) {
           this.setState({
             loading: false,
-            fullData: data.rows[0]
+            fullData: data.rows[0],
+            // If this is a sub-record (parentTable set) and user has update permission,
+            // open edit mode directly instead of detail view
+            editMode: parentTable && permissions && permissions.canUpdate
           });
         } else {
           console.error('Failed to fetch full data:', data.error || 'No data returned');
@@ -135,6 +145,25 @@ class TableRow extends React.Component {
     }
   }
 
+  /**
+   * Reload the full data for this row (used when sub-records are updated)
+   */
+  reloadFullData = async () => {
+    const { row, tableName } = this.props;
+    try {
+      const response = await fetch(`/_api/${tableName}/${row.id}?relation=all&compact=1`);
+      const data = await response.json();
+
+      if (data.success && data.rows && data.rows.length > 0) {
+        this.setState({
+          fullData: data.rows[0]
+        });
+      }
+    } catch (error) {
+      console.error('Error reloading full data:', error);
+    }
+  }
+
   handleDelete = async (e) => {
     e.stopPropagation();
     const { row, tableName, onUpdate } = this.props;
@@ -165,7 +194,24 @@ class TableRow extends React.Component {
   }
 
   render() {
-    const { row, fields, structure, displayMode, tableName, permissions, tableConfig, parentTable, showDeleteButton } = this.props;
+    const {
+      row,
+      fields,
+      structure,
+      displayMode,
+      tableName,
+      permissions,
+      tableConfig,
+      parentTable,
+      showDeleteButton,
+      draggable,
+      onDragStart,
+      onDragOver,
+      onDragEnd,
+      onDragLeave,
+      isDragging,
+      isDragOver
+    } = this.props;
     const { expanded, editMode, fullData, loading, focusFieldName } = this.state;
 
     if (displayMode === 'raw') {
@@ -178,13 +224,41 @@ class TableRow extends React.Component {
 
     const displayData = fullData || row;
 
+    // Build drag style if dragging or drag over
+    let rowStyle = {};
+    if (isDragging) {
+      rowStyle.opacity = 0.5;
+    }
+    if (isDragOver) {
+      rowStyle.borderTop = '2px solid #007bff';
+    }
+
     return e(React.Fragment, null,
       // Always show the data row (no substitution)
       e('tr', {
-        className: `data-row ${expanded ? 'expanded' : ''}`,
+        className: `data-row ${expanded ? 'expanded' : ''} ${draggable ? 'draggable' : ''}`,
         onClick: this.toggleExpand,
-        onDoubleClick: this.enterEditMode
+        onDoubleClick: this.enterEditMode,
+        draggable: draggable || false,
+        onDragStart: onDragStart,
+        onDragOver: onDragOver,
+        onDragEnd: onDragEnd,
+        onDragLeave: onDragLeave,
+        style: rowStyle
       },
+        // Drag handle column (only if draggable)
+        draggable && e('td', {
+          key: 'drag-handle',
+          'data-label': '⋮⋮',
+          style: {
+            width: '30px',
+            textAlign: 'center',
+            cursor: 'grab',
+            fontSize: '16px',
+            color: '#6c757d'
+          },
+          onClick: (e) => e.stopPropagation() // Prevent row expansion when clicking drag handle
+        }, '⋮⋮'),
         // Delete button column (if enabled)
         showDeleteButton && permissions && permissions.canDelete && e('td', {
           key: 'delete-col',
@@ -293,7 +367,9 @@ class TableRow extends React.Component {
         onUpdate: this.props.onUpdate,
         // Props for sub-lists (automatically enabled when parentTable is provided)
         parentTable: parentTable,
-        hideRelations1N: !!parentTable
+        hideRelations1N: !!parentTable,
+        // Callback to reload this row's data when sub-records are updated
+        onSubRecordUpdate: this.reloadFullData
       })
     );
   }

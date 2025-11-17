@@ -42,7 +42,9 @@ class SubList extends React.Component {
       showDeleteButtons: false,
       selectedFields: null,
       showFieldSelector: false,
-      defaultSort: defaultSort
+      defaultSort: defaultSort,
+      draggedIndex: null,
+      dragOverIndex: null
     };
   }
 
@@ -187,9 +189,78 @@ class SubList extends React.Component {
     return lowerField.includes(lowerParent) || lowerField === `id${lowerParent}`;
   }
 
+  handleDragStart = (index) => (e) => {
+    this.setState({ draggedIndex: index });
+    e.dataTransfer.effectAllowed = 'move';
+  }
+
+  handleDragOver = (index) => (e) => {
+    e.preventDefault();
+    if (this.state.draggedIndex !== index) {
+      this.setState({ dragOverIndex: index });
+    }
+  }
+
+  handleDragEnd = async (e) => {
+    e.preventDefault();
+    const { draggedIndex, dragOverIndex, tableConfig } = this.state;
+    const { rows, tableName, onSubRecordUpdate } = this.props;
+
+    if (draggedIndex === null || dragOverIndex === null || draggedIndex === dragOverIndex) {
+      this.setState({ draggedIndex: null, dragOverIndex: null });
+      return;
+    }
+
+    // Get orderable field from table config
+    const orderableField = tableConfig?.orderable;
+    if (!orderableField) {
+      this.setState({ draggedIndex: null, dragOverIndex: null });
+      return;
+    }
+
+    // Sort rows first to get correct order
+    const sortedRows = this.sortRows(rows, this.state.orderBy, this.state.order);
+
+    // Reorder the array
+    const newRows = [...sortedRows];
+    const [movedRow] = newRows.splice(draggedIndex, 1);
+    newRows.splice(dragOverIndex, 0, movedRow);
+
+    // Update position field for all affected rows
+    const updates = newRows.map((row, index) => ({
+      id: row.id,
+      [orderableField]: index
+    }));
+
+    try {
+      // Update all positions in batch
+      for (const update of updates) {
+        await fetch(`/_api/${tableName}/${update.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ [orderableField]: update[orderableField] })
+        });
+      }
+
+      // Reload parent data to show updated order
+      if (onSubRecordUpdate) {
+        await onSubRecordUpdate();
+      }
+    } catch (error) {
+      console.error('Error updating order:', error);
+      alert('Erreur lors de la mise à jour de l\'ordre');
+    }
+
+    this.setState({ draggedIndex: null, dragOverIndex: null });
+  }
+
+  handleDragLeave = () => {
+    this.setState({ dragOverIndex: null });
+  }
+
   render() {
-    const { rows, tableName, parentTable, parentId, relationName, hideHeader } = this.props;
-    const { structure, tableConfig, permissions, orderBy, order, displayMode, showDeleteButtons, selectedFields, showFieldSelector } = this.state;
+    const { rows, tableName, parentTable, parentId, relationName, hideHeader, onSubRecordUpdate } = this.props;
+    const { structure, tableConfig, permissions, orderBy, order, displayMode, showDeleteButtons, selectedFields, showFieldSelector, draggedIndex, dragOverIndex } = this.state;
 
     if (!rows || rows.length === 0) {
       // If hideHeader is true, don't show anything for empty lists
@@ -266,34 +337,21 @@ class SubList extends React.Component {
       ? `Tri: ${orderBy} ${order === 'ASC' ? '▲' : '▼'}`
       : null;
 
+    // Check if table is orderable (supports drag & drop reordering)
+    const isOrderable = tableConfig && tableConfig.orderable;
+
     return e('div', { className: 'sub-list-container', style: { position: 'relative' } },
-      // Header with "+ Nouveau" button and three-dots menu (only if not hideHeader)
-      !hideHeader && e('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 0', marginBottom: '4px', gap: '8px' } },
-        // Left side: sort indicator
-        e('div', { style: { fontSize: '12px', color: '#6c757d', fontStyle: 'italic', minHeight: '20px' } },
-          sortIndicator || ''
-        ),
-        // Right side: buttons
-        e('div', { style: { display: 'flex', alignItems: 'center', gap: '8px' } },
-          parentId && e('button', {
-            className: 'btn-add-relation-item',
-            onClick: (ev) => {
-              ev.stopPropagation();
-              window.open(`/_crud/${tableName}?parent=${parentTable}&parentId=${parentId}`, '_blank');
-            },
-            title: `Créer un nouveau ${tableName}`
-          }, '+ Nouveau'),
-          e(ThreeDotsMenu, {
-            isSubList: true,
-            tableName,
-            showDeleteButtons,
-            onToggleDelete: this.handleToggleDeleteButtons,
-            onAdvancedSort: this.handleAdvancedSort,
-            onLinkToTable: this.handleLinkToTable,
-            onExtendAuthorization: parentTable && parentId ? this.handleExtendAuthorization : null
-          })
-        )
-      ),
+      // Sort indicator (only if not default and not hideHeader)
+      !hideHeader && sortIndicator && e('div', {
+        style: {
+          fontSize: '12px',
+          color: '#6c757d',
+          fontStyle: 'italic',
+          minHeight: '20px',
+          padding: '4px 0',
+          marginBottom: '4px'
+        }
+      }, sortIndicator),
 
       // Table
       e('table', { className: 'sub-list-table' },
@@ -306,7 +364,8 @@ class SubList extends React.Component {
           displayMode,
           showDeleteButton: showDeleteButtons,
           permissions,
-          statistics: {} // SubList doesn't have statistics yet
+          statistics: {}, // SubList doesn't have statistics yet
+          draggable: isOrderable
         }),
         e('tbody', null,
           sortedRows.map((row, idx) =>
@@ -319,7 +378,16 @@ class SubList extends React.Component {
               parentTable,
               tableConfig,
               permissions,
-              showDeleteButton: showDeleteButtons
+              showDeleteButton: showDeleteButtons,
+              onUpdate: onSubRecordUpdate,
+              // Drag & drop props for orderable tables
+              draggable: isOrderable,
+              onDragStart: isOrderable ? this.handleDragStart(idx) : null,
+              onDragOver: isOrderable ? this.handleDragOver(idx) : null,
+              onDragEnd: isOrderable ? this.handleDragEnd : null,
+              onDragLeave: isOrderable ? this.handleDragLeave : null,
+              isDragging: draggedIndex === idx,
+              isDragOver: dragOverIndex === idx
             })
           )
         )
