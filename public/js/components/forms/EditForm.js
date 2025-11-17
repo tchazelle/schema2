@@ -36,7 +36,6 @@
  * - focusFieldName: Field name to auto-focus on mount
  */
 
-const e = React.createElement;
 
 class EditForm extends React.Component {
   constructor(props) {

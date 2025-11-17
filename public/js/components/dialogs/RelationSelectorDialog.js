@@ -19,7 +19,6 @@
  * - onCancel: Callback to close the dialog
  */
 
-const e = React.createElement;
 
 class RelationSelectorDialog extends React.Component {
   constructor(props) {

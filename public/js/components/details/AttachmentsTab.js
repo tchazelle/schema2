@@ -17,7 +17,6 @@
  * @component
  */
 
-const e = React.createElement;
 
 class AttachmentsTab extends React.Component {
   constructor(props) {

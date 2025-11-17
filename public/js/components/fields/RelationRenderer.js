@@ -7,7 +7,6 @@
  * Dependencies: React
  */
 
-const e = React.createElement;
 
 /**
  * N:1 Relation Renderer

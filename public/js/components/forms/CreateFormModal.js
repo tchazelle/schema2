@@ -32,7 +32,6 @@
  * - defaultValues: Object with default field values (e.g., {startDate: '2025-11-16'})
  */
 
-const e = React.createElement;
 
 class CreateFormModal extends React.Component {
   constructor(props) {
