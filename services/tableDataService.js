@@ -295,8 +295,9 @@ async function getTableData(user, tableName, options = {}) {
   //console.log('[TableDataService] WHERE clause:', where);
   //console.log('[TableDataService] Params initial:', params);
 
-  // Select with table prefix when there are JOINs
-  const selectClause = customJoins.length > 0 ? `\`${table}\`.*` : '*';
+  // Select with table prefix when there are JOINs, and include computed fields (as)
+  const tableAlias = customJoins.length > 0 ? table : null;
+  const selectClause = SchemaService.buildSelectClause(table, tableAlias);
   let query = `SELECT ${selectClause} FROM \`${table}\``;
 
   // Add JOINs if provided (for advanced search/sort on relation fields)
@@ -384,6 +385,10 @@ async function getTableData(user, tableName, options = {}) {
     ];
   }
 
+  // Obtenir les champs calculés JS et les champs de statistiques
+  const calculatedFields = SchemaService.getCalculatedFields(table, user);
+  const statFields = SchemaService.getStatFields(table, user);
+
   // Filtrer les rows et charger les relations
   //console.log('[TableDataService] Filtrage des champs et chargement des relations...');
   const filteredRows = [];
@@ -391,6 +396,25 @@ async function getTableData(user, tableName, options = {}) {
     //console.log(`[TableDataService] Traitement row id=${row.id}...`);
     const filteredRow = EntityService.filterEntityFields(user, table, row);
     //console.log(`[TableDataService] Champs filtrés pour row id=${row.id}:`, Object.keys(filteredRow));
+
+    // Calculer les champs JavaScript (calculate)
+    const context = {
+      pool,
+      user,
+      schema,
+      tableName: table,
+      rows: accessibleRows
+    };
+
+    for (const fieldName in calculatedFields) {
+      try {
+        const calculateFn = calculatedFields[fieldName];
+        filteredRow[fieldName] = await calculateFn(row, context);
+      } catch (error) {
+        console.error(`[TableDataService] Error calculating field ${fieldName}:`, error);
+        filteredRow[fieldName] = null;
+      }
+    }
 
     // Ajouter un label construit à partir des displayFields
     const displayFields = SchemaService.getDisplayFields(table);
@@ -444,6 +468,34 @@ async function getTableData(user, tableName, options = {}) {
 
   //console.log(`[TableDataService] ✅ Total rows filtrées et enrichies: ${filteredRows.length}`);
 
+  // Calculer les statistiques si des champs ont stat défini
+  const stats = {};
+  if (Object.keys(statFields).length > 0 && filteredRows.length > 0) {
+    for (const fieldName in statFields) {
+      const statType = statFields[fieldName];
+      const values = filteredRows.map(row => row[fieldName]).filter(val => val !== null && val !== undefined);
+
+      if (values.length > 0) {
+        switch (statType) {
+          case 'sum':
+            stats[fieldName] = values.reduce((acc, val) => acc + parseFloat(val || 0), 0);
+            break;
+          case 'average':
+            const sum = values.reduce((acc, val) => acc + parseFloat(val || 0), 0);
+            stats[fieldName] = sum / values.length;
+            break;
+          case 'count':
+            stats[fieldName] = values.length;
+            break;
+          default:
+            console.warn(`[TableDataService] Unknown stat type: ${statType}`);
+        }
+      } else {
+        stats[fieldName] = null;
+      }
+    }
+  }
+
   // Compter le nombre total de résultats (sans limit)
   const countQuery = `SELECT COUNT(*) as total FROM \`${table}\` WHERE ${where}`;
   const [countResult] = await pool.query(countQuery, params.slice(0, params.length - (limit ? 1 : 0) - (offset ? 1 : 0)));
@@ -461,6 +513,11 @@ async function getTableData(user, tableName, options = {}) {
       offset: offset ? parseInt(offset) : 0
     }
   };
+
+  // Ajouter les stats si présentes
+  if (Object.keys(stats).length > 0) {
+    response.stats = stats;
+  }
 
   // Ajouter le schéma si demandé
   if (includeSchema === '1') {
