@@ -107,6 +107,7 @@ class CrudService {
 
       // Replace in simple orderBy
       if (finalOrderBy === '_dateRange') {
+        console.log(`[CrudService] Replacing _dateRange with ${startDateField} in orderBy`);
         finalOrderBy = startDateField;
       }
 
@@ -114,11 +115,14 @@ class CrudService {
       if (advancedSort && advancedSort.length > 0) {
         advancedSort = advancedSort.map(criterion => {
           if (criterion.field === '_dateRange') {
+            console.log(`[CrudService] Replacing _dateRange with ${startDateField} in advancedSort`);
             return { ...criterion, field: startDateField };
           }
           return criterion;
         });
       }
+    } else {
+      console.log(`[CrudService] Table ${table} - hasCalendar: ${hasCalendar(table)}, orderBy: ${finalOrderBy}`);
     }
 
     if (advancedSort && advancedSort.length > 0) {

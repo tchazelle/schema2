@@ -310,12 +310,32 @@ async function getTableData(user, tableName, options = {}) {
   // Ajouter ORDER BY si spécifié
   // Replace _dateRange with actual database field if needed (_dateRange is a virtual computed field)
   let finalOrderBy = orderBy;
-  if (orderBy && orderBy.includes('_dateRange') && hasCalendar(table)) {
-    const calendarConfig = getCalendarConfig(table);
-    const startDateField = calendarConfig.startDate || 'startDate';
-    // Replace _dateRange with the actual startDate field
-    // Handle both simple field and prefixed field (e.g., "Todo._dateRange" -> "Todo.startDate")
-    finalOrderBy = orderBy.replace(/_dateRange/g, startDateField);
+
+  // Failsafe: Always check if orderBy contains _dateRange, regardless of what previous layers did
+  // This protects against any edge cases where the replacement in crudService didn't happen
+  if (orderBy && typeof orderBy === 'string' && orderBy.includes('_dateRange')) {
+    // Check if table has calendar config
+    if (hasCalendar(table)) {
+      const calendarConfig = getCalendarConfig(table);
+      const startDateField = calendarConfig.startDate || 'startDate';
+
+      // Replace _dateRange with the actual startDate field
+      // Handle multiple formats:
+      // - Simple: "_dateRange" -> "startDate"
+      // - Prefixed: "Todo._dateRange" -> "Todo.startDate"
+      // - Backticked: "`_dateRange`" -> "`startDate`"
+      // - Prefixed backticked: "`Todo`.`_dateRange`" -> "`Todo`.`startDate`"
+      finalOrderBy = orderBy
+        .replace(/`_dateRange`/g, `\`${startDateField}\``)
+        .replace(/_dateRange/g, startDateField);
+
+      console.log(`[TableDataService] Replaced _dateRange with ${startDateField} in orderBy: "${orderBy}" -> "${finalOrderBy}"`);
+    } else {
+      console.warn(`[TableDataService] WARNING: Table "${table}" does not have calendar config, but orderBy contains _dateRange: "${orderBy}"`);
+      // Fallback: remove the ORDER BY clause to prevent SQL error
+      console.warn(`[TableDataService] Removing ORDER BY clause to prevent SQL error`);
+      finalOrderBy = null;
+    }
   }
 
   if (finalOrderBy) {
