@@ -347,15 +347,15 @@ module.exports = {
     },
     Attachment: {
       // ... defaultConfigTable
-    
+
       hasAttachmentsTab: false, // Les attachments eux-mêmes n'ont pas besoin d'attachments
       fields: {
         id: { type: "integer", isPrimary: true, autoIncrement: true },
-        rowLink: { type: "varchar", renderer: "rowLink" }, // Lien vers l'enregistrement parent (ex: "Person/1") - DEPRECATED: utiliser les relations ci-dessous
-        fileName: { type: "varchar" }, // Nom du fichier original
-        fileType: { type: "varchar" }, // Type MIME (image/jpeg, application/pdf, etc.)
-        fileSize: { type: "integer" }, // Taille en octets
-        filePath: { type: "varchar", renderer: "filePreview" }, // Chemin du fichier sur le système de fichiers
+        rowLink: { type: "varchar", renderer: "rowLink", readonly: true }, // Lien vers l'enregistrement parent (ex: "Person/1") - DEPRECATED: utiliser les relations ci-dessous
+        name: { type: "varchar" }, // Nom du fichier (modifiable, permet de renommer)
+        fileType: { type: "varchar", readonly: true }, // Type MIME (image/jpeg, application/pdf, etc.)
+        fileSize: { type: "integer", readonly: true }, // Taille en octets
+        filePath: { type: "varchar", renderer: "filePreview", readonly: true }, // Chemin du fichier sur le système de fichiers
       },
     },
     Event: {

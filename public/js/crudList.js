@@ -1273,6 +1273,21 @@ class EditForm extends React.Component {
       );
     }
 
+    // Show readonly fields as readonly
+    if (field.readonly) {
+      return e('div', { key: fieldName, className: 'edit-field' },
+        e('label', { className: 'edit-field-label' }, label, ' ', e('span', { style: { fontSize: '10px', color: '#6c757d', fontWeight: 400 } }, '(lecture seule)')),
+        e('input', {
+          type: 'text',
+          className: 'edit-field-input',
+          value: value || '',
+          readOnly: true,
+          disabled: true,
+          style: { background: '#e9ecef', cursor: 'not-allowed' }
+        })
+      );
+    }
+
     // Check if this is a relation
     if (field.relation) {
       return e('div', { key: fieldName, className: 'edit-field' },
@@ -1707,8 +1722,9 @@ class RelationRenderer extends React.Component {
  */
 class TableHeader extends React.Component {
   render() {
-    const { fields, structure, orderBy, order, onSort, displayMode, showDeleteButton, permissions, advancedSortCriteria } = this.props;
+    const { fields, structure, orderBy, order, onSort, displayMode, showDeleteButton, permissions, advancedSortCriteria, statistics } = this.props;
     const hasAdvancedSort = advancedSortCriteria && advancedSortCriteria.length > 0;
+    const hasStatistics = statistics && Object.keys(statistics).length > 0;
 
     if (displayMode === 'raw') {
       return e('thead', null,
@@ -1722,6 +1738,7 @@ class TableHeader extends React.Component {
     }
 
     return e('thead', null,
+      // Header row
       e('tr', null,
         showDeleteButton && permissions && permissions.canDelete && e('th', { key: 'delete-header', style: { width: '40px' } }, ''),
         e('th', { key: 'granted-header', style: { width: '40px', textAlign: 'center' }, title: 'Statut de publication' }, '📋'),
@@ -1747,6 +1764,44 @@ class TableHeader extends React.Component {
             style: style,
             onClick: () => onSort(fieldName)
           }, label, sortIcon);
+        })
+      ),
+      // Statistics row (if statistics are available)
+      hasStatistics && e('tr', { className: 'statistics-row', style: { backgroundColor: '#f8f9fa', fontWeight: 'bold' } },
+        showDeleteButton && permissions && permissions.canDelete && e('th', { key: 'delete-stat', style: { width: '40px' } }),
+        e('th', { key: 'granted-stat', style: { width: '40px' } }),
+        fields.map(fieldName => {
+          const stat = statistics[fieldName];
+          if (!stat) {
+            return e('th', { key: `stat-${fieldName}` });
+          }
+
+          // Format the statistic value
+          let displayValue;
+          if (stat.type === 'avg') {
+            displayValue = parseFloat(stat.value).toFixed(2);
+          } else {
+            displayValue = stat.value;
+          }
+
+          // Add icon/label for stat type
+          let statLabel;
+          switch (stat.type) {
+            case 'sum':
+              statLabel = '∑ ';
+              break;
+            case 'avg':
+              statLabel = 'μ ';
+              break;
+            case 'count':
+              statLabel = '# ';
+              break;
+          }
+
+          return e('th', {
+            key: `stat-${fieldName}`,
+            style: { fontSize: '0.9em', color: '#495057' }
+          }, statLabel, displayValue);
         })
       )
     );
@@ -2101,7 +2156,8 @@ class RowDetailModal extends React.Component {
                     });
                     const data = await response.json();
                     if (data.success && onUpdate) {
-                      onUpdate();
+                      // Pass the updated granted value to onUpdate
+                      onUpdate({ granted: val });
                     }
                   } catch (error) {
                     console.error('Failed to save granted:', error);
@@ -2416,8 +2472,9 @@ class AttachmentsTab extends React.Component {
               flexDirection: 'column'
             },
             onClick: () => {
-              // Navigate to attachment edit form
-              window.location.href = `/_crud/Attachment/${att.id}`;
+              // Navigate to attachment edit form with parent context
+              const { tableName, rowId } = this.props;
+              window.location.href = `/_crud/Attachment/${att.id}?parent=${tableName}&parentId=${rowId}`;
             },
             onMouseEnter: (e) => {
               e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
@@ -3073,7 +3130,8 @@ class SubList extends React.Component {
           onSort: this.handleSort,
           displayMode,
           showDeleteButton: showDeleteButtons,
-          permissions
+          permissions,
+          statistics: {} // SubList doesn't have statistics yet
         }),
         e('tbody', null,
           sortedRows.map((row, idx) =>
@@ -4846,6 +4904,17 @@ class CrudList extends React.Component {
     if (returnView && returnDate) {
       // Return to calendar with saved view and date
       window.location.href = '/_calendar';
+      return;
+    }
+
+    // Check if we have parent context (e.g., from attachment detail)
+    const urlParams = new URLSearchParams(window.location.search);
+    const parent = urlParams.get('parent');
+    const parentId = urlParams.get('parentId');
+
+    if (parent && parentId) {
+      // Return to parent record with modal open
+      window.location.href = `/_crud/${parent}?open=${parentId}`;
     } else {
       // Navigate back to table list view
       window.location.href = `/_crud/${this.props.table}`;
@@ -5515,7 +5584,8 @@ class CrudList extends React.Component {
             displayMode,
             showDeleteButton: showDeleteButtons,
             permissions: data.permissions,
-            advancedSortCriteria: advancedSortCriteria
+            advancedSortCriteria: advancedSortCriteria,
+            statistics: data.statistics
           }),
           e('tbody', null,
             data.rows.map((row, idx) =>
