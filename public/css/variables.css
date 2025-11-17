@@ -1,0 +1,291 @@
+/**
+ * CSS Variables - Schema2
+ *
+ * Centralized design tokens for colors, spacing, typography, shadows, etc.
+ * Enables easy theming and dark mode implementation.
+ *
+ * Usage: var(--variable-name)
+ * Example: color: var(--color-primary);
+ */
+
+:root {
+  /* ========================================
+     COLORS - Primary & Brand
+     ======================================== */
+
+  --color-primary: #007bff;
+  --color-primary-hover: #0056b3;
+  --color-primary-active: #004085;
+  --color-primary-light: #80bdff;
+  --color-primary-bg: #e7f5ff;
+
+
+  /* ========================================
+     COLORS - Semantic (Success, Error, Warning, Info)
+     ======================================== */
+
+  --color-success: #28a745;
+  --color-success-hover: #218838;
+  --color-success-bg: #d4edda;
+  --color-success-border: #c3e6cb;
+
+  --color-error: #dc3545;
+  --color-error-bg: #f8d7da;
+  --color-error-border: #f5c6cb;
+
+  --color-warning-bg: #fff3cd;
+
+  --color-info: #0066cc;
+
+
+  /* ========================================
+     COLORS - Neutrals (Text)
+     ======================================== */
+
+  --color-text-primary: #212529;
+  --color-text-heading: #333;
+  --color-text-secondary: #495057;
+  --color-text-muted: #666;
+  --color-text-muted-light: #6c757d;
+  --color-text-label: #8b8a9e;
+  --color-text-placeholder: #adb5bd;
+  --color-text-empty: #999;
+
+
+  /* ========================================
+     COLORS - Neutrals (Borders)
+     ======================================== */
+
+  --color-border: #dee2e6;
+  --color-border-light: #e0e0e0;
+  --color-border-input: #ced4da;
+  --color-border-hover: #adb5bd;
+  --color-border-card: #ddd;
+
+
+  /* ========================================
+     COLORS - Neutrals (Backgrounds)
+     ======================================== */
+
+  --color-bg-page: #f5f5f5;
+  --color-bg-section: #f8f9fa;
+  --color-bg-hover: #e9ecef;
+  --color-bg-subtle: #f0f0f0;
+  --color-bg-card: #fafafa;
+  --color-bg-white: #ffffff;
+
+
+  /* ========================================
+     COLORS - JSON Viewer (Dark Theme)
+     ======================================== */
+
+  --color-json-bg: #1e1e1e;
+  --color-json-scrollbar-track: #2d2d2d;
+  --color-json-scrollbar-thumb: #555;
+  --color-json-scrollbar-thumb-hover: #666;
+  --color-json-text: #d4d4d4;
+  --color-json-key: #9cdcfe;
+  --color-json-string: #ce9178;
+  --color-json-number: #b5cea8;
+  --color-json-boolean: #569cd6;
+
+
+  /* ========================================
+     COLORS - Overlays & Shadows (RGBA)
+     ======================================== */
+
+  --color-overlay: rgba(0, 0, 0, 0.5);
+  --color-overlay-dark: rgba(0, 0, 0, 0.6);
+  --color-shadow-light: rgba(0, 0, 0, 0.05);
+  --color-shadow: rgba(0, 0, 0, 0.1);
+  --color-shadow-medium: rgba(0, 0, 0, 0.15);
+  --color-shadow-dark: rgba(0, 0, 0, 0.2);
+  --color-shadow-darker: rgba(0, 0, 0, 0.3);
+  --color-focus-glow: rgba(0, 123, 255, 0.15);
+  --color-focus-glow-light: rgba(0, 123, 255, 0.1);
+
+
+  /* ========================================
+     SPACING
+     ======================================== */
+
+  --space-0: 0;
+  --space-1: 3px;
+  --space-xs: 4px;
+  --space-2: 5px;
+  --space-3: 6px;
+  --space-sm: 8px;
+  --space-4: 10px;
+  --space-md: 12px;
+  --space-5: 15px;
+  --space-lg: 16px;
+  --space-xl: 20px;
+  --space-2xl: 24px;
+  --space-3xl: 30px;
+  --space-4xl: 40px;
+  --space-5xl: 60px;
+
+
+  /* ========================================
+     TYPOGRAPHY - Font Families
+     ======================================== */
+
+  --font-family-base: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-family-mono: 'Consolas', 'Monaco', 'Courier New', monospace;
+
+
+  /* ========================================
+     TYPOGRAPHY - Font Sizes
+     ======================================== */
+
+  --font-size-2xs: 10px;
+  --font-size-xs: 11px;
+  --font-size-sm: 12px;
+  --font-size-13: 13px;
+  --font-size-base: 14px;
+  --font-size-15: 15px;
+  --font-size-md: 16px;
+  --font-size-17: 17px;
+  --font-size-lg: 18px;
+  --font-size-xl: 20px;
+  --font-size-22: 22px;
+  --font-size-2xl: 24px;
+  --font-size-3xl: 28px;
+  --font-size-4xl: 32px;
+  --font-size-36: 36px;
+  --font-size-5xl: 48px;
+  --font-size-6xl: 72px;
+
+
+  /* ========================================
+     TYPOGRAPHY - Font Weights
+     ======================================== */
+
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+
+  /* ========================================
+     TYPOGRAPHY - Line Heights
+     ======================================== */
+
+  --line-height-tight: 1;
+  --line-height-snug: 1.4;
+  --line-height-normal: 1.6;
+  --line-height-relaxed: 1.8;
+
+
+  /* ========================================
+     TYPOGRAPHY - Letter Spacing
+     ======================================== */
+
+  --letter-spacing-tight: 0.3px;
+  --letter-spacing-normal: 0.5px;
+
+
+  /* ========================================
+     BORDERS - Border Radius
+     ======================================== */
+
+  --border-radius-sm: 4px;
+  --border-radius-md: 6px;
+  --border-radius-lg: 8px;
+  --border-radius-xl: 12px;
+  --border-radius-pill: 20px;
+  --border-radius-circle: 50%;
+
+
+  /* ========================================
+     BORDERS - Border Widths
+     ======================================== */
+
+  --border-width-thin: 1px;
+  --border-width-medium: 2px;
+
+
+  /* ========================================
+     SHADOWS - Elevation Levels
+     ======================================== */
+
+  /* Subtle shadows (cards, sections) */
+  --shadow-xs: 0 2px 4px var(--color-shadow-light);
+  --shadow-sm: 0 2px 4px var(--color-shadow);
+  --shadow-sm-alt: 0 2px 5px var(--color-shadow-light);
+  --shadow-sm-medium: 0 2px 8px var(--color-shadow);
+
+  /* Medium shadows (dropdowns, hover states) */
+  --shadow-md: 0 4px 8px var(--color-shadow);
+  --shadow-md-dark: 0 4px 8px var(--color-shadow-dark);
+  --shadow-md-large: 0 4px 12px var(--color-shadow-medium);
+  --shadow-md-xl: 0 4px 12px var(--color-shadow);
+
+  /* Heavy shadows (modals) */
+  --shadow-lg: 0 4px 20px var(--color-shadow-darker);
+  --shadow-xl: 0 8px 32px var(--color-shadow-darker);
+
+  /* Directional shadows */
+  --shadow-left: -2px 0 8px var(--color-shadow);
+
+
+  /* ========================================
+     SHADOWS - Focus States
+     ======================================== */
+
+  --shadow-focus: 0 0 0 2px var(--color-focus-glow);
+  --shadow-focus-light: 0 0 0 3px var(--color-focus-glow-light);
+  --shadow-focus-strong: 0 0 0 3px var(--color-focus-glow);
+
+
+  /* ========================================
+     Z-INDEX - Stacking Order
+     ======================================== */
+
+  --z-sticky: 10;
+  --z-header: 100;
+  --z-overlay: 999;
+  --z-dropdown: 1000;
+  --z-modal: 9999;
+  --z-modal-overlay: 10000;
+  --z-modal-detail: 10001;
+
+
+  /* ========================================
+     TRANSITIONS - Duration & Easing
+     ======================================== */
+
+  --transition-fast: 0.15s ease;
+  --transition-base: 0.2s ease;
+  --transition-slow: 0.3s ease;
+
+
+  /* ========================================
+     LAYOUT - Container & Breakpoints
+     ======================================== */
+
+  --container-max-width: 1200px;
+  --breakpoint-mobile: 768px;
+  --breakpoint-tablet: 1024px;
+  --breakpoint-small: 500px;
+}
+
+
+/* ========================================
+   DARK MODE READY
+   Uncomment and customize when implementing dark mode
+   ======================================== */
+
+/*
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-primary: #4da3ff;
+    --color-text-primary: #e0e0e0;
+    --color-text-heading: #ffffff;
+    --color-bg-page: #1a1a1a;
+    --color-bg-section: #2d2d2d;
+    --color-bg-white: #1e1e1e;
+    --color-border: #3d3d3d;
+  }
+}
+*/

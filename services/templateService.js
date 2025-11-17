@@ -396,8 +396,6 @@ class TemplateService {
       accessibleTables,
     } = options;
 
-  console.log("htmlCrudDetailPage", options)
-
     return `
 <!DOCTYPE html>
 <html lang="fr">
@@ -583,8 +581,6 @@ class TemplateService {
           return;
         }
 
-        console.log('createEvent called:', { tableName, date, dateType: typeof date });
-
         // Sauvegarder la vue actuelle pour le retour
         sessionStorage.setItem('calendarReturnView', calendar.view.type);
         sessionStorage.setItem('calendarReturnDate', date);
@@ -601,7 +597,6 @@ class TemplateService {
           const [, year, month, day] = match;
           const dateTimeISO = year + '-' + month + '-' + day + 'T09:00';
           const url = '/_crud/' + tableName + '?startDate=' + encodeURIComponent(dateTimeISO);
-          console.log('Redirecting to:', url);
           window.location.href = url;
         } else {
           // Fallback si vraiment impossible de parser la date
@@ -644,15 +639,6 @@ class TemplateService {
         eventDurationEditable: true,
         // Gestion du drag-and-drop
         eventDrop: function(info) {
-          console.log('[Calendar] Événement déplacé:', {
-            id: info.event.id,
-            table: info.event.extendedProps.table,
-            oldStart: info.oldEvent.start,
-            newStart: info.event.start,
-            oldEnd: info.oldEvent.end,
-            newEnd: info.event.end
-          });
-
           // Préparer les données pour l'API (en heure locale, pas UTC)
           const eventData = {
             startDate: dateToLocalISO(info.event.start),
@@ -670,7 +656,6 @@ class TemplateService {
           .then(response => response.json())
           .then(data => {
             if (data.success) {
-              console.log('[Calendar] Mise à jour réussie');
             } else {
               console.error('[Calendar] Erreur lors de la mise à jour:', data.error);
               // Annuler le changement en cas d'erreur
@@ -687,15 +672,6 @@ class TemplateService {
         },
         // Gestion du redimensionnement
         eventResize: function(info) {
-          console.log('[Calendar] Événement redimensionné:', {
-            id: info.event.id,
-            table: info.event.extendedProps.table,
-            oldStart: info.oldEvent.start,
-            newStart: info.event.start,
-            oldEnd: info.oldEvent.end,
-            newEnd: info.event.end
-          });
-
           // Préparer les données pour l'API (en heure locale, pas UTC)
           const eventData = {
             startDate: dateToLocalISO(info.event.start),
@@ -713,7 +689,6 @@ class TemplateService {
           .then(response => response.json())
           .then(data => {
             if (data.success) {
-              console.log('[Calendar] Mise à jour réussie');
             } else {
               console.error('[Calendar] Erreur lors de la mise à jour:', data.error);
               // Annuler le changement en cas d'erreur
@@ -815,7 +790,6 @@ class TemplateService {
       fetch('/_calendar/stats')
         .then(response => response.json())
         .then(data => {
-          console.log('[Calendar] Stats response:', data);
           if (data.success) {
             const statsEl = document.getElementById('calendarStats');
             // Stats are spread directly into the response object, not nested under data.data

@@ -1,54 +1,57 @@
 /**
  * JSON Viewer styles - Syntax highlighting for JSON display
+ * Uses CSS variables from variables.css
  */
 
+@import 'variables.css';
+
 .json-display {
-  background: #1e1e1e;
-  color: #d4d4d4;
-  padding: 20px;
-  border-radius: 4px;
+  background: var(--color-json-bg);
+  color: var(--color-json-text);
+  padding: var(--space-xl);
+  border-radius: var(--border-radius-sm);
   overflow-x: auto;
-  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-  font-size: 13px;
-  line-height: 1.6;
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-13);
+  line-height: var(--line-height-normal);
 }
 
 /* JSON syntax highlighting */
 .json-key {
-  color: #9cdcfe;
+  color: var(--color-json-key);
 }
 
 .json-string {
-  color: #ce9178;
+  color: var(--color-json-string);
 }
 
 .json-number {
-  color: #b5cea8;
+  color: var(--color-json-number);
 }
 
 .json-boolean {
-  color: #569cd6;
+  color: var(--color-json-boolean);
 }
 
 .json-null {
-  color: #569cd6;
+  color: var(--color-json-boolean);
 }
 
 /* Scrollbar styling for JSON viewer */
 .json-display::-webkit-scrollbar {
-  height: 8px;
-  width: 8px;
+  height: var(--space-sm);
+  width: var(--space-sm);
 }
 
 .json-display::-webkit-scrollbar-track {
-  background: #2d2d2d;
+  background: var(--color-json-scrollbar-track);
 }
 
 .json-display::-webkit-scrollbar-thumb {
-  background: #555;
-  border-radius: 4px;
+  background: var(--color-json-scrollbar-thumb);
+  border-radius: var(--border-radius-sm);
 }
 
 .json-display::-webkit-scrollbar-thumb:hover {
-  background: #666;
+  background: var(--color-json-scrollbar-thumb-hover);
 }

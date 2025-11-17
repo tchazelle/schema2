@@ -342,10 +342,6 @@ router.put('/:tableName/:id', async (req, res) => {
     const updateValues = Object.values(data);
     const updateQuery = `UPDATE \`${table}\` SET ${updateFields} WHERE id = ?`;
 
-    // Console.log the UPDATE query
-    console.log('UPDATE Query:', updateQuery);
-    console.log('UPDATE Values:', [...updateValues, id]);
-
     // Update record
     await pool.query(updateQuery, [...updateValues, id]);
 

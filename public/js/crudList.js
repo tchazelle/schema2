@@ -1080,7 +1080,6 @@ class EditForm extends React.Component {
       // Send only the changed field
       const dataToSend = { [fieldName]: value };
 
-      console.log(`Saving field ${fieldName}:`, value);
 
       const response = await fetch(`/_api/${tableName}/${row.id}`, {
         method: 'PUT',
@@ -4787,7 +4786,6 @@ class CrudList extends React.Component {
   }
 
   async componentDidMount() {
-    console.log('[CrudList] componentDidMount() called');
     this.loadSchema();
 
     // If initialRecordId is provided, load only that record for fullscreen view
@@ -4804,32 +4802,22 @@ class CrudList extends React.Component {
     // URL parameters will be checked in componentDidUpdate when data is available
     // This is crucial for calendar integration where we need data.structure
     // to be available before opening the create form
-    console.log('[CrudList] componentDidMount complete, URL parameters will be checked when data is available');
   }
 
   componentDidUpdate(prevProps, prevState) {
-    console.log('[CrudList] componentDidUpdate() called');
-    console.log('[CrudList] prevState.data:', prevState.data ? 'available' : 'null');
-    console.log('[CrudList] this.state.data:', this.state.data ? 'available' : 'null');
-    console.log('[CrudList] urlParametersProcessed:', this.urlParametersProcessed);
 
     // If data just became available for the first time
     // AND we haven't processed URL parameters yet
     // This ensures the create form can be opened with data.structure available
     if (!prevState.data && this.state.data && !this.urlParametersProcessed) {
-      console.log('[CrudList] Conditions met, calling checkURLParameters()');
       this.urlParametersProcessed = true;
       this.checkURLParameters();
     } else {
-      console.log('[CrudList] Conditions NOT met for calling checkURLParameters()');
       if (this.urlParametersProcessed) {
-        console.log('[CrudList] → URL parameters already processed');
       }
       if (prevState.data) {
-        console.log('[CrudList] → Data was already available in previous state');
       }
       if (!this.state.data) {
-        console.log('[CrudList] → Data not yet available in current state');
       }
     }
   }
@@ -4940,13 +4928,6 @@ class CrudList extends React.Component {
   }
 
   checkURLParameters() {
-    console.log('='.repeat(80));
-    console.log('[CrudList] checkURLParameters() called');
-    console.log('[CrudList] Full URL:', window.location.href);
-    console.log('[CrudList] Pathname:', window.location.pathname);
-    console.log('[CrudList] Search string:', window.location.search);
-    console.log('[CrudList] Search length:', window.location.search.length);
-    console.log('[CrudList] State.data available:', this.state.data ? 'YES' : 'NO');
 
     // Parse URL query parameters
     const urlParams = new URLSearchParams(window.location.search);
@@ -4954,30 +4935,21 @@ class CrudList extends React.Component {
     const parentId = urlParams.get('parentId');
     const openRecordId = urlParams.get('open');
 
-    console.log('[CrudList] Parsed params:');
-    console.log('  - parent:', parent);
-    console.log('  - parentId:', parentId);
-    console.log('  - openRecordId:', openRecordId);
 
     // Extract all URL parameters as default values for form fields
     const defaultValues = {};
     let paramCount = 0;
     for (const [key, value] of urlParams.entries()) {
       paramCount++;
-      console.log(`[CrudList] URL param #${paramCount}: ${key} = ${value}`);
       // Skip special parameters: parent, parentId, open
       if (key !== 'parent' && key !== 'parentId' && key !== 'open') {
         defaultValues[key] = value;
       }
     }
 
-    console.log('[CrudList] Total URL params found:', paramCount);
-    console.log('[CrudList] Extracted defaultValues:', defaultValues);
-    console.log('[CrudList] defaultValues count:', Object.keys(defaultValues).length);
 
     // If 'open' parameter is provided, load that record in fullscreen mode
     if (openRecordId) {
-      console.log('[CrudList] Opening record in fullscreen mode:', openRecordId);
       this.setState({
         fullscreenRecordId: parseInt(openRecordId)
       });
@@ -4987,7 +4959,6 @@ class CrudList extends React.Component {
 
     // If parent and parentId are provided, open create form automatically
     if (parent && parentId) {
-      console.log('[CrudList] Opening create form with parent:', parent, parentId);
       this.setState({
         showCreateForm: true,
         createFormParentTable: parent,
@@ -4996,13 +4967,11 @@ class CrudList extends React.Component {
       });
     } else if (Object.keys(defaultValues).length > 0) {
       // If there are default values but no parent, still open the form
-      console.log('[CrudList] Opening create form with default values:', defaultValues);
       this.setState({
         showCreateForm: true,
         createFormDefaultValues: defaultValues
       });
     } else {
-      console.log('[CrudList] No URL parameters to process');
     }
   }
 
@@ -5185,14 +5154,12 @@ class CrudList extends React.Component {
   }
 
   handleAddNew = (parentTable = null, parentId = null, defaultValues = {}) => {
-    console.log('[CrudList] handleAddNew called - parentTable:', parentTable, 'parentId:', parentId, 'defaultValues:', defaultValues);
     this.setState({
       showCreateForm: true,
       createFormParentTable: parentTable,
       createFormParentId: parentId,
       createFormDefaultValues: defaultValues
     }, () => {
-      console.log('[CrudList] State updated - showCreateForm:', this.state.showCreateForm);
     });
   }
 
@@ -5539,11 +5506,9 @@ class CrudList extends React.Component {
         ),
         e('div', { className: 'crud-actions' },
           (() => {
-            console.log('[CrudList] Button render check - data:', !!data, 'permissions:', data?.permissions, 'canCreate:', data?.permissions?.canCreate);
             return data && data.permissions && data.permissions.canCreate && e('button', {
               className: 'btn-add-record',
               onClick: (e) => {
-                console.log('[CrudList] Button clicked!', e);
                 this.handleAddNew();
               }
             }, '+ Nouveau');
@@ -5626,8 +5591,6 @@ class CrudList extends React.Component {
 
       // Create form modal
       (() => {
-        console.log('[CrudList] Render - showCreateForm:', showCreateForm, 'data:', data ? 'available' : 'null');
-        console.log('[CrudList] Render - createFormDefaultValues:', createFormDefaultValues);
         return showCreateForm && data && e(CreateFormModal, {
           tableName: table,
           structure: data.structure,

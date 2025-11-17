@@ -46,8 +46,6 @@ router.patch('/events/:table/:id', async (req, res) => {
     const { table, id } = req.params;
     const { startDate, endDate } = req.body;
 
-    console.log('[CALENDAR DRAG-DROP] Début de la mise à jour:', { table, id, startDate, endDate });
-
     // Vérifier si l'utilisateur a accès au calendrier
     if (!CalendarService.hasCalendarAccess(user)) {
       return res.status(403).json(UIService.jsonError('Accès au calendrier non autorisé'));
@@ -60,7 +58,6 @@ router.patch('/events/:table/:id', async (req, res) => {
       return res.status(result.status || 500).json(UIService.jsonError(result.error));
     }
 
-    console.log('[CALENDAR DRAG-DROP] Mise à jour réussie');
     res.json(UIService.jsonSuccess({ message: 'Événement mis à jour avec succès' }));
 
   } catch (error) {

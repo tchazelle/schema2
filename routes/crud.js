@@ -249,7 +249,6 @@ router.get('/:table/view', async (req, res) => {
         container: container,
         showSystemFields: false,
         onFieldSelect: (path, field) => {
-          //console.log('Champ sélectionné:', path, field);
         }
       });
 
@@ -314,7 +313,6 @@ router.get('/:table/data', async (req, res) => {
       try {
         parsedAdvancedSearch = JSON.parse(advancedSearch);
       } catch (e) {
-        console.error('Failed to parse advancedSearch:', e);
       }
     }
 
@@ -322,7 +320,6 @@ router.get('/:table/data', async (req, res) => {
       try {
         parsedAdvancedSort = JSON.parse(advancedSort);
       } catch (e) {
-        console.error('Failed to parse advancedSort:', e);
       }
     }
 

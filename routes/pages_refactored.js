@@ -17,7 +17,6 @@ const CrudService = require('../services/crudService');
 router.get('/:slug?', async (req, res) => {
   try {
     const slug = req.params.slug || 'index';
-    console.log('PAGE ' + slug);
     const user = req.user;
     const isAuthenticated = !!user;
 
