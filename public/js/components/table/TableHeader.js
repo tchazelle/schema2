@@ -26,13 +26,14 @@
  */
 class TableHeader extends React.Component {
   render() {
-    const { fields, structure, orderBy, order, onSort, displayMode, showDeleteButton, permissions, advancedSortCriteria, statistics } = this.props;
+    const { fields, structure, orderBy, order, onSort, displayMode, showDeleteButton, permissions, advancedSortCriteria, statistics, draggable } = this.props;
     const hasAdvancedSort = advancedSortCriteria && advancedSortCriteria.length > 0;
     const hasStatistics = statistics && Object.keys(statistics).length > 0;
 
     if (displayMode === 'raw') {
       return e('thead', null,
         e('tr', null,
+          draggable && e('th', { key: 'drag-header', style: { width: '30px' } }, ''),
           showDeleteButton && permissions && permissions.canDelete && e('th', { key: 'delete-header', style: { width: '40px' } }, ''),
           fields.map(fieldName =>
             e('th', { key: fieldName }, fieldName)
@@ -44,6 +45,7 @@ class TableHeader extends React.Component {
     return e('thead', null,
       // Header row
       e('tr', null,
+        draggable && e('th', { key: 'drag-header', style: { width: '30px', textAlign: 'center' }, title: 'Glisser pour réorganiser' }, '⋮⋮'),
         showDeleteButton && permissions && permissions.canDelete && e('th', { key: 'delete-header', style: { width: '40px' } }, ''),
         e('th', { key: 'granted-header', style: { width: '40px', textAlign: 'center' }, title: 'Statut de publication' }, '📋'),
         fields.map(fieldName => {
@@ -72,6 +74,7 @@ class TableHeader extends React.Component {
       ),
       // Statistics row (if statistics are available)
       hasStatistics && e('tr', { className: 'statistics-row', style: { backgroundColor: '#f8f9fa', fontWeight: 'bold' } },
+        draggable && e('th', { key: 'drag-stat', style: { width: '30px' } }),
         showDeleteButton && permissions && permissions.canDelete && e('th', { key: 'delete-stat', style: { width: '40px' } }),
         e('th', { key: 'granted-stat', style: { width: '40px' } }),
         fields.map(fieldName => {
