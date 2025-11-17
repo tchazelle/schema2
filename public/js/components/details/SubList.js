@@ -103,6 +103,33 @@ class SubList extends React.Component {
     window.open(`/_crud/${tableName}`, '_blank');
   }
 
+  handleExtendAuthorization = async () => {
+    const { tableName, parentTable, parentId } = this.props;
+
+    if (!confirm(`Étendre l'autorisation de la fiche ${parentTable} à toutes les fiches ${tableName} liées ?`)) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/_api/${parentTable}/${parentId}/extend-authorization/${tableName}`, {
+        method: 'POST'
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        alert(`✓ Autorisation étendue à ${data.updatedCount} fiche(s) ${tableName}`);
+        // Reload the page to refresh data
+        window.location.reload();
+      } else {
+        alert(`Erreur: ${data.error || 'Échec de l\'extension'}`);
+      }
+    } catch (error) {
+      console.error('Error extending authorization:', error);
+      alert('Erreur lors de l\'extension de l\'autorisation');
+    }
+  }
+
   handleSort = (fieldName) => {
     this.setState(prev => {
       if (prev.orderBy === fieldName) {
@@ -262,7 +289,8 @@ class SubList extends React.Component {
             showDeleteButtons,
             onToggleDelete: this.handleToggleDeleteButtons,
             onAdvancedSort: this.handleAdvancedSort,
-            onLinkToTable: this.handleLinkToTable
+            onLinkToTable: this.handleLinkToTable,
+            onExtendAuthorization: parentTable && parentId ? this.handleExtendAuthorization : null
           })
         )
       ),

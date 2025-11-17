@@ -31,12 +31,13 @@ class RowDetailView extends React.Component {
     super(props);
     this.state = {
       openRelations: new Set(),
-      showAttachments: false
+      showAttachments: false,
+      attachmentCount: 0
     };
   }
 
-  componentDidMount() {
-    const { row, structure } = this.props;
+  async componentDidMount() {
+    const { row, structure, tableName } = this.props;
     // Open "Strong" relations by default, keep "Weak" relations closed
     const strongRelations = new Set();
 
@@ -50,6 +51,24 @@ class RowDetailView extends React.Component {
     }
 
     this.setState({ openRelations: strongRelations });
+
+    // Load attachment count
+    await this.loadAttachmentCount();
+  }
+
+  loadAttachmentCount = async () => {
+    const { tableName, row } = this.props;
+
+    try {
+      const response = await fetch(`/_api/${tableName}/${row.id}/attachments`);
+      const data = await response.json();
+
+      if (data.success) {
+        this.setState({ attachmentCount: data.count || 0 });
+      }
+    } catch (error) {
+      console.error('Failed to load attachment count:', error);
+    }
   }
 
   toggleRelation = (relName) => {
@@ -75,7 +94,7 @@ class RowDetailView extends React.Component {
 
   render() {
     const { row, structure, tableName, permissions, onEdit, parentTable, hideRelations1N } = this.props;
-    const { openRelations, showAttachments } = this.state;
+    const { openRelations, showAttachments, attachmentCount } = this.state;
 
     // Check if table has attachments enabled
     const tableConfig = SCHEMA_CONFIG?.tables?.[tableName];
@@ -310,7 +329,7 @@ class RowDetailView extends React.Component {
                 parentTable: tableName,
                 parentId: row.id,
                 relationName: relName,
-                hideHeader: true,
+                hideHeader: false,
                 defaultSort: relation.defaultSort
               })
             )
@@ -330,13 +349,15 @@ class RowDetailView extends React.Component {
           },
             e('span', { className: 'relation-toggle' }, showAttachments ? '▼' : '▶'),
             e('strong', null, 'Pièces jointes'),
-            e('span', { className: 'relation-count badge', style: { fontSize: '14px' } }, '📎')
+            e('span', { className: 'relation-count badge' }, attachmentCount),
+            e('span', { style: { fontSize: '14px' } }, '📎')
           )
         ),
         showAttachments && e(AttachmentsTab, {
           tableName: tableName,
           rowId: row.id,
-          permissions: permissions
+          permissions: permissions,
+          onAttachmentChange: this.loadAttachmentCount
         })
       )
     );

@@ -63,7 +63,7 @@ class ThreeDotsMenu extends React.Component {
   }
 
   render() {
-    const { displayMode, onDisplayModeChange, onFieldSelect, onToggleDelete, showDeleteButtons, onAdvancedSearch, onAdvancedSort, hasAdvancedSearch, hasAdvancedSort, isSubList, tableName, onLinkToTable } = this.props;
+    const { displayMode, onDisplayModeChange, onFieldSelect, onToggleDelete, showDeleteButtons, onAdvancedSearch, onAdvancedSort, hasAdvancedSearch, hasAdvancedSort, isSubList, tableName, onLinkToTable, onExtendAuthorization } = this.props;
     const { isOpen } = this.state;
 
     return e('div', { className: 'menu-dots', ref: this.menuRef },
@@ -132,6 +132,11 @@ class ThreeDotsMenu extends React.Component {
             className: 'menu-item',
             onClick: () => this.handleOptionClick('onAdvancedSort')
           }, '📊 Tri avancé...'),
+          onExtendAuthorization && e('button', {
+            key: 'sublist-extend-auth',
+            className: 'menu-item',
+            onClick: () => this.handleOptionClick('onExtendAuthorization')
+          }, '🔐 Étendre l\'autorisation aux fiches liées'),
           e('div', { key: 'sublist-divider', className: 'menu-divider' }),
           e('button', {
             key: 'sublist-link',

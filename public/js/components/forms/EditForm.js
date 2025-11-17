@@ -722,7 +722,7 @@ class EditForm extends React.Component {
                 parentTable: tableName,
                 parentId: row.id,
                 relationName: relName,
-                hideHeader: true
+                hideHeader: false
               })
             )
           );
