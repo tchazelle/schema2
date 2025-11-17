@@ -974,7 +974,8 @@ class EditForm extends React.Component {
       saveStatus: 'idle', // idle, saving, saved, error
       errors: {},
       openRelations: new Set(), // Track which 1:n relations are expanded
-      dirtyFields: new Set() // Track which fields have been modified
+      dirtyFields: new Set(), // Track which fields have been modified
+      showAttachments: false // Track if attachments section is expanded
     };
 
     this.saveTimeout = null;
@@ -1094,6 +1095,11 @@ class EditForm extends React.Component {
         // Notify parent of successful save (only send changed field to avoid full re-render)
         if (this.props.onSave) {
           this.props.onSave({ [fieldName]: value });
+        }
+
+        // Refresh the list to show the updated data
+        if (this.props.onUpdate) {
+          this.props.onUpdate();
         }
 
         // Clear pending save
@@ -1368,13 +1374,55 @@ class EditForm extends React.Component {
 
   render() {
     const { structure, onClose, row, tableName, tableConfig, permissions, hideRelations1N = false, parentTable } = this.props;
-    const { saveStatus, errors, formData, openRelations } = this.state;
+    const { saveStatus, errors, formData, openRelations, showAttachments } = this.state;
+
+    // Get calendar config from structure if available
+    const hasCalendar = structure.calendar;
+    const startDateField = hasCalendar ? (structure.calendar.startDate || 'startDate') : null;
+    const endDateField = hasCalendar ? (structure.calendar.endDate || 'endDate') : null;
+
+    // First pass: collect all fields and track startDate position
+    let startDateIndex = -1;
+    const rawFields = Object.keys(structure.fields);
+
+    // Find the position of startDate in the original field order
+    if (hasCalendar && startDateField) {
+      startDateIndex = rawFields.indexOf(startDateField);
+    }
 
     // Get editable fields (exclude system fields, id, granted, relations arrays, and parent fields in sub-lists)
-    const editableFields = Object.keys(structure.fields).filter(f =>
-      !['id', 'ownerId', 'granted', 'createdAt', 'updatedAt'].includes(f) &&
-      !this.isParentField(f)
-    );
+    // Also filter out startDate and endDate if table has calendar and _dateRange is present
+    const editableFields = rawFields.filter(f => {
+      // Filter out system fields
+      if (['id', 'ownerId', 'granted', 'createdAt', 'updatedAt'].includes(f)) {
+        return false;
+      }
+      // Filter out parent fields
+      if (this.isParentField(f)) {
+        return false;
+      }
+      // Filter out startDate and endDate if table has calendar and _dateRange is present
+      if (row._dateRange && hasCalendar && (f === startDateField || f === endDateField)) {
+        return false;
+      }
+      return true;
+    });
+
+    // Add _dateRange at the position where startDate was (substitution)
+    if (row._dateRange && !editableFields.includes('_dateRange')) {
+      // Calculate the adjusted index after filtering
+      // Count how many fields before startDate were filtered out
+      let adjustedIndex = 0;
+      if (startDateIndex > 0) {
+        for (let i = 0; i < startDateIndex; i++) {
+          const f = rawFields[i];
+          if (!['id', 'ownerId', 'granted', 'createdAt', 'updatedAt'].includes(f) && !this.isParentField(f)) {
+            adjustedIndex++;
+          }
+        }
+      }
+      editableFields.splice(adjustedIndex, 0, '_dateRange');
+    }
 
     // Extract 1:N relations (only if not hidden)
     const relations1N = [];
@@ -1504,6 +1552,28 @@ class EditForm extends React.Component {
               })
             )
           );
+        })
+      ),
+
+      // Attachments section (always shown)
+      e('div', { className: 'edit-form-attachments-section' },
+        e('div', {
+          className: 'relation-header',
+          style: { display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'space-between' }
+        },
+          e('div', {
+            style: { display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', flex: 1 },
+            onClick: () => this.setState(prev => ({ showAttachments: !prev.showAttachments }))
+          },
+            e('span', { className: 'relation-toggle' }, showAttachments ? '▼' : '▶'),
+            e('strong', null, 'Pièces jointes'),
+            e('span', { className: 'relation-count badge', style: { fontSize: '14px' } }, '📎')
+          )
+        ),
+        showAttachments && e(AttachmentsTab, {
+          tableName: tableName,
+          rowId: row.id,
+          permissions: permissions
         })
       )
     );
@@ -2006,6 +2076,7 @@ class RowDetailModal extends React.Component {
                   permissions,
                   onClose: onExitEditMode,
                   onSave,
+                  onUpdate,
                   focusFieldName,
                   parentTable,
                   hideRelations1N
@@ -2585,8 +2656,8 @@ class RowDetailView extends React.Component {
         })
       ),
 
-      // Attachments section (if table has hasAttachmentsTab enabled)
-      hasAttachmentsTab && e('div', { className: 'detail-attachments-section' },
+      // Attachments section (always shown)
+      e('div', { className: 'detail-attachments-section' },
         e('div', {
           className: 'relation-header',
           style: { display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'space-between' }
