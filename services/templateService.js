@@ -93,21 +93,24 @@ class TemplateService {
   <script src="/js/components/search/AdvancedSearchModal.js"></script>
   <script src="/js/components/search/AdvancedSortModal.js"></script>
 
-  <!-- 6. Table Components -->
+  <!-- 6. Dialog Components (no dependencies) -->
+  <script src="/js/components/dialogs/RelationSelectorDialog.js"></script>
+
+  <!-- 7. Table Components -->
   <script src="/js/components/table/TableHeader.js"></script>
   <script src="/js/components/table/TableRow.js"></script>
 
-  <!-- 7. Detail Components (depends on table, fields, forms) -->
+  <!-- 8. Detail Components (depends on table, fields, forms) -->
   <script src="/js/components/details/AttachmentsTab.js"></script>
   <script src="/js/components/details/SubList.js"></script>
   <script src="/js/components/details/RowDetailView.js"></script>
   <script src="/js/components/details/RowDetailModal.js"></script>
 
-  <!-- 8. Large Form Components (depends on many others) -->
+  <!-- 9. Large Form Components (depends on many others) -->
   <script src="/js/components/forms/EditForm.js"></script>
   <script src="/js/components/forms/CreateFormModal.js"></script>
 
-  <!-- 9. Main Application (depends on all components) -->
+  <!-- 10. Main Application (depends on all components) -->
   <script src="/js/crudList.js"></script>
     `;
   }
