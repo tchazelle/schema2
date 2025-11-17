@@ -432,5 +432,73 @@ module.exports = {
         // + commonFields
       }
     },
+
+    Trip:{
+      displayFields: ["name"],
+      pageSize: 300,
+      hasAttachmentsTab: true, // Permet d'attacher des pièces jointes
+      granted: {
+        "admin": ["read", "create", "update", "delete", "publish"]
+      },
+      calendar: {
+        bgColor: "yellow",
+        startDate: "departureTime",
+        endDate: "arrivalTime"
+      },
+      fields: {
+        id: { type: "integer", isPrimary: true, autoIncrement: true },
+        departureTime: { type: "datetime", renderer: "datetime" }, 
+        arrivalTime: { type: "datetime", renderer: "datetime" }, 
+        
+        subType:{
+          type: "enum", 
+          values:["BoatTrip","BusTrip","Flight", "TouristTrip","TrainTrip"]
+        },
+        name: { type: "varchar" }, // Nom de la tâche
+        description: { type: "text" }, // Description de la tâche,
+      }
+    },  
+    itinerary:{
+      
+      pageSize: 500,
+      hasAttachmentsTab: false, // Permet d'attacher des pièces jointes
+      granted: {
+        "admin": ["read", "create", "update", "delete", "publish"]
+      },
+      
+      fields: {
+        id: { type: "integer", isPrimary: true, autoIncrement: true },
+        position:{ type: "integer" },
+        Trip: {
+          type: "integer",
+          relation: "Trip",
+          foreignKey: "id",
+          arrayName: "ItemList",
+          relationshipStrength: "Strong",
+          defaultSort: { field: "position", order: "ASC" }
+        },
+        Place: {
+          type: "integer",
+          relation: "Place",
+          foreignKey: "id",
+          arrayName: "partOfTrip",
+          relationshipStrength: "Weak"
+        } 
+      }
+    },
+    Place : {
+      displayFields: ["name"],
+      pageSize: 300,
+      granted: { "admin": ["read", "create", "update", "delete", "publish"] },
+      fields: {
+        id: { type: "integer", isPrimary: true, autoIncrement: true },
+        name: { type: "varchar" }, // Nom de la tâche
+        description: { type: "text" }, // Description de la tâche,
+        "streetAddress": { type: "text", wrapper:{name: "address", type: "PostalAddress"} },
+        "postalCode": { type: "varchar(10)", wrapper:{name: "address", type: "PostalAddress"} },
+        "addressLocality": { type: "varchar", wrapper:{name: "address", type: "PostalAddress"} },
+        "addressCountry": { type: "varchar", wrapper:{name: "address", type: "PostalAddress"} }
+      }
+    }
   }
 };
