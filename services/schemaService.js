@@ -174,11 +174,19 @@ class SchemaService {
         filteredSchema.fields[fieldName] = {
           type: fieldConfig.type,
           ...(isComputed && { computed: true }),
+          // Ajouter calculate: true si c'est une fonction (transformé pour JSON)
+          ...(fieldConfig.calculate && typeof fieldConfig.calculate === 'function' && { calculate: true }),
+          // Ajouter as si c'est un champ calculé SQL
+          ...(fieldConfig.as && { as: fieldConfig.as }),
+          // Ajouter stat si défini
+          ...(fieldConfig.stat && { stat: fieldConfig.stat }),
           ...(fieldConfig.relation && { relation: fieldConfig.relation }),
           ...(fieldConfig.foreignKey && { foreignKey: fieldConfig.foreignKey }),
           ...(fieldConfig.arrayName && { arrayName: fieldConfig.arrayName }),
           ...(fieldConfig.relationshipStrength && { relationshipStrength: fieldConfig.relationshipStrength }),
-          ...(fieldConfig.defaultSort && { defaultSort: fieldConfig.defaultSort })
+          ...(fieldConfig.defaultSort && { defaultSort: fieldConfig.defaultSort }),
+          ...(fieldConfig.readonly && { readonly: fieldConfig.readonly }),
+          ...(fieldConfig.renderer && { renderer: fieldConfig.renderer })
         };
       }
     }
@@ -320,8 +328,9 @@ class SchemaService {
         default: fieldConfig.default,
         renderer: fieldConfig.renderer,
         values: fieldConfig.values, // Pour les enums
+        readonly: fieldConfig.readonly,
         as: fieldConfig.as, // Pour les champs calculés SQL
-        calculate: fieldConfig.calculate ? 'function' : undefined, // Indiquer qu'il y a une fonction de calcul
+        calculate: (fieldConfig.calculate && typeof fieldConfig.calculate === 'function') ? true : undefined, // Transformé en true pour JSON
         stat: fieldConfig.stat
       };
 
@@ -418,6 +427,139 @@ class SchemaService {
     }
 
     return structure;
+  }
+
+  /**
+   * Construit la clause SELECT pour une table en incluant les champs calculés SQL (as)
+   * @param {string} tableName - Nom de la table
+   * @param {string} [tableAlias] - Alias de la table (pour les JOINs)
+   * @returns {string} - Clause SELECT (ex: "*, CONCAT(...) AS fullName")
+   */
+  static buildSelectClause(tableName, tableAlias = null) {
+    const tableConfig = schema.tables[tableName];
+    if (!tableConfig) {
+      return '*';
+    }
+
+    const prefix = tableAlias ? `\`${tableAlias}\`.` : '';
+    const tableRef = tableAlias ? tableAlias : tableName;
+    const selectParts = [`${prefix}*`];
+
+    // Ajouter les champs calculés SQL (as)
+    for (const fieldName in tableConfig.fields) {
+      const fieldConfig = tableConfig.fields[fieldName];
+      if (fieldConfig.as) {
+        // Remplacer les noms de champs dans la formule par leur version qualifiée si nécessaire
+        let formula = fieldConfig.as;
+        if (tableAlias) {
+          // Remplacer les références de champs par leur version qualifiée
+          // Ex: "CONCAT(givenName, ' ', familyName)" -> "CONCAT(`tableAlias`.givenName, ' ', `tableAlias`.familyName)"
+          // On cherche les noms de champs connus dans la formule
+          for (const otherFieldName in tableConfig.fields) {
+            const regex = new RegExp(`\\b${otherFieldName}\\b`, 'g');
+            formula = formula.replace(regex, `${prefix}${otherFieldName}`);
+          }
+        }
+        selectParts.push(`${formula} AS \`${fieldName}\``);
+      }
+    }
+
+    return selectParts.join(', ');
+  }
+
+  /**
+   * Obtient les champs avec fonction calculate (JavaScript)
+   * @param {string} tableName - Nom de la table
+   * @param {Object} user - L'utilisateur (pour vérifier les permissions)
+   * @returns {Object} - { fieldName: calculateFunction }
+   */
+  static getCalculatedFields(tableName, user = null) {
+    const tableConfig = schema.tables[tableName];
+    if (!tableConfig) {
+      return {};
+    }
+
+    const calculatedFields = {};
+    const userRoles = user ? getUserAllRoles(user) : ['public'];
+
+    for (const fieldName in tableConfig.fields) {
+      const fieldConfig = tableConfig.fields[fieldName];
+
+      // Vérifier les permissions spécifiques au champ
+      let fieldAccessible = true;
+      if (fieldConfig.grant) {
+        fieldAccessible = false;
+        for (const role of userRoles) {
+          if (fieldConfig.grant[role] && fieldConfig.grant[role].includes('read')) {
+            fieldAccessible = true;
+            break;
+          }
+        }
+      }
+
+      if (fieldAccessible && fieldConfig.calculate && typeof fieldConfig.calculate === 'function') {
+        calculatedFields[fieldName] = fieldConfig.calculate;
+      }
+    }
+
+    return calculatedFields;
+  }
+
+  /**
+   * Obtient les champs avec statistiques
+   * @param {string} tableName - Nom de la table
+   * @param {Object} user - L'utilisateur (pour vérifier les permissions)
+   * @returns {Object} - { fieldName: statType } (statType: 'sum', 'average', 'count')
+   */
+  static getStatFields(tableName, user = null) {
+    const tableConfig = schema.tables[tableName];
+    if (!tableConfig) {
+      return {};
+    }
+
+    const statFields = {};
+    const userRoles = user ? getUserAllRoles(user) : ['public'];
+
+    for (const fieldName in tableConfig.fields) {
+      const fieldConfig = tableConfig.fields[fieldName];
+
+      // Vérifier les permissions spécifiques au champ
+      let fieldAccessible = true;
+      if (fieldConfig.grant) {
+        fieldAccessible = false;
+        for (const role of userRoles) {
+          if (fieldConfig.grant[role] && fieldConfig.grant[role].includes('read')) {
+            fieldAccessible = true;
+            break;
+          }
+        }
+      }
+
+      if (fieldAccessible && fieldConfig.stat) {
+        statFields[fieldName] = fieldConfig.stat;
+      }
+    }
+
+    return statFields;
+  }
+
+  /**
+   * Prépare le schéma pour la sérialisation JSON (transforme les fonctions calculate)
+   * @param {Object} tableConfig - Configuration de la table
+   * @returns {Object} - Configuration avec calculate transformé
+   */
+  static prepareSchemaForSerialization(tableConfig) {
+    const serialized = JSON.parse(JSON.stringify(tableConfig));
+
+    // Transformer les fonctions calculate en true
+    for (const fieldName in tableConfig.fields) {
+      const fieldConfig = tableConfig.fields[fieldName];
+      if (fieldConfig.calculate && typeof fieldConfig.calculate === 'function') {
+        serialized.fields[fieldName].calculate = true;
+      }
+    }
+
+    return serialized;
   }
 }
 
