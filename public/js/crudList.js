@@ -1177,7 +1177,15 @@ class EditForm extends React.Component {
             }
           }
         },
-          '📅 Période',
+          'Période',
+          ' ',
+          e('a', {
+            href: '/_calendar',
+            onClick: (ev) => ev.stopPropagation(),
+            className: 'field-icon-link',
+            title: 'Voir le calendrier',
+            style: { fontSize: '1.2em', textDecoration: 'none', marginLeft: '5px' }
+          }, '📅'),
           e('span', { style: { fontSize: '10px', color: '#6c757d', fontWeight: 400 } }, '(cliquer pour modifier)')
         ),
         e(CalendarDateRangeTool, {
@@ -1428,7 +1436,7 @@ class EditForm extends React.Component {
     }
 
     // Get editable fields (exclude system fields, id, granted, relations arrays, and parent fields in sub-lists)
-    // Also filter out startDate and endDate if table has calendar and _dateRange is present
+    // Also filter out startDate and endDate if table has calendar (they will be replaced by _dateRange)
     const editableFields = rawFields.filter(f => {
       // Filter out system fields
       if (['id', 'ownerId', 'granted', 'createdAt', 'updatedAt'].includes(f)) {
@@ -1438,15 +1446,15 @@ class EditForm extends React.Component {
       if (this.isParentField(f)) {
         return false;
       }
-      // Filter out startDate and endDate if table has calendar and _dateRange is present
-      if (row._dateRange && hasCalendar && (f === startDateField || f === endDateField)) {
+      // Filter out startDate and endDate if table has calendar (they will be replaced by _dateRange)
+      if (hasCalendar && (f === startDateField || f === endDateField)) {
         return false;
       }
       return true;
     });
 
     // Add _dateRange at the position where startDate was (substitution)
-    if (row._dateRange && !editableFields.includes('_dateRange')) {
+    if (hasCalendar && !editableFields.includes('_dateRange')) {
       // Calculate the adjusted index after filtering
       // Count how many fields before startDate were filtered out
       let adjustedIndex = 0;
@@ -2507,15 +2515,15 @@ class RowDetailView extends React.Component {
       if (this.isParentField(f)) {
         return false;
       }
-      // Filter out startDate and endDate if table has calendar and _dateRange is present
-      if (row._dateRange && hasCalendar && (f === startDateField || f === endDateField)) {
+      // Filter out startDate and endDate if table has calendar (they will be replaced by _dateRange)
+      if (hasCalendar && (f === startDateField || f === endDateField)) {
         return false;
       }
       return true;
     });
 
     // Add _dateRange at the position where startDate was (substitution)
-    if (row._dateRange && !allFields.includes('_dateRange')) {
+    if (hasCalendar && !allFields.includes('_dateRange')) {
       // Calculate the adjusted index after filtering
       // Count how many fields before startDate were filtered out
       let adjustedIndex = 0;
@@ -2620,7 +2628,21 @@ class RowDetailView extends React.Component {
             style: isClickable ? { cursor: 'pointer' } : {},
             onClick: isClickable ? (e) => handleFieldClick(fieldName, e) : undefined
           },
-            e('label', { className: 'detail-label' }, label),
+            e('label', { className: 'detail-label' },
+              fieldName === '_dateRange' && tableConfig.calendar
+                ? [
+                    label,
+                    ' ',
+                    e('a', {
+                      href: '/_calendar',
+                      onClick: (ev) => ev.stopPropagation(),
+                      className: 'field-icon-link',
+                      title: 'Voir le calendrier',
+                      style: { fontSize: '1.2em', textDecoration: 'none', marginLeft: '5px' }
+                    }, '📅')
+                  ]
+                : label
+            ),
             e('div', { className: 'detail-value' },
               relationN1
                 ? e(RelationRenderer, {
