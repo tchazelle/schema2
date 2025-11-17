@@ -103,6 +103,7 @@ module.exports = {
       granted:{
         public:["read"]
       },
+      
       // ... defaultConfigTable
       fields: {
         id: { type: "integer", isPrimary: true, autoIncrement: true },
@@ -119,6 +120,7 @@ module.exports = {
       granted:{
         public:["read"]
       },
+      orderable:"position",
       // ... defaultConfigTable
       fields: {
         id: { type: "integer", isPrimary: true, autoIncrement: true },
@@ -465,7 +467,7 @@ module.exports = {
       granted: {
         "admin": ["read", "create", "update", "delete", "publish"]
       },
-      
+      orderable:"position",
       fields: {
         id: { type: "integer", isPrimary: true, autoIncrement: true },
         position:{ type: "integer" },
@@ -473,7 +475,7 @@ module.exports = {
           type: "integer",
           relation: "Trip",
           foreignKey: "id",
-          arrayName: "ItemList",
+          arrayName: "itinerary",
           relationshipStrength: "Strong",
           defaultSort: { field: "position", order: "ASC" }
         },
