@@ -26,7 +26,9 @@ class RelationRenderer extends React.Component {
         href: `/_crud/${relatedTable}/${relation.id}`,
         className: 'relation-link',
         onClick: (ev) => ev.stopPropagation()
-      }, '🔗 ', displayValue)
+      }, '🔗'),
+      ' ',
+      e('span', { className: 'relation-display-value' }, displayValue)
     );
   }
 
