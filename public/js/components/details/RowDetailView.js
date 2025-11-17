@@ -348,3 +348,6 @@ class RowDetailView extends React.Component {
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = RowDetailView;
 }
+
+// Export to global scope for use in crudList.js
+window.RowDetailView = RowDetailView;

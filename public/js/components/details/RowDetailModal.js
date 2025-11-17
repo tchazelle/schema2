@@ -158,3 +158,6 @@ class RowDetailModal extends React.Component {
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = RowDetailModal;
 }
+
+// Export to global scope for use in crudList.js
+window.RowDetailModal = RowDetailModal;

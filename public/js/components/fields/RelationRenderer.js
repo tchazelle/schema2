@@ -64,3 +64,6 @@ class RelationRenderer extends React.Component {
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = RelationRenderer;
 }
+
+// Export to global scope for use in crudList.js
+window.RelationRenderer = RelationRenderer;

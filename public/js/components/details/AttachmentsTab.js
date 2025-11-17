@@ -377,3 +377,6 @@ class AttachmentsTab extends React.Component {
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = AttachmentsTab;
 }
+
+// Export to global scope for use in crudList.js
+window.AttachmentsTab = AttachmentsTab;

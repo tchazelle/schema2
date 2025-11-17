@@ -321,3 +321,6 @@ function getGrantedIcon(granted) {
   }
   return '📋'; // Default - clipboard
 }
+
+// Export to global scope for use in crudList.js
+window.TableRow = TableRow;

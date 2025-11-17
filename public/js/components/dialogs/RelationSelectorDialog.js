@@ -153,3 +153,6 @@ class RelationSelectorDialog extends React.Component {
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = RelationSelectorDialog;
 }
+
+// Export to global scope for use in crudList.js
+window.RelationSelectorDialog = RelationSelectorDialog;
