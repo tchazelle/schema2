@@ -1,0 +1,129 @@
+/**
+ * ThreeDotsMenu Component
+ * Context menu with actions for table view customization
+ *
+ * Features:
+ * - Display mode selection (default, all, raw, custom)
+ * - Field selection trigger
+ * - Advanced search toggle
+ * - Advanced sort toggle
+ * - Delete mode toggle
+ * - Click outside to close
+ *
+ * Props:
+ * - displayMode: Current display mode ('default', 'all', 'raw', 'custom')
+ * - showDeleteButtons: Whether delete buttons are shown
+ * - hasAdvancedSearch: Whether advanced search is active
+ * - hasAdvancedSort: Whether advanced sort is active
+ * - onDisplayModeChange: Callback when display mode changes (mode)
+ * - onFieldSelect: Callback to open field selector
+ * - onAdvancedSearch: Callback to toggle advanced search
+ * - onAdvancedSort: Callback to toggle advanced sort
+ * - onToggleDelete: Callback to toggle delete mode
+ */
+
+const e = React.createElement;
+
+class ThreeDotsMenu extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      isOpen: false
+    };
+    this.menuRef = React.createRef();
+  }
+
+  componentDidMount() {
+    document.addEventListener('click', this.handleClickOutside);
+  }
+
+  componentWillUnmount() {
+    document.removeEventListener('click', this.handleClickOutside);
+  }
+
+  handleClickOutside = (event) => {
+    if (this.menuRef.current && !this.menuRef.current.contains(event.target)) {
+      this.setState({ isOpen: false });
+    }
+  }
+
+  toggleMenu = (ev) => {
+    ev.stopPropagation();
+    this.setState(prev => ({ isOpen: !prev.isOpen }));
+  }
+
+  handleOptionClick = (action) => {
+    this.setState({ isOpen: false });
+    if (this.props[action]) {
+      this.props[action]();
+    }
+  }
+
+  render() {
+    const { displayMode, onDisplayModeChange, onFieldSelect, onToggleDelete, showDeleteButtons, onAdvancedSearch, onAdvancedSort, hasAdvancedSearch, hasAdvancedSort } = this.props;
+    const { isOpen } = this.state;
+
+    return e('div', { className: 'menu-dots', ref: this.menuRef },
+      e('button', {
+        className: 'btn-menu',
+        onClick: this.toggleMenu,
+        'aria-label': 'Options'
+      }, '⋮'),
+      isOpen && e('div', { className: 'menu-dropdown' },
+        e('div', { className: 'menu-section' },
+          e('div', { className: 'menu-label' }, 'Mode de présentation'),
+          e('button', {
+            className: `menu-item ${displayMode === 'default' ? 'active' : ''}`,
+            onClick: () => {
+              this.handleOptionClick('onDisplayModeChange');
+              onDisplayModeChange('default');
+            }
+          }, displayMode === 'default' ? '✓ ' : '', 'Par défaut (masquer champs système)'),
+          e('button', {
+            className: `menu-item ${displayMode === 'all' ? 'active' : ''}`,
+            onClick: () => {
+              this.handleOptionClick('onDisplayModeChange');
+              onDisplayModeChange('all');
+            }
+          }, displayMode === 'all' ? '✓ ' : '', 'Tous les champs'),
+          e('button', {
+            className: `menu-item ${displayMode === 'raw' ? 'active' : ''}`,
+            onClick: () => {
+              this.handleOptionClick('onDisplayModeChange');
+              onDisplayModeChange('raw');
+            }
+          }, displayMode === 'raw' ? '✓ ' : '', 'Données brutes'),
+          e('button', {
+            className: `menu-item ${displayMode === 'custom' ? 'active' : ''}`,
+            onClick: () => {
+              this.handleOptionClick('onDisplayModeChange');
+              onDisplayModeChange('custom');
+            }
+          }, displayMode === 'custom' ? '✓ ' : '', 'Sélection personnalisée')
+        ),
+        e('div', { className: 'menu-divider' }),
+        e('button', {
+          className: 'menu-item',
+          onClick: () => this.handleOptionClick('onFieldSelect')
+        }, '🎯 Sélectionner les champs'),
+        e('div', { className: 'menu-divider' }),
+        onAdvancedSearch && e('button', {
+          className: `menu-item ${hasAdvancedSearch ? 'active' : ''}`,
+          onClick: () => this.handleOptionClick('onAdvancedSearch')
+        }, hasAdvancedSearch ? '✓ ' : '', '🔍 Recherche avancée...'),
+        onAdvancedSort && e('button', {
+          className: `menu-item ${hasAdvancedSort ? 'active' : ''}`,
+          onClick: () => this.handleOptionClick('onAdvancedSort')
+        }, hasAdvancedSort ? '✓ ' : '', '📊 Tri avancé...'),
+        onToggleDelete && [
+          e('div', { key: 'divider-delete', className: 'menu-divider' }),
+          e('button', {
+            key: 'toggle-delete',
+            className: `menu-item ${showDeleteButtons ? 'active' : ''}`,
+            onClick: () => this.handleOptionClick('onToggleDelete')
+          }, showDeleteButtons ? '✓ ' : '', '🗑️ Mode suppression')
+        ]
+      )
+    );
+  }
+}
