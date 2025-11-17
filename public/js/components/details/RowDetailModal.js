@@ -16,7 +16,6 @@
  * @component
  */
 
-const e = React.createElement;
 
 class RowDetailModal extends React.Component {
   componentDidMount() {

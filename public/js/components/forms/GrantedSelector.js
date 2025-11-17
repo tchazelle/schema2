@@ -22,7 +22,6 @@
  * - onChange: Callback when value changes (grantedValue)
  */
 
-const e = React.createElement;
 
 class GrantedSelector extends React.Component {
   constructor(props) {

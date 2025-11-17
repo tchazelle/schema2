@@ -22,7 +22,6 @@
  * - onToggleDelete: Callback to toggle delete mode
  */
 
-const e = React.createElement;
 
 class ThreeDotsMenu extends React.Component {
   constructor(props) {

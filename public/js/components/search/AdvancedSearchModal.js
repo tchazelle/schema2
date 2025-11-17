@@ -37,7 +37,6 @@
  * @extracted Phase 6 of crudList.js refactoring
  */
 
-const e = React.createElement;
 
 class AdvancedSearchModal extends React.Component {
   constructor(props) {

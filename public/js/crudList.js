@@ -25,7 +25,6 @@
  * - Row-level permissions
  */
 
-const e = React.createElement;
 
 // Global schema config (fetched from server)
 let SCHEMA_CONFIG = null;

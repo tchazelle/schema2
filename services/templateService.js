@@ -71,6 +71,11 @@ class TemplateService {
   <!-- 1. Utilities (no dependencies) -->
   <script src="/js/utils/crudListUtils.js"></script>
 
+  <!-- Global React.createElement shorthand -->
+  <script>
+    const e = React.createElement;
+  </script>
+
   <!-- 2. Field Components (foundational, no dependencies) -->
   <script src="/js/components/fields/FieldRenderer.js"></script>
   <script src="/js/components/fields/RelationRenderer.js"></script>

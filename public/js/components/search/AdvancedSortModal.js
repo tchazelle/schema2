@@ -32,7 +32,6 @@
  * @extracted Phase 6 of crudList.js refactoring
  */
 
-const e = React.createElement;
 
 class AdvancedSortModal extends React.Component {
   constructor(props) {

@@ -25,7 +25,6 @@
  * @component
  */
 
-const e = React.createElement;
 
 class RowDetailView extends React.Component {
   constructor(props) {

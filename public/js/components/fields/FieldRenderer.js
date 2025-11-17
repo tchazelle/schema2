@@ -8,7 +8,6 @@
  * Dependencies: React
  */
 
-const e = React.createElement;
 
 /**
  * Field Renderer Component

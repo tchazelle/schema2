@@ -19,7 +19,6 @@
  * - props.statistics: Object with statistics for each field
  */
 
-const e = React.createElement;
 
 /**
  * Table Header Component

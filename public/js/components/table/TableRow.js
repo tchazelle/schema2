@@ -35,7 +35,6 @@
  * - onUpdate: Callback when row is updated/deleted
  */
 
-const e = React.createElement;
 
 /**
  * Table Row Component

@@ -20,7 +20,6 @@
  * - onAddNew: Callback when "+" button is clicked
  */
 
-const e = React.createElement;
 
 class RelationAutocomplete extends React.Component {
   constructor(props) {

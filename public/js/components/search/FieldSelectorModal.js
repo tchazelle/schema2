@@ -18,7 +18,6 @@
  * - onClose: Callback to close the modal
  */
 
-const e = React.createElement;
 
 class FieldSelectorModal extends React.Component {
   constructor(props) {

@@ -24,7 +24,6 @@
  * @component
  */
 
-const e = React.createElement;
 
 class SubList extends React.Component {
   constructor(props) {

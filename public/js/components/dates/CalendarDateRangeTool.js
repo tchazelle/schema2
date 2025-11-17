@@ -23,7 +23,6 @@
  * - onChangeRange: Callback when range changes (startValue, endValue)
  */
 
-const e = React.createElement;
 
 class CalendarDateRangeTool extends React.Component {
   constructor(props) {
