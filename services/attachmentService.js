@@ -97,7 +97,7 @@ class AttachmentService {
 
       // Insert attachment record
       const [result] = await pool.query(
-        `INSERT INTO Attachment (rowLink, fileName, fileType, fileSize, filePath, ownerId, granted, createdAt, updatedAt)
+        `INSERT INTO Attachment (rowLink, name, fileType, fileSize, filePath, ownerId, granted, createdAt, updatedAt)
          VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
         [
           rowLink,
@@ -139,7 +139,7 @@ class AttachmentService {
       const rowLink = `${tableName}/${id}`;
 
       const [rows] = await pool.query(
-        `SELECT id, rowLink, fileName, fileType, fileSize, filePath, createdAt, updatedAt
+        `SELECT id, rowLink, name, fileType, fileSize, filePath, createdAt, updatedAt
          FROM Attachment
          WHERE rowLink = ?
          ORDER BY createdAt DESC`,
@@ -161,7 +161,7 @@ class AttachmentService {
   static async getAttachmentById(attachmentId) {
     try {
       const [rows] = await pool.query(
-        `SELECT id, rowLink, fileName, fileType, fileSize, filePath, ownerId, granted
+        `SELECT id, rowLink, name, fileType, fileSize, filePath, ownerId, granted
          FROM Attachment
          WHERE id = ?`,
         [attachmentId]

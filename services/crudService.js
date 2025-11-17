@@ -220,6 +220,9 @@ class CrudService {
     // Get all fields INCLUDING system fields (for field selector)
     const allFieldsForSelector = Object.keys(structure.fields);
 
+    // Calculate statistics for fields with stat property
+    const statistics = await this.calculateStatistics(user, table, structure.fields, customWhere, searchParams, joins);
+
     return {
       success: true,
       table,
@@ -230,7 +233,8 @@ class CrudService {
       allFields: allFieldsForSelector,
       structure,
       permissions,
-      schema: result.schema
+      schema: result.schema,
+      statistics
     };
   }
 
@@ -628,6 +632,97 @@ class CrudService {
     }
 
     return null;
+  }
+
+  /**
+   * Calculate statistics for fields with stat property
+   * @param {Object} user - Current user
+   * @param {string} table - Table name
+   * @param {Object} fields - Table fields definition
+   * @param {string} customWhere - WHERE clause from search
+   * @param {Array} searchParams - Parameters for WHERE clause
+   * @param {Array} joins - JOIN clauses
+   * @returns {Promise<Object>} - Statistics by field name
+   */
+  static async calculateStatistics(user, table, fields, customWhere, searchParams, joins) {
+    const statistics = {};
+
+    // Find fields with stat property
+    const statsFields = Object.entries(fields)
+      .filter(([fieldName, field]) => field.stat)
+      .filter(([fieldName, field]) => !field.as && !field.calculate); // Only real DB fields
+
+    if (statsFields.length === 0) {
+      return statistics;
+    }
+
+    // Build SQL query to calculate statistics
+    const selectClauses = statsFields.map(([fieldName, field]) => {
+      const stat = field.stat;
+      switch (stat) {
+        case 'sum':
+          return `SUM(${table}.${fieldName}) as ${fieldName}_sum`;
+        case 'average':
+        case 'avg':
+          return `AVG(${table}.${fieldName}) as ${fieldName}_avg`;
+        case 'count':
+          return `COUNT(${table}.${fieldName}) as ${fieldName}_count`;
+        default:
+          return null;
+      }
+    }).filter(Boolean);
+
+    if (selectClauses.length === 0) {
+      return statistics;
+    }
+
+    try {
+      // Build query with JOINs if needed (for filtered statistics)
+      const joinClause = joins.length > 0 ? joins.join(' ') : '';
+      const sql = `
+        SELECT ${selectClauses.join(', ')}
+        FROM ${table}
+        ${joinClause}
+        WHERE ${customWhere}
+      `;
+
+      const [rows] = await pool.query(sql, searchParams);
+
+      if (rows && rows.length > 0) {
+        const result = rows[0];
+
+        // Map results to field names
+        for (const [fieldName, field] of statsFields) {
+          const stat = field.stat;
+          let statKey;
+
+          switch (stat) {
+            case 'sum':
+              statKey = `${fieldName}_sum`;
+              break;
+            case 'average':
+            case 'avg':
+              statKey = `${fieldName}_avg`;
+              break;
+            case 'count':
+              statKey = `${fieldName}_count`;
+              break;
+          }
+
+          if (statKey && result[statKey] !== undefined && result[statKey] !== null) {
+            statistics[fieldName] = {
+              type: stat === 'average' || stat === 'avg' ? 'avg' : stat,
+              value: result[statKey]
+            };
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error calculating statistics:', error);
+      // Don't fail the whole request if statistics fail
+    }
+
+    return statistics;
   }
 }
 

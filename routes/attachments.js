@@ -77,7 +77,7 @@ router.post('/:table/:id/attachments', async (req, res) => {
           message: 'File uploaded successfully',
           attachment: {
             id: attachment.id,
-            fileName: attachment.fileName,
+            fileName: attachment.name, // Database field is 'name', API uses 'fileName' for backward compatibility
             fileType: attachment.fileType,
             fileSize: attachment.fileSize,
             fileSizeFormatted: AttachmentService.formatFileSize(attachment.fileSize),
@@ -131,7 +131,7 @@ router.get('/:table/:id/attachments', async (req, res) => {
     // Format attachments with preview info
     const formattedAttachments = attachments.map(att => ({
       id: att.id,
-      fileName: att.fileName,
+      fileName: att.name, // Database field is 'name', API uses 'fileName' for backward compatibility
       fileType: att.fileType,
       fileSize: att.fileSize,
       fileSizeFormatted: AttachmentService.formatFileSize(att.fileSize),
@@ -193,9 +193,9 @@ router.get('/attachments/:id/download', async (req, res) => {
 
     // Set disposition (inline for preview, attachment for download)
     if (inline) {
-      res.setHeader('Content-Disposition', `inline; filename="${attachment.fileName}"`);
+      res.setHeader('Content-Disposition', `inline; filename="${attachment.name}"`);
     } else {
-      res.setHeader('Content-Disposition', `attachment; filename="${attachment.fileName}"`);
+      res.setHeader('Content-Disposition', `attachment; filename="${attachment.name}"`);
     }
 
     // Send file
