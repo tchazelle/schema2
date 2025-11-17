@@ -16,10 +16,11 @@
  *
  * Dependencies:
  * - React (global)
- * - ThreeDotsMenu (table component)
+ * - ThreeDotsMenu (search component)
  * - TableHeader (table component)
  * - TableRow (table component)
  * - FieldSelectorModal (table component)
+ * - AdvancedSortModal (search component)
  *
  * @component
  */
@@ -42,6 +43,7 @@ class SubList extends React.Component {
       showDeleteButtons: false,
       selectedFields: null,
       showFieldSelector: false,
+      showAdvancedSort: false,
       defaultSort: defaultSort,
       draggedIndex: null,
       dragOverIndex: null
@@ -96,17 +98,29 @@ class SubList extends React.Component {
   }
 
   handleAdvancedSort = () => {
-    // TODO: Implement advanced sort modal for sub-lists
-    alert('Tri avancé pour les sous-listes - à implémenter');
+    // Open advanced sort modal
+    this.setState({ showAdvancedSort: true });
+  }
+
+  handleCloseAdvancedSort = () => {
+    this.setState({ showAdvancedSort: false });
+  }
+
+  handleApplyAdvancedSort = (sortConfig) => {
+    this.setState({
+      orderBy: sortConfig.field,
+      order: sortConfig.order,
+      showAdvancedSort: false
+    });
   }
 
   handleLinkToTable = () => {
     const { tableName } = this.props;
-    window.open(`/_crud/${tableName}`, '_blank');
+    window.location.href = `/_crud/${tableName}`;
   }
 
   handleExtendAuthorization = async () => {
-    const { tableName, parentTable, parentId } = this.props;
+    const { tableName, parentTable, parentId, onSubRecordUpdate } = this.props;
 
     if (!confirm(`Étendre l'autorisation de la fiche ${parentTable} à toutes les fiches ${tableName} liées ?`)) {
       return;
@@ -121,8 +135,10 @@ class SubList extends React.Component {
 
       if (data.success) {
         alert(`✓ Autorisation étendue à ${data.updatedCount} fiche(s) ${tableName}`);
-        // Reload the page to refresh data
-        window.location.reload();
+        // Refresh the sub-list data without reloading the entire page
+        if (onSubRecordUpdate) {
+          await onSubRecordUpdate();
+        }
       } else {
         alert(`Erreur: ${data.error || 'Échec de l\'extension'}`);
       }
@@ -260,7 +276,7 @@ class SubList extends React.Component {
 
   render() {
     const { rows, tableName, parentTable, parentId, relationName, hideHeader, onSubRecordUpdate } = this.props;
-    const { structure, tableConfig, permissions, orderBy, order, displayMode, showDeleteButtons, selectedFields, showFieldSelector, draggedIndex, dragOverIndex } = this.state;
+    const { structure, tableConfig, permissions, orderBy, order, displayMode, showDeleteButtons, selectedFields, showFieldSelector, showAdvancedSort, draggedIndex, dragOverIndex } = this.state;
 
     if (!rows || rows.length === 0) {
       // If hideHeader is true, don't show anything for empty lists
@@ -400,6 +416,16 @@ class SubList extends React.Component {
         structure,
         onApply: this.handleApplyFieldSelection,
         onClose: this.handleCloseFieldSelector
+      }),
+
+      // Advanced sort modal
+      showAdvancedSort && e(AdvancedSortModal, {
+        tableName,
+        allFields,
+        structure,
+        currentSort: { field: orderBy, order },
+        onApply: this.handleApplyAdvancedSort,
+        onClose: this.handleCloseAdvancedSort
       })
     );
   }
