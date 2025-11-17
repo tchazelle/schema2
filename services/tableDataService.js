@@ -1,4 +1,5 @@
 const pool = require('../config/database');
+const schema = require('../schema');
 const { hasPermission } = require('./permissionService');
 const SchemaService = require('./schemaService');
 const EntityService = require('./entityService');
