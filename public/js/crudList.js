@@ -2090,14 +2090,101 @@ function getGrantedIcon(granted) {
  * Full-screen modal with fixed header containing title, granted selector, and close button
  */
 class RowDetailModal extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      showDuplicateMenu: false,
+      showRelationSelector: false,
+      duplicating: false
+    };
+    this.menuRef = React.createRef();
+  }
+
   componentDidMount() {
     // Prevent body scroll when modal is open
     document.body.style.overflow = 'hidden';
+    // Add click listener for closing duplicate menu
+    document.addEventListener('click', this.handleClickOutside);
   }
 
   componentWillUnmount() {
     // Restore body scroll
     document.body.style.overflow = '';
+    // Remove click listener
+    document.removeEventListener('click', this.handleClickOutside);
+  }
+
+  handleClickOutside = (event) => {
+    if (this.menuRef.current && !this.menuRef.current.contains(event.target)) {
+      this.setState({ showDuplicateMenu: false });
+    }
+  }
+
+  toggleDuplicateMenu = (ev) => {
+    ev.stopPropagation();
+    this.setState(prev => ({ showDuplicateMenu: !prev.showDuplicateMenu }));
+  }
+
+  handleDuplicate = async () => {
+    const { tableName, row, onClose } = this.props;
+    this.setState({ showDuplicateMenu: false, duplicating: true });
+
+    try {
+      const response = await fetch(`/_api/${tableName}/${row.id}/duplicate`, {
+        method: 'POST'
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        alert(`Enregistrement dupliqué avec succès ! (ID: ${data.id})`);
+        // Refresh the list and open the new record
+        window.location.href = `/_crud/${tableName}?open=${data.id}`;
+      } else {
+        alert(`Erreur lors de la duplication : ${data.error}`);
+        this.setState({ duplicating: false });
+      }
+    } catch (error) {
+      console.error('Duplicate error:', error);
+      alert(`Erreur lors de la duplication : ${error.message}`);
+      this.setState({ duplicating: false });
+    }
+  }
+
+  handleDuplicateWithRelations = () => {
+    this.setState({ showDuplicateMenu: false, showRelationSelector: true });
+  }
+
+  handleConfirmDuplicateWithRelations = async (selectedRelations) => {
+    const { tableName, row } = this.props;
+    this.setState({ showRelationSelector: false, duplicating: true });
+
+    try {
+      const response = await fetch(`/_api/${tableName}/${row.id}/duplicate-with-relations`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ relations: selectedRelations })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        alert(data.message || `Enregistrement dupliqué avec succès ! (ID: ${data.id})`);
+        // Refresh the list and open the new record
+        window.location.href = `/_crud/${tableName}?open=${data.id}`;
+      } else {
+        alert(`Erreur lors de la duplication : ${data.error}`);
+        this.setState({ duplicating: false });
+      }
+    } catch (error) {
+      console.error('Duplicate with relations error:', error);
+      alert(`Erreur lors de la duplication : ${error.message}`);
+      this.setState({ duplicating: false });
+    }
+  }
+
+  handleCancelRelationSelector = () => {
+    this.setState({ showRelationSelector: false });
   }
 
   handleOverlayClick = (e) => {
@@ -2185,12 +2272,80 @@ class RowDetailModal extends React.Component {
               }, `🔗 ${tableName}/${row.id}`)
             )
           ),
-          // Close button (X exits edit mode if in edit, otherwise closes modal)
-          e('button', {
-            className: 'modal-close-detail',
-            onClick: editMode ? onExitEditMode : onClose,
-            title: editMode ? 'Retour à la fiche' : 'Fermer (Echap)'
-          }, '✖')
+          // Action buttons section
+          e('div', { style: { display: 'flex', alignItems: 'center', gap: '8px' } },
+            // Duplicate menu (only show if has create permission and not in edit mode)
+            !editMode && permissions && permissions.canCreate && e('div', {
+              className: 'menu-dots',
+              ref: this.menuRef,
+              style: { position: 'relative' }
+            },
+              e('button', {
+                className: 'btn-menu',
+                onClick: this.toggleDuplicateMenu,
+                title: 'Options de duplication',
+                disabled: this.state.duplicating,
+                style: {
+                  background: '#f8f9fa',
+                  border: '1px solid #ddd',
+                  borderRadius: '4px',
+                  padding: '4px 8px',
+                  cursor: this.state.duplicating ? 'wait' : 'pointer',
+                  fontSize: '16px'
+                }
+              }, '⋮'),
+              this.state.showDuplicateMenu && e('div', {
+                className: 'menu-dropdown',
+                style: {
+                  position: 'absolute',
+                  right: 0,
+                  top: '100%',
+                  marginTop: '4px',
+                  backgroundColor: 'white',
+                  border: '1px solid #ddd',
+                  borderRadius: '4px',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                  minWidth: '200px',
+                  zIndex: 1000
+                }
+              },
+                e('button', {
+                  className: 'menu-item',
+                  onClick: this.handleDuplicate,
+                  style: {
+                    display: 'block',
+                    width: '100%',
+                    padding: '8px 12px',
+                    border: 'none',
+                    background: 'none',
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                    fontSize: '14px'
+                  }
+                }, '📋 Dupliquer'),
+                e('button', {
+                  className: 'menu-item',
+                  onClick: this.handleDuplicateWithRelations,
+                  style: {
+                    display: 'block',
+                    width: '100%',
+                    padding: '8px 12px',
+                    border: 'none',
+                    background: 'none',
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                    fontSize: '14px'
+                  }
+                }, '📋 Dupliquer avec relations...')
+              )
+            ),
+            // Close button (X exits edit mode if in edit, otherwise closes modal)
+            e('button', {
+              className: 'modal-close-detail',
+              onClick: editMode ? onExitEditMode : onClose,
+              title: editMode ? 'Retour à la fiche' : 'Fermer (Echap)'
+            }, '✖')
+          )
         ),
         // Scrollable body
         e('div', { className: 'modal-body-detail' },
@@ -2220,7 +2375,14 @@ class RowDetailModal extends React.Component {
                   hideRelations1N
                 })
         )
-      )
+      ),
+      // Relation selector dialog
+      this.state.showRelationSelector && e(RelationSelectorDialog, {
+        tableName,
+        rowId: row.id,
+        onConfirm: this.handleConfirmDuplicateWithRelations,
+        onCancel: this.handleCancelRelationSelector
+      })
     );
   }
 }
@@ -2289,8 +2451,8 @@ class AttachmentsTab extends React.Component {
           // Reload attachments
           await this.loadAttachments();
           // Notify parent to update count
-          if (this.props.onAttachmentChange) {
-            this.props.onAttachmentChange();
+          if (this.props.onAttachmentsChange) {
+            this.props.onAttachmentsChange();
           }
         } else {
           alert(`Erreur lors de l'upload de ${file.name}: ${data.error}`);
@@ -2321,8 +2483,8 @@ class AttachmentsTab extends React.Component {
         // Reload attachments
         await this.loadAttachments();
         // Notify parent to update count
-        if (this.props.onAttachmentChange) {
-          this.props.onAttachmentChange();
+        if (this.props.onAttachmentsChange) {
+          this.props.onAttachmentsChange();
         }
       } else {
         alert(`Erreur lors de la suppression: ${data.error}`);
@@ -2591,12 +2753,13 @@ class RowDetailView extends React.Component {
     super(props);
     this.state = {
       openRelations: new Set(),
-      showAttachments: false
+      showAttachments: false,
+      attachmentCount: 0
     };
   }
 
-  componentDidMount() {
-    const { row, structure } = this.props;
+  async componentDidMount() {
+    const { row, structure, tableName } = this.props;
     // Open "Strong" relations by default, keep "Weak" relations closed
     const strongRelations = new Set();
 
@@ -2609,6 +2772,24 @@ class RowDetailView extends React.Component {
     }
 
     this.setState({ openRelations: strongRelations });
+
+    // Load attachment count
+    await this.loadAttachmentCount();
+  }
+
+  loadAttachmentCount = async () => {
+    const { tableName, row } = this.props;
+
+    try {
+      const response = await fetch(`/_api/${tableName}/${row.id}/attachments`);
+      const data = await response.json();
+
+      if (data.success && data.attachments) {
+        this.setState({ attachmentCount: data.attachments.length });
+      }
+    } catch (error) {
+      console.error('Error loading attachment count:', error);
+    }
   }
 
   toggleRelation = (relName) => {
@@ -2634,7 +2815,7 @@ class RowDetailView extends React.Component {
 
   render() {
     const { row, structure, tableName, permissions, onEdit, parentTable, hideRelations1N } = this.props;
-    const { openRelations, showAttachments } = this.state;
+    const { openRelations, showAttachments, attachmentCount } = this.state;
 
     // Check if table has attachments enabled
     const tableConfig = SCHEMA_CONFIG?.tables?.[tableName];
@@ -2886,13 +3067,25 @@ class RowDetailView extends React.Component {
           },
             e('span', { className: 'relation-toggle' }, showAttachments ? '▼' : '▶'),
             e('strong', null, 'Pièces jointes'),
-            e('span', { className: 'relation-count badge', style: { fontSize: '14px' } }, '📎')
+            e('span', {
+              className: 'relation-count badge',
+              style: {
+                fontSize: '14px',
+                backgroundColor: attachmentCount > 0 ? '#e3f2fd' : '#f5f5f5',
+                color: attachmentCount > 0 ? '#1976d2' : '#999',
+                padding: '2px 8px',
+                borderRadius: '12px',
+                fontWeight: 'bold',
+                marginLeft: '4px'
+              }
+            }, `📎 ${attachmentCount}`)
           )
         ),
         showAttachments && e(AttachmentsTab, {
           tableName: tableName,
           rowId: row.id,
-          permissions: permissions
+          permissions: permissions,
+          onAttachmentsChange: this.loadAttachmentCount
         })
       )
     );
@@ -3264,6 +3457,196 @@ class FieldSelectorModal extends React.Component {
             className: 'btn-apply',
             onClick: this.apply
           }, 'Appliquer')
+        )
+      )
+    );
+  }
+}
+
+/**
+ * RelationSelectorDialog Component
+ * Dialog for selecting which 1:N relations to duplicate when duplicating a record
+ */
+class RelationSelectorDialog extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      selectedRelations: new Set(),
+      loading: true,
+      relations: []
+    };
+  }
+
+  async componentDidMount() {
+    await this.loadRelations();
+  }
+
+  loadRelations = async () => {
+    const { tableName, rowId } = this.props;
+
+    try {
+      // Get table structure to find 1:N relations
+      const structureResponse = await fetch(`/_crud/${tableName}/structure`);
+      const structureData = await structureResponse.json();
+
+      if (!structureData.success || !structureData.structure) {
+        this.setState({ loading: false, relations: [] });
+        return;
+      }
+
+      const structure = structureData.structure;
+      const relations1N = [];
+
+      // Find all 1:N relations (reverse relations)
+      if (structure.reverseRelations) {
+        for (const [relTableName, relInfo] of Object.entries(structure.reverseRelations)) {
+          // Count related records
+          try {
+            const countResponse = await fetch(`/_api/${relTableName}?limit=1000&noSystemFields=1`);
+            const countData = await countResponse.json();
+
+            if (countData.success && countData.rows) {
+              // Filter rows that reference our record
+              const relatedRows = countData.rows.filter(r => r[relInfo.foreignKey] == rowId);
+
+              if (relatedRows.length > 0) {
+                relations1N.push({
+                  name: relTableName,
+                  label: relTableName,
+                  count: relatedRows.length,
+                  foreignKey: relInfo.foreignKey
+                });
+              }
+            }
+          } catch (err) {
+            console.error(`Error counting relations for ${relTableName}:`, err);
+          }
+        }
+      }
+
+      this.setState({ loading: false, relations: relations1N });
+    } catch (error) {
+      console.error('Error loading relations:', error);
+      this.setState({ loading: false, relations: [] });
+    }
+  }
+
+  toggleRelation = (relationName) => {
+    this.setState(prev => {
+      const newSet = new Set(prev.selectedRelations);
+      if (newSet.has(relationName)) {
+        newSet.delete(relationName);
+      } else {
+        newSet.add(relationName);
+      }
+      return { selectedRelations: newSet };
+    });
+  }
+
+  selectAll = () => {
+    const allRelations = this.state.relations.map(rel => rel.name);
+    this.setState({ selectedRelations: new Set(allRelations) });
+  }
+
+  selectNone = () => {
+    this.setState({ selectedRelations: new Set() });
+  }
+
+  confirm = () => {
+    const relationsArray = Array.from(this.state.selectedRelations);
+    this.props.onConfirm(relationsArray);
+  }
+
+  render() {
+    const { onCancel } = this.props;
+    const { selectedRelations, loading, relations } = this.state;
+
+    return e('div', {
+      className: 'modal-overlay',
+      onClick: onCancel
+    },
+      e('div', {
+        className: 'modal-content',
+        onClick: (ev) => ev.stopPropagation(),
+        style: { maxWidth: '500px' }
+      },
+        e('div', { className: 'modal-header' },
+          e('h3', null, 'Dupliquer avec relations'),
+          e('button', {
+            className: 'modal-close',
+            onClick: onCancel
+          }, '✖')
+        ),
+        e('div', { className: 'modal-body' },
+          loading ? e('p', { style: { textAlign: 'center', color: '#999' } }, 'Chargement des relations...') : [
+            e('p', { key: 'description', style: { marginBottom: '16px', color: '#666' } },
+              'Sélectionnez les relations à dupliquer :'
+            ),
+
+            relations.length > 0 ? [
+              e('div', { key: 'actions', className: 'modal-actions', style: { marginBottom: '12px' } },
+                e('button', {
+                  className: 'btn-select-all',
+                  onClick: this.selectAll,
+                  style: { fontSize: '12px', padding: '4px 8px' }
+                }, 'Tout sélectionner'),
+                e('button', {
+                  className: 'btn-select-none',
+                  onClick: this.selectNone,
+                  style: { fontSize: '12px', padding: '4px 8px' }
+                }, 'Tout désélectionner')
+              ),
+              e('div', { key: 'list', className: 'field-list', style: { maxHeight: '300px', overflowY: 'auto' } },
+                relations.map(relation => {
+                  const isSelected = selectedRelations.has(relation.name);
+
+                  return e('label', {
+                    key: relation.name,
+                    className: 'field-checkbox',
+                    style: {
+                      display: 'flex',
+                      alignItems: 'center',
+                      padding: '8px',
+                      cursor: 'pointer',
+                      borderBottom: '1px solid #eee'
+                    }
+                  },
+                    e('input', {
+                      type: 'checkbox',
+                      checked: isSelected,
+                      onChange: () => this.toggleRelation(relation.name),
+                      style: { marginRight: '8px' }
+                    }),
+                    e('span', { style: { flex: 1 } }, relation.label || relation.name),
+                    e('span', {
+                      className: 'badge',
+                      style: {
+                        backgroundColor: '#e3f2fd',
+                        color: '#1976d2',
+                        padding: '2px 8px',
+                        borderRadius: '12px',
+                        fontSize: '12px',
+                        fontWeight: 'bold'
+                      }
+                    }, relation.count)
+                  );
+                })
+              )
+            ] : e('p', { key: 'empty', style: { color: '#999', fontStyle: 'italic' } },
+              'Aucune relation 1:N disponible pour cette table.'
+            )
+          ]
+        ),
+        e('div', { className: 'modal-footer' },
+          e('button', {
+            className: 'btn-cancel',
+            onClick: onCancel
+          }, 'Annuler'),
+          e('button', {
+            className: 'btn-apply',
+            onClick: this.confirm,
+            disabled: loading
+          }, selectedRelations.size === 0 ? 'Dupliquer sans relations' : `Dupliquer avec ${selectedRelations.size} relation(s)`)
         )
       )
     );
