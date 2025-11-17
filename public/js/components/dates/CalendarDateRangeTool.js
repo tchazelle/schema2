@@ -273,8 +273,6 @@ class CalendarDateRangeTool extends React.Component {
             type: 'number',
             className: 'edit-field-input duration-input',
             value: duration,
-            min: 1,
-            step: 15,
             onChange: (ev) => this.handleDurationChange(Number(ev.target.value))
           }),
           e('span', { className: 'duration-presets' },

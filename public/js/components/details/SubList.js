@@ -29,17 +29,44 @@ const e = React.createElement;
 class SubList extends React.Component {
   constructor(props) {
     super(props);
+
+    // Get default sort from relation configuration if available
+    const defaultSort = this.getDefaultSortFromRelation(props);
+
     this.state = {
       structure: null,
       tableConfig: null,
       permissions: null,
-      orderBy: 'updatedAt',
-      order: 'DESC',
+      orderBy: defaultSort.field,
+      order: defaultSort.order,
       displayMode: 'default',
       showDeleteButtons: false,
       selectedFields: null,
       showFieldSelector: false
     };
+  }
+
+  getDefaultSortFromRelation(props) {
+    const { tableName, parentTable, relationName } = props;
+
+    // Try to get defaultSort from parent table structure via SCHEMA_CONFIG
+    if (typeof SCHEMA_CONFIG !== 'undefined' && SCHEMA_CONFIG.tables && parentTable) {
+      const parentTableConfig = SCHEMA_CONFIG.tables[parentTable];
+      if (parentTableConfig && parentTableConfig.fields) {
+        // Find the field that defines this relation
+        for (const [fieldName, fieldConfig] of Object.entries(parentTableConfig.fields)) {
+          if (fieldConfig.arrayName === relationName && fieldConfig.defaultSort) {
+            return {
+              field: fieldConfig.defaultSort.field,
+              order: fieldConfig.defaultSort.order || 'ASC'
+            };
+          }
+        }
+      }
+    }
+
+    // Fallback to updatedAt DESC
+    return { field: 'updatedAt', order: 'DESC' };
   }
 
   async componentDidMount() {
@@ -92,7 +119,7 @@ class SubList extends React.Component {
   handleSort = (fieldName) => {
     this.setState(prev => {
       if (prev.orderBy === fieldName) {
-        // Cycle through: ASC -> DESC -> default (updatedAt DESC)
+        // Cycle through: ASC -> DESC -> default sort
         if (prev.order === 'ASC') {
           return {
             orderBy: fieldName,
@@ -100,9 +127,10 @@ class SubList extends React.Component {
           };
         } else {
           // Third click: return to default sort
+          const defaultSort = this.getDefaultSortFromRelation(this.props);
           return {
-            orderBy: 'updatedAt',
-            order: 'DESC'
+            orderBy: defaultSort.field,
+            order: defaultSort.order
           };
         }
       } else {
@@ -219,7 +247,9 @@ class SubList extends React.Component {
     const sortedRows = this.sortRows(rows, orderBy, order);
 
     // Get sort indicator text
-    const sortIndicator = orderBy !== 'updatedAt' || order !== 'DESC'
+    const defaultSort = this.getDefaultSortFromRelation(this.props);
+    const isDefaultSort = (orderBy === defaultSort.field && order === defaultSort.order);
+    const sortIndicator = !isDefaultSort
       ? `Tri: ${orderBy} ${order === 'ASC' ? '▲' : '▼'}`
       : null;
 

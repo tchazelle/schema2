@@ -438,9 +438,11 @@ class TemplateService {
    * Génère la page HTML du calendrier avec tous les événements
    * @param {Object} user - L'utilisateur connecté
    * @param {Date} initialDate - Date initiale optionnelle pour le calendrier
+   * @param {Array} pages - Liste des pages accessibles pour le menu
+   * @param {Array} accessibleTables - Liste des tables accessibles pour le menu
    * @returns {string} - HTML complet de la page calendrier
    */
-  static htmlCalendar(user, initialDate = null) {
+  static htmlCalendar(user, initialDate = null, pages = [], accessibleTables = []) {
     return `
 <!DOCTYPE html>
 <html lang="fr">
@@ -456,7 +458,7 @@ class TemplateService {
 </head>
 <body>
 
-  ${this.htmlHeader(user, [], [])}
+  ${this.htmlHeader(user, pages, accessibleTables)}
   ${this.htmlLogin()}
 
   <main class="calendar-container">
