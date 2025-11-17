@@ -1699,12 +1699,11 @@ class TableRow extends React.Component {
       }
     }));
 
-    // Don't notify parent on every field change (causes list refresh)
-    // Parent refresh is only needed on delete or create, not on field updates
-    // The autosave already updates the DB, so the data is persisted
-    // if (this.props.onUpdate) {
-    //   this.props.onUpdate();
-    // }
+    // Notify parent to refresh the list so changes are visible
+    // The autosave already updates the DB, now refresh the list to show changes
+    if (this.props.onUpdate) {
+      this.props.onUpdate();
+    }
   }
 
   handleDelete = async (e) => {
@@ -2374,7 +2373,16 @@ class RowDetailView extends React.Component {
     const startDateField = hasCalendar ? (structure.calendar.startDate || 'startDate') : null;
     const endDateField = hasCalendar ? (structure.calendar.endDate || 'endDate') : null;
 
-    const allFields = Object.keys(structure.fields).filter(f => {
+    // First pass: collect all fields and track startDate position
+    let startDateIndex = -1;
+    const rawFields = Object.keys(structure.fields);
+
+    // Find the position of startDate in the original field order
+    if (hasCalendar && startDateField) {
+      startDateIndex = rawFields.indexOf(startDateField);
+    }
+
+    const allFields = rawFields.filter(f => {
       // Filter out system fields
       if (['id', 'ownerId', 'granted', 'createdAt', 'updatedAt'].includes(f)) {
         return false;
@@ -2390,9 +2398,20 @@ class RowDetailView extends React.Component {
       return true;
     });
 
-    // Add _dateRange at the beginning if it exists in row
+    // Add _dateRange at the position where startDate was (substitution)
     if (row._dateRange && !allFields.includes('_dateRange')) {
-      allFields.unshift('_dateRange');
+      // Calculate the adjusted index after filtering
+      // Count how many fields before startDate were filtered out
+      let adjustedIndex = 0;
+      if (startDateIndex > 0) {
+        for (let i = 0; i < startDateIndex; i++) {
+          const f = rawFields[i];
+          if (!['id', 'ownerId', 'granted', 'createdAt', 'updatedAt'].includes(f) && !this.isParentField(f)) {
+            adjustedIndex++;
+          }
+        }
+      }
+      allFields.splice(adjustedIndex, 0, '_dateRange');
     }
 
     // Collect all 1:N relations defined in schema (even if empty)

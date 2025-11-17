@@ -309,8 +309,17 @@ class CrudService {
         const startDateField = calendarConfig?.startDate || 'startDate';
         const endDateField = calendarConfig?.endDate || 'endDate';
 
+        // Find the position of startDate before removing it
+        const startDateIndex = fields.indexOf(startDateField);
+
         fields = fields.filter(f => f !== startDateField && f !== endDateField);
-        fields.push('_dateRange');
+
+        // Insert _dateRange at the position where startDate was
+        if (startDateIndex >= 0 && startDateIndex <= fields.length) {
+          fields.splice(startDateIndex, 0, '_dateRange');
+        } else {
+          fields.push('_dateRange');
+        }
       }
 
       return fields;
@@ -329,8 +338,17 @@ class CrudService {
       const startDateField = calendarConfig?.startDate || 'startDate';
       const endDateField = calendarConfig?.endDate || 'endDate';
 
+      // Find the position of startDate before removing it
+      const startDateIndex = fields.indexOf(startDateField);
+
       fields = fields.filter(f => f !== startDateField && f !== endDateField);
-      fields.push('_dateRange');
+
+      // Insert _dateRange at the position where startDate was
+      if (startDateIndex >= 0 && startDateIndex <= fields.length) {
+        fields.splice(startDateIndex, 0, '_dateRange');
+      } else {
+        fields.push('_dateRange');
+      }
     }
 
     return fields;
