@@ -187,3 +187,6 @@ class FieldRenderer extends React.Component {
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = FieldRenderer;
 }
+
+// Export to global scope for use in crudList.js
+window.FieldRenderer = FieldRenderer;

@@ -127,3 +127,6 @@ class ThreeDotsMenu extends React.Component {
     );
   }
 }
+
+// Export to global scope for use in crudList.js
+window.ThreeDotsMenu = ThreeDotsMenu;

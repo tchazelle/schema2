@@ -118,3 +118,6 @@ class FieldSelectorModal extends React.Component {
     );
   }
 }
+
+// Export to global scope for use in crudList.js
+window.FieldSelectorModal = FieldSelectorModal;

@@ -303,3 +303,6 @@ class SubList extends React.Component {
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = SubList;
 }
+
+// Export to global scope for use in crudList.js
+window.SubList = SubList;

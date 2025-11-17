@@ -336,3 +336,6 @@ class CalendarDateRangeTool extends React.Component {
     );
   }
 }
+
+// Export to global scope for use in crudList.js
+window.CalendarDateRangeTool = CalendarDateRangeTool;

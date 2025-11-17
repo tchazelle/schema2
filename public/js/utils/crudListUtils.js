@@ -48,3 +48,9 @@ if (typeof module !== 'undefined' && module.exports) {
     getGrantedIcon
   };
 }
+
+// Export to global scope for browser use
+if (typeof window !== 'undefined') {
+  window.buildCardTitle = buildCardTitle;
+  window.getGrantedIcon = getGrantedIcon;
+}

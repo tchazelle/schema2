@@ -61,6 +61,52 @@ class TemplateService {
     `
   }
 
+  /**
+   * Generate script tags for CRUD component dependencies
+   * IMPORTANT: Order matters! Components must load in dependency order.
+   * Based on: public/js/components/INTEGRATION.md
+   */
+  static htmlCrudComponentScripts() {
+    return `
+  <!-- 1. Utilities (no dependencies) -->
+  <script src="/js/utils/crudListUtils.js"></script>
+
+  <!-- 2. Field Components (foundational, no dependencies) -->
+  <script src="/js/components/fields/FieldRenderer.js"></script>
+  <script src="/js/components/fields/RelationRenderer.js"></script>
+
+  <!-- 3. Date Components (no dependencies) -->
+  <script src="/js/components/dates/CalendarDateRangeTool.js"></script>
+
+  <!-- 4. Form Input Components (small, few dependencies) -->
+  <script src="/js/components/forms/GrantedSelector.js"></script>
+  <script src="/js/components/forms/RelationAutocomplete.js"></script>
+
+  <!-- 5. Search/Filter Components (no dependencies) -->
+  <script src="/js/components/search/FieldSelectorModal.js"></script>
+  <script src="/js/components/search/ThreeDotsMenu.js"></script>
+  <script src="/js/components/search/AdvancedSearchModal.js"></script>
+  <script src="/js/components/search/AdvancedSortModal.js"></script>
+
+  <!-- 6. Table Components -->
+  <script src="/js/components/table/TableHeader.js"></script>
+  <script src="/js/components/table/TableRow.js"></script>
+
+  <!-- 7. Detail Components (depends on table, fields, forms) -->
+  <script src="/js/components/details/AttachmentsTab.js"></script>
+  <script src="/js/components/details/SubList.js"></script>
+  <script src="/js/components/details/RowDetailView.js"></script>
+  <script src="/js/components/details/RowDetailModal.js"></script>
+
+  <!-- 8. Large Form Components (depends on many others) -->
+  <script src="/js/components/forms/EditForm.js"></script>
+  <script src="/js/components/forms/CreateFormModal.js"></script>
+
+  <!-- 9. Main Application (depends on all components) -->
+  <script src="/js/crudList.js"></script>
+    `;
+  }
+
   static htmlTitle() {`
       <div class="sidebar-header">
         <div class="sidebar-header-content">
@@ -353,8 +399,7 @@ class TemplateService {
 
   <div id="root"></div>
 
-  <!-- CRUD List Component -->
-  <script src="/js/crudList.js"></script>
+  ${this.htmlCrudComponentScripts()}
 
   <script>
     // Mount the React component
@@ -418,8 +463,7 @@ class TemplateService {
 
   <div id="root"></div>
 
-  <!-- CRUD List Component (reused for detail view) -->
-  <script src="/js/crudList.js"></script>
+  ${this.htmlCrudComponentScripts()}
 
   <script>
     // Mount the React component with recordId to trigger fullscreen modal

@@ -198,3 +198,6 @@ class GrantedSelector extends React.Component {
     );
   }
 }
+
+// Export to global scope for use in crudList.js
+window.GrantedSelector = GrantedSelector;
