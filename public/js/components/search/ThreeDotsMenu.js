@@ -8,6 +8,7 @@
  * - Advanced search toggle
  * - Advanced sort toggle
  * - Delete mode toggle
+ * - Sub-list specific options (when isSubList=true)
  * - Click outside to close
  *
  * Props:
@@ -20,6 +21,9 @@
  * - onAdvancedSearch: Callback to toggle advanced search
  * - onAdvancedSort: Callback to toggle advanced sort
  * - onToggleDelete: Callback to toggle delete mode
+ * - isSubList: Whether this menu is for a sub-list (default: false)
+ * - tableName: Name of the table (for sub-list link)
+ * - onLinkToTable: Callback to navigate to full table view
  */
 
 
@@ -59,7 +63,7 @@ class ThreeDotsMenu extends React.Component {
   }
 
   render() {
-    const { displayMode, onDisplayModeChange, onFieldSelect, onToggleDelete, showDeleteButtons, onAdvancedSearch, onAdvancedSort, hasAdvancedSearch, hasAdvancedSort } = this.props;
+    const { displayMode, onDisplayModeChange, onFieldSelect, onToggleDelete, showDeleteButtons, onAdvancedSearch, onAdvancedSort, hasAdvancedSearch, hasAdvancedSort, isSubList, tableName, onLinkToTable } = this.props;
     const { isOpen } = this.state;
 
     return e('div', { className: 'menu-dots', ref: this.menuRef },
@@ -69,7 +73,8 @@ class ThreeDotsMenu extends React.Component {
         'aria-label': 'Options'
       }, '⋮'),
       isOpen && e('div', { className: 'menu-dropdown' },
-        e('div', { className: 'menu-section' },
+        // Display mode section (hide for sub-lists)
+        !isSubList && e('div', { className: 'menu-section' },
           e('div', { className: 'menu-label' }, 'Mode de présentation'),
           e('button', {
             className: `menu-item ${displayMode === 'default' ? 'active' : ''}`,
@@ -100,21 +105,43 @@ class ThreeDotsMenu extends React.Component {
             }
           }, displayMode === 'custom' ? '✓ ' : '', 'Sélection personnalisée')
         ),
-        e('div', { className: 'menu-divider' }),
-        e('button', {
+        !isSubList && e('div', { className: 'menu-divider' }),
+        !isSubList && e('button', {
           className: 'menu-item',
           onClick: () => this.handleOptionClick('onFieldSelect')
         }, '🎯 Sélectionner les champs'),
-        e('div', { className: 'menu-divider' }),
-        onAdvancedSearch && e('button', {
+        !isSubList && e('div', { className: 'menu-divider' }),
+        !isSubList && onAdvancedSearch && e('button', {
           className: `menu-item ${hasAdvancedSearch ? 'active' : ''}`,
           onClick: () => this.handleOptionClick('onAdvancedSearch')
         }, hasAdvancedSearch ? '✓ ' : '', '🔍 Recherche avancée...'),
-        onAdvancedSort && e('button', {
+        !isSubList && onAdvancedSort && e('button', {
           className: `menu-item ${hasAdvancedSort ? 'active' : ''}`,
           onClick: () => this.handleOptionClick('onAdvancedSort')
         }, hasAdvancedSort ? '✓ ' : '', '📊 Tri avancé...'),
-        onToggleDelete && [
+
+        // Sub-list specific options
+        isSubList && [
+          e('button', {
+            key: 'sublist-delete',
+            className: `menu-item ${showDeleteButtons ? 'active' : ''}`,
+            onClick: () => this.handleOptionClick('onToggleDelete')
+          }, showDeleteButtons ? '✓ ' : '', '🗑️ Mode suppression'),
+          e('button', {
+            key: 'sublist-sort',
+            className: 'menu-item',
+            onClick: () => this.handleOptionClick('onAdvancedSort')
+          }, '📊 Tri avancé...'),
+          e('div', { key: 'sublist-divider', className: 'menu-divider' }),
+          e('button', {
+            key: 'sublist-link',
+            className: 'menu-item',
+            onClick: () => this.handleOptionClick('onLinkToTable')
+          }, `🔗 Lien vers la table ${tableName || ''}`)
+        ],
+
+        // Delete mode (for main list only)
+        !isSubList && onToggleDelete && [
           e('div', { key: 'divider-delete', className: 'menu-divider' }),
           e('button', {
             key: 'toggle-delete',

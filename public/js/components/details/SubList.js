@@ -93,6 +93,16 @@ class SubList extends React.Component {
     });
   }
 
+  handleAdvancedSort = () => {
+    // TODO: Implement advanced sort modal for sub-lists
+    alert('Tri avancé pour les sous-listes - à implémenter');
+  }
+
+  handleLinkToTable = () => {
+    const { tableName } = this.props;
+    window.open(`/_crud/${tableName}`, '_blank');
+  }
+
   handleSort = (fieldName) => {
     this.setState(prev => {
       if (prev.orderBy === fieldName) {
@@ -247,11 +257,12 @@ class SubList extends React.Component {
             title: `Créer un nouveau ${tableName}`
           }, '+ Nouveau'),
           e(ThreeDotsMenu, {
-            displayMode,
-            onDisplayModeChange: this.handleDisplayModeChange,
-            onFieldSelect: this.handleShowFieldSelector,
+            isSubList: true,
+            tableName,
+            showDeleteButtons,
             onToggleDelete: this.handleToggleDeleteButtons,
-            showDeleteButtons
+            onAdvancedSort: this.handleAdvancedSort,
+            onLinkToTable: this.handleLinkToTable
           })
         )
       ),
