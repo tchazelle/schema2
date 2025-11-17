@@ -34,6 +34,8 @@ class RowDetailView extends React.Component {
       showAttachments: false,
       attachmentCount: 0
     };
+    // Store refs to SubList components to access their handlers
+    this.subListRefs = {};
   }
 
   async componentDidMount() {
@@ -351,16 +353,35 @@ class RowDetailView extends React.Component {
                 e(ThreeDotsMenu, {
                   isSubList: true,
                   tableName: relatedTable,
-                  showDeleteButtons: false,
-                  onToggleDelete: null, // Will be handled by SubList
-                  onAdvancedSort: null, // Will be handled by SubList
-                  onLinkToTable: () => window.open(`/_crud/${relatedTable}`, '_blank'),
-                  onExtendAuthorization: () => this.handleExtendAuthorizationForRelation(relatedTable, relName)
+                  showDeleteButtons: this.subListRefs[relName]?.state?.showDeleteButtons || false,
+                  onToggleDelete: () => {
+                    if (this.subListRefs[relName]) {
+                      this.subListRefs[relName].handleToggleDeleteButtons();
+                      // Force re-render to update menu state indicator
+                      this.forceUpdate();
+                    }
+                  },
+                  onAdvancedSort: () => {
+                    if (this.subListRefs[relName]) {
+                      this.subListRefs[relName].handleAdvancedSort();
+                    }
+                  },
+                  onLinkToTable: () => {
+                    if (this.subListRefs[relName]) {
+                      this.subListRefs[relName].handleLinkToTable();
+                    }
+                  },
+                  onExtendAuthorization: () => {
+                    if (this.subListRefs[relName]) {
+                      this.subListRefs[relName].handleExtendAuthorization();
+                    }
+                  }
                 })
               )
             ),
             isOpen && e('div', { className: 'relation-list' },
               e(SubList, {
+                ref: (ref) => { this.subListRefs[relName] = ref; },
                 rows: relRows,
                 tableName: relatedTable,
                 parentTable: tableName,
