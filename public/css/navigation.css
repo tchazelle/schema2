@@ -1,35 +1,38 @@
 /**
  * Navigation styles - Menus, navbars, and navigation links
+ * Uses CSS variables from variables.css
  */
 
+@import 'variables.css';
+
 .nav {
-  margin-bottom: 20px;
-  padding: 15px;
-  background: white;
-  border-radius: 8px;
+  margin-bottom: var(--space-xl);
+  padding: var(--space-5);
+  background: var(--color-bg-white);
+  border-radius: var(--border-radius-lg);
   display: flex;
-  gap: 10px;
+  gap: var(--space-4);
   flex-wrap: wrap;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
 }
 
 .nav a {
-  padding: 8px 16px;
-  background: #007bff;
-  color: white;
+  padding: var(--space-sm) var(--space-lg);
+  background: var(--color-primary);
+  color: var(--color-bg-white);
   text-decoration: none;
-  border-radius: 4px;
-  font-size: 14px;
-  transition: background 0.2s;
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-base);
+  transition: background var(--transition-base);
   display: inline-block;
 }
 
 .nav a:hover {
-  background: #0056b3;
+  background: var(--color-primary-hover);
 }
 
 .nav a:active {
-  background: #004085;
+  background: var(--color-primary-active);
 }
 
 /* Responsive navigation */

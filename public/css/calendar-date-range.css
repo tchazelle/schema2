@@ -1,3 +1,5 @@
+@import 'variables.css';
+
 /**
  * CalendarDateRangeTool Component Styles
  * Smart date range picker for calendar events
@@ -8,11 +10,11 @@
    ======================================== */
 
 .calendar-date-range-tool {
-  background: #f8f9fa;
-  border: 1px solid #dee2e6;
-  border-radius: 8px;
-  padding: 16px;
-  margin-bottom: 16px;
+  background: var(--color-bg-section);
+  border: var(--border-width-thin) solid var(--color-border);
+  border-radius: var(--border-radius-lg);
+  padding: var(--space-lg);
+  margin-bottom: var(--space-lg);
 }
 
 .calendar-date-range-wrapper {
@@ -24,22 +26,22 @@
    ======================================== */
 
 .date-range-mode-selector {
-  margin-bottom: 16px;
+  margin-bottom: var(--space-lg);
 }
 
 .date-range-mode-selector .edit-field-label {
   display: block;
-  margin-bottom: 6px;
-  font-weight: 500;
-  font-size: 14px;
-  color: #495057;
+  margin-bottom: var(--space-3);
+  font-weight: var(--font-weight-medium);
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
 }
 
 .date-range-mode-selector .mode-select {
   width: 100%;
   max-width: 400px;
-  font-size: 14px;
-  padding: 8px 12px;
+  font-size: var(--font-size-base);
+  padding: var(--space-sm) var(--space-md);
 }
 
 /* ========================================
@@ -47,13 +49,13 @@
    ======================================== */
 
 .date-range-duration {
-  margin-top: 12px;
+  margin-top: var(--space-md);
 }
 
 .duration-input-group {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--space-md);
   flex-wrap: wrap;
 }
 
@@ -64,28 +66,28 @@
 
 .duration-presets {
   display: flex;
-  gap: 6px;
+  gap: var(--space-3);
   flex-wrap: wrap;
 }
 
 .btn-duration-preset {
-  background: #fff;
-  border: 1px solid #ced4da;
-  border-radius: 4px;
-  padding: 6px 12px;
-  font-size: 13px;
+  background: var(--color-bg-white);
+  border: var(--border-width-thin) solid var(--color-border-input);
+  border-radius: var(--border-radius-sm);
+  padding: var(--space-3) var(--space-md);
+  font-size: var(--font-size-13);
   cursor: pointer;
-  color: #495057;
-  transition: all 0.2s ease;
+  color: var(--color-text-secondary);
+  transition: all var(--transition-base);
 }
 
 .btn-duration-preset:hover {
-  background: #e9ecef;
-  border-color: #adb5bd;
+  background: var(--color-bg-hover);
+  border-color: var(--color-border-hover);
 }
 
 .btn-duration-preset:active {
-  background: #dee2e6;
+  background: var(--color-border);
   transform: scale(0.98);
 }
 
@@ -94,7 +96,7 @@
    ======================================== */
 
 .date-range-endtime {
-  margin-top: 12px;
+  margin-top: var(--space-md);
 }
 
 .date-range-endtime .edit-field-input {
@@ -106,25 +108,25 @@
    ======================================== */
 
 .date-range-preview {
-  margin-top: 16px;
-  padding: 12px;
-  background: #fff;
-  border: 1px solid #dee2e6;
-  border-radius: 6px;
-  font-size: 14px;
-  color: #495057;
+  margin-top: var(--space-lg);
+  padding: var(--space-md);
+  background: var(--color-bg-white);
+  border: var(--border-width-thin) solid var(--color-border);
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
 }
 
 .date-range-preview .preview-label {
-  font-weight: 500;
-  color: #212529;
-  margin-right: 8px;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+  margin-right: var(--space-sm);
 }
 
 .date-range-preview .preview-value {
-  color: #007bff;
-  font-weight: 500;
-  font-family: 'Courier New', monospace;
+  color: var(--color-primary);
+  font-weight: var(--font-weight-medium);
+  font-family: var(--font-family-mono);
 }
 
 /* ========================================
@@ -132,7 +134,7 @@
    ======================================== */
 
 .calendar-date-range-tool .edit-field {
-  margin-bottom: 12px;
+  margin-bottom: var(--space-md);
 }
 
 .calendar-date-range-tool .edit-field:last-child {
@@ -141,37 +143,37 @@
 
 .calendar-date-range-tool .edit-field-label {
   display: block;
-  margin-bottom: 6px;
-  font-weight: 500;
-  font-size: 14px;
-  color: #495057;
+  margin-bottom: var(--space-3);
+  font-weight: var(--font-weight-medium);
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
 }
 
 .calendar-date-range-tool .edit-field-input,
 .calendar-date-range-tool .edit-field-select {
   width: 100%;
   max-width: 400px;
-  padding: 8px 12px;
-  border: 1px solid #ced4da;
-  border-radius: 4px;
-  font-size: 14px;
-  color: #495057;
-  background: #fff;
-  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+  padding: var(--space-sm) var(--space-md);
+  border: var(--border-width-thin) solid var(--color-border-input);
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
+  background: var(--color-bg-white);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 
 .calendar-date-range-tool .edit-field-input:focus,
 .calendar-date-range-tool .edit-field-select:focus {
   outline: none;
-  border-color: #80bdff;
-  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.15);
+  border-color: var(--color-primary-light);
+  box-shadow: var(--shadow-focus);
 }
 
 /* ========================================
    RESPONSIVE
    ======================================== */
 
-@media (max-width: 768px) {
+@media (max-width: var(--breakpoint-mobile)) {
   .duration-input-group {
     flex-direction: column;
     align-items: stretch;
@@ -211,5 +213,5 @@
 }
 
 .calendar-date-range-tool > * {
-  animation: fadeInSlide 0.3s ease-out;
+  animation: fadeInSlide var(--transition-slow);
 }

@@ -761,8 +761,6 @@ class CrudService {
               };
               break;
 
-            default:
-              console.warn(`[CrudService] Unknown stat type: ${stat}`);
           }
         }
       }

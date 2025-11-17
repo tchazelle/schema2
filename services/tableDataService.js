@@ -35,7 +35,6 @@ async function loadRelationsForRow(user, tableName, row, options = {}) {
     if (relationsN1[fieldName]) {
       const relConfig = relationsN1[fieldName];
       const foreignValue = row[fieldName];
-      //console.log("relConfig", relConfig)
       if (foreignValue) {
         // Charger l'enregistrement lié
         const [relatedRows] = await pool.query(
@@ -134,8 +133,6 @@ async function loadRelationsForRow(user, tableName, row, options = {}) {
             for (const subFieldName in subRelationsN1) {
               const subRelConfig = subRelationsN1[subFieldName];
 
-              //console.log("subRelConfig", subRelConfig, " subFieldName",subFieldName, "relationName", relationName)
-
               // CORRECTION: Exclure la relation qui pointe vers la table parent (éviter le doublon)
               // Ex: dans OrganizationPerson, ne pas charger Organization car c'est déjà la fiche master
               //if (subRelConfig.relatedTable === tableName) { // FAUX on peut avoir deux relations sur une même table
@@ -144,7 +141,6 @@ async function loadRelationsForRow(user, tableName, row, options = {}) {
               }
               
               const subForeignValue = relRow[subFieldName];
-            
 
               if (subForeignValue) {
                 // Charger l'enregistrement lié
@@ -244,32 +240,20 @@ async function getTableData(user, tableName, options = {}) {
     noId
   } = options;
 
-  /*
-  //console.log('\n====== [TableDataService.getTableData] Début ======');
-  //console.log('[TableDataService] tableName:', tableName);
-  //console.log('[TableDataService] options:', { id, limit, offset, orderBy, order, relation, compact, includeSchema });
-  //console.log('[TableDataService] user:', user ? `id=${user.id}, roles=${JSON.stringify(user.roles)}` : 'null');
-  */
-
   // user est déjà enrichi par userEnrichMiddleware (toujours défini, même pour visiteurs publics)
 
   // Normaliser le nom de la table (case-insensitive)
   const table = SchemaService.getTableName(tableName);
-  //console.log('[TableDataService] Table normalisée:', table);
 
   // Vérifier si la table existe dans le schéma
   if (!table) {
-    //console.log('[TableDataService] ❌ Table non trouvée');
     return { success: false, error: 'Table non trouvée', statusCode: 404, rows: [] };
   }
 
   // Vérifier si l'utilisateur a accès à la table
-  //console.log('[TableDataService] Vérification permission...');
   if (!hasPermission(user, table, 'read')) {
-    //console.log('[TableDataService] ❌ Accès refusé à cette table');
     return { success: false, error: 'Accès refusé à cette table', statusCode: 403, rows: [] };
   }
-  //console.log('[TableDataService] ✅ Permission OK');
 
   // Construire la requête SQL
   // Si id est fourni, ajouter une condition id = ? au customWhere
@@ -283,18 +267,13 @@ async function getTableData(user, tableName, options = {}) {
     effectiveCustomWhereParams.push(idAsInt);
   }
 
-  //console.log("**************************** effectiveCustomWhereParams",effectiveCustomWhereParams)
-
   // Passer le nom de table si des JOINs sont présents pour éviter l'ambiguïté des colonnes granted/ownerId
-  //console.log('[TableDataService] Construction WHERE clause avec EntityService.buildWhereClause...');
   const { where, params } = EntityService.buildWhereClause(
     user,
     effectiveCustomWhere,
     effectiveCustomWhereParams,
     customJoins.length > 0 ? table : null
   );
-  //console.log('[TableDataService] WHERE clause:', where);
-  //console.log('[TableDataService] Params initial:', params);
 
   // Select with table prefix when there are JOINs, and include computed fields (as)
   const tableAlias = customJoins.length > 0 ? table : null;
@@ -340,32 +319,12 @@ async function getTableData(user, tableName, options = {}) {
     params.push(parseInt(offset));
   }
 
-  // Console log the query for debugging
-  //console.log('[TableDataService] Query SQL finale:', query);
-  //console.log('[TableDataService] Params SQL finale:', params);
-
   // Exécuter la requête
-  //console.log('[TableDataService] Exécution de la requête SQL...');
   const [rows] = await pool.query(query, params);
-  //console.log(`[TableDataService] ✅ Requête exécutée - ${rows.length} row(s) trouvée(s)`);
 
 
   // Filtrer les rows selon granted et les champs selon les permissions
-  //console.log('[TableDataService] Filtrage des rows avec EntityService.canAccessEntity...');
-  if (rows.length > 0) {
-    //console.log('[TableDataService] Première row avant filtrage:', { id: rows[0].id, granted: rows[0].granted, ownerId: rows[0].ownerId });
-  }
-
   const accessibleRows = rows.filter(row => EntityService.canAccessEntity(user, table, row));
-  //console.log(`[TableDataService] Rows accessibles après filtrage: ${accessibleRows.length}/${rows.length}`);
-
-  // Debug: Log if rows were filtered out by granted check
-  if (id && rows.length > 0 && accessibleRows.length === 0) {
-    //console.log(`[TableDataService] ⚠️ WARNING: Record id=${id} trouvé mais filtré par granted check`);
-    //console.log(`[TableDataService] Record granted value:`, rows[0].granted);
-    //console.log(`[TableDataService] Record ownerId:`, rows[0].ownerId);
-    //console.log(`[TableDataService] User:`, user ? `id=${user.id}, roles=${JSON.stringify(user.roles)}` : 'null (public)');
-  }
 
   // Charger les relations si demandées
   const { relationsN1, relations1N } = SchemaService.getTableRelations(user, table);
@@ -391,12 +350,9 @@ async function getTableData(user, tableName, options = {}) {
   const statFields = SchemaService.getStatFields(table, user);
 
   // Filtrer les rows et charger les relations
-  //console.log('[TableDataService] Filtrage des champs et chargement des relations...');
   const filteredRows = [];
   for (const row of accessibleRows) {
-    //console.log(`[TableDataService] Traitement row id=${row.id}...`);
     const filteredRow = EntityService.filterEntityFields(user, table, row);
-    //console.log(`[TableDataService] Champs filtrés pour row id=${row.id}:`, Object.keys(filteredRow));
 
     // Calculer les champs JavaScript (calculate)
     const context = {
@@ -447,8 +403,6 @@ async function getTableData(user, tableName, options = {}) {
 
     // Charger les relations pour cette row
     if (requestedRelations.length > 0) {
-      //console.log(`[TableDataService] Chargement des relations pour row id=${row.id}:`, requestedRelations);
-
       const relations = await loadRelationsForRow(user, table, row, {
         requestedRelations,
         loadN1InRelations: true,
@@ -456,7 +410,6 @@ async function getTableData(user, tableName, options = {}) {
         noSystemFields,
         noId
       });
-      //console.log(`[TableDataService] Relations chargées pour row id=${row.id}:`, Object.keys(relations));
 
       // Ajouter les relations au résultat (utilise _relations pour éviter conflit avec champ DB)
       if (Object.keys(relations).length > 0) {
@@ -466,8 +419,6 @@ async function getTableData(user, tableName, options = {}) {
 
     filteredRows.push(filteredRow);
   }
-
-  //console.log(`[TableDataService] ✅ Total rows filtrées et enrichies: ${filteredRows.length}`);
 
   // Calculer les statistiques si des champs ont stat défini
   const stats = {};
@@ -514,7 +465,6 @@ async function getTableData(user, tableName, options = {}) {
   const countQuery = `SELECT COUNT(*) as total FROM \`${table}\` WHERE ${where}`;
   const [countResult] = await pool.query(countQuery, params.slice(0, params.length - (limit ? 1 : 0) - (offset ? 1 : 0)));
   const total = countResult[0].total;
-  //console.log('[TableDataService] Total count (sans limit):', total);
 
   const response = {
     success: true,
@@ -535,18 +485,14 @@ async function getTableData(user, tableName, options = {}) {
 
   // Ajouter le schéma si demandé
   if (includeSchema === '1') {
-    //console.log('[TableDataService] Ajout du schéma à la réponse...');
     response.schema = SchemaService.buildFilteredSchema(user, table);
   }
   if(useProxy) {
-  //console.log('[TableDataService] Application du dataProxy...');
     const response2  = dataProxy(response)
     return JSON.parse(JSON.stringify(response2))
 
   }
 
-  //console.log('[TableDataService] ✅ Réponse finale:', { rows:response.rows });
-  //console.log('====== [TableDataService.getTableData] Fin ======\n');
   return response;
 }
 

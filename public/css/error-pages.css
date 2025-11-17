@@ -1,6 +1,9 @@
 /**
  * Error pages styles - 404 and 500 error pages
+ * Uses CSS variables from variables.css
  */
+
+@import 'variables.css';
 
 /* Reset */
 * {
@@ -11,8 +14,8 @@
 
 /* Centered layout for error pages */
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  background: #f5f5f5;
+  font-family: var(--font-family-base);
+  background: var(--color-bg-page);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -22,71 +25,71 @@ body {
 /* Error container */
 .container {
   text-align: center;
-  background: white;
-  padding: 60px 40px;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background: var(--color-bg-white);
+  padding: var(--space-5xl) var(--space-4xl);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-sm-medium);
   max-width: 500px;
   width: 100%;
 }
 
 /* Error heading */
 h1 {
-  font-size: 72px;
-  color: #007bff;
-  margin-bottom: 20px;
-  font-weight: 700;
+  font-size: var(--font-size-6xl);
+  color: var(--color-primary);
+  margin-bottom: var(--space-xl);
+  font-weight: var(--font-weight-bold);
 }
 
 /* 500 error specific color */
 h1.error-500 {
-  font-size: 48px;
-  color: #dc3545;
+  font-size: var(--font-size-5xl);
+  color: var(--color-error);
 }
 
 /* Error description */
 p {
-  font-size: 18px;
-  color: #666;
-  margin-bottom: 30px;
-  line-height: 1.6;
+  font-size: var(--font-size-lg);
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-3xl);
+  line-height: var(--line-height-normal);
 }
 
 /* Back link button */
 a {
   display: inline-block;
-  padding: 12px 24px;
-  background: #007bff;
-  color: white;
+  padding: var(--space-md) var(--space-2xl);
+  background: var(--color-primary);
+  color: var(--color-bg-white);
   text-decoration: none;
-  border-radius: 4px;
-  font-weight: 600;
-  transition: background 0.2s;
+  border-radius: var(--border-radius-sm);
+  font-weight: var(--font-weight-semibold);
+  transition: background var(--transition-base);
 }
 
 a:hover {
-  background: #0056b3;
+  background: var(--color-primary-hover);
 }
 
 a:active {
-  background: #004085;
+  background: var(--color-primary-active);
 }
 
 /* Responsive */
 @media (max-width: 768px) {
   .container {
-    padding: 40px 20px;
+    padding: var(--space-4xl) var(--space-xl);
   }
 
   h1 {
-    font-size: 48px;
+    font-size: var(--font-size-5xl);
   }
 
   h1.error-500 {
-    font-size: 36px;
+    font-size: var(--font-size-36);
   }
 
   p {
-    font-size: 16px;
+    font-size: var(--font-size-md);
   }
 }

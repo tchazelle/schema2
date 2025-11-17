@@ -21,54 +21,40 @@ class EntityService {
    * @returns {boolean} - true si accessible
    */
   static canAccessEntity(user, tableName, entity) {
-    //console.log(`[EntityService.canAccessEntity] tableName=${tableName}, entity.id=${entity?.id}, entity.granted=${entity?.granted}, entity.ownerId=${entity?.ownerId}`);
-    //console.log(`[EntityService.canAccessEntity] user:`, user ? `id=${user.id}, roles=${JSON.stringify(user.roles)}` : 'null');
 
     // Si pas de granted, l'entité est publique
     if (!entity.granted) {
-      //console.log('[EntityService.canAccessEntity] ✅ Pas de granted → accessible (public)');
       return true;
     }
 
     const userRoles = getUserAllRoles(user);
-    //console.log('[EntityService.canAccessEntity] userRoles (avec héritage):', userRoles);
 
     // Si granted = 'draft', seul le propriétaire peut lire
     if (entity.granted === GRANTED_VALUES.DRAFT) {
-      //console.log(`[EntityService.canAccessEntity] granted=DRAFT, vérification propriétaire (ownerId=${entity.ownerId}, user.id=${user?.id})`);
       if (!user || entity.ownerId !== user.id) {
-        //console.log('[EntityService.canAccessEntity] ❌ DRAFT mais pas propriétaire → refusé');
         return false;
       }
-      //console.log('[EntityService.canAccessEntity] ✅ DRAFT et propriétaire → accessible');
       return true;
     }
 
     // Si granted = 'shared', vérifier les permissions de la table
     if (entity.granted === GRANTED_VALUES.SHARED) {
-      //console.log('[EntityService.canAccessEntity] granted=SHARED, vérification permission table...');
       if (!hasPermission(user, tableName, 'read')) {
-        //console.log('[EntityService.canAccessEntity] ❌ SHARED mais pas de permission table → refusé');
         return false;
       }
-      //console.log('[EntityService.canAccessEntity] ✅ SHARED et permission table → accessible');
       return true;
     }
 
     // Si granted = 'published @role', vérifier le rôle
     if (isPublishedRole(entity.granted)) {
       const requiredRole = extractRoleFromGranted(entity.granted);
-      //console.log(`[EntityService.canAccessEntity] granted=PUBLISHED @${requiredRole}, vérification rôle...`);
       if (!userRoles.includes(requiredRole)) {
-        //console.log(`[EntityService.canAccessEntity] ❌ PUBLISHED @${requiredRole} mais user n'a pas ce rôle → refusé`);
         return false;
       }
-      //console.log(`[EntityService.canAccessEntity] ✅ PUBLISHED @${requiredRole} et user a le rôle → accessible`);
       return true;
     }
 
     // Autres valeurs de granted : accessible par défaut
-    //console.log('[EntityService.canAccessEntity] ✅ Autre valeur de granted → accessible par défaut');
     return true;
   }
 
@@ -82,13 +68,11 @@ class EntityService {
    * @returns {Object} - Entité filtrée
    */
   static filterEntityFields(user, tableName, entity) {
-    //console.log(`[EntityService.filterEntityFields] tableName=${tableName}, entity.id=${entity?.id}`);
 
     const userRoles = getUserAllRoles(user);
     const tableConfig = SchemaService.getTableConfig(tableName);
 
     if (!tableConfig) {
-      //console.log('[EntityService.filterEntityFields] ⚠️ Pas de tableConfig → retour entité brute');
       return entity;
     }
 
@@ -115,7 +99,6 @@ class EntityService {
           }
         }
         if (!fieldAccessible) {
-          //console.log(`[EntityService.filterEntityFields] ❌ Champ '${fieldName}' filtré (grant: ${JSON.stringify(fieldConfig.grant)})`);
           fieldsFiltered++;
         }
       }
@@ -126,9 +109,7 @@ class EntityService {
     }
 
     if (fieldsFiltered > 0) {
-      //console.log(`[EntityService.filterEntityFields] ⚠️ ${fieldsFiltered} champ(s) filtré(s) sur ${Object.keys(entity).length}`);
     } else {
-      //console.log(`[EntityService.filterEntityFields] ✅ Tous les champs accessibles`);
     }
 
     return filteredEntity;
@@ -145,11 +126,8 @@ class EntityService {
    * @returns {Object} - { where: string, params: Array }
    */
   static buildWhereClause(user, baseWhere = null, baseParams = [], tableName = null) {
-    //console.log(`[EntityService.buildWhereClause] tableName=${tableName}, baseWhere=${baseWhere}, baseParams=${JSON.stringify(baseParams)}`);
-    //console.log(`[EntityService.buildWhereClause] user:`, user ? `id=${user.id}, roles=${JSON.stringify(user.roles)}` : 'null');
 
     const userRoles = getUserAllRoles(user);
-    //console.log('[EntityService.buildWhereClause] userRoles (avec héritage):', userRoles);
 
     const conditions = [];
     const params = [];
@@ -163,7 +141,6 @@ class EntityService {
       conditions.push(`(${baseWhere})`);
       // Ajouter les paramètres de base en premier
       params.push(...baseParams);
-      //console.log('[EntityService.buildWhereClause] Ajout baseWhere:', baseWhere);
     }
 
     // Conditions pour granted
@@ -173,26 +150,22 @@ class EntityService {
     if (user) {
       grantedConditions.push(`(${grantedCol} = ? AND ${ownerIdCol} = ?)`);
       params.push(GRANTED_VALUES.DRAFT, user.id);
-      //console.log('[EntityService.buildWhereClause] Ajout condition DRAFT pour user.id =', user.id);
     }
 
     // 2. Shared accessible selon les permissions de la table (déjà vérifié)
     grantedConditions.push(`${grantedCol} = ?`);
     params.push(GRANTED_VALUES.SHARED);
-    //console.log('[EntityService.buildWhereClause] Ajout condition SHARED');
 
     // 3. Published @role accessible selon les rôles
     for (const role of userRoles) {
       grantedConditions.push(`${grantedCol} = ?`);
       params.push(`${GRANTED_VALUES.PUBLISHED_PREFIX}${role}`);
-      //console.log(`[EntityService.buildWhereClause] Ajout condition PUBLISHED @${role}`);
     }
 
     // 4. Rows sans granted (NULL ou vide)
     grantedConditions.push(`${grantedCol} IS NULL`);
     grantedConditions.push(`${grantedCol} = ?`);
     params.push(GRANTED_VALUES.EMPTY);
-    //console.log('[EntityService.buildWhereClause] Ajout conditions NULL et EMPTY');
 
     if (grantedConditions.length > 0) {
       conditions.push(`(${grantedConditions.join(' OR ')})`);
@@ -200,8 +173,6 @@ class EntityService {
 
     const where = conditions.length > 0 ? conditions.join(' AND ') : '1=1';
 
-    //console.log('[EntityService.buildWhereClause] ✅ WHERE finale:', where);
-    //console.log('[EntityService.buildWhereClause] ✅ Params finaux:', params);
 
     return { where, params };
   }

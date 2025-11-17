@@ -1,102 +1,106 @@
 /**
  * Login form styles - User authentication form
+ * Uses CSS variables from variables.css
  */
 
+@import 'variables.css';
+
 .login-form {
-  display:none;
+  display: none;
   max-width: 400px;
-  margin: 40px auto;
-  background: white;
-  padding: 30px;
-  border-radius: 8px;
-  border: 1px solid #e0e0e0;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  
-  min-width:40rem;
+  margin: var(--space-4xl) auto;
+  background: var(--color-bg-white);
+  padding: var(--space-3xl);
+  border-radius: var(--border-radius-lg);
+  border: var(--border-width-thin) solid var(--color-border-light);
+  box-shadow: var(--shadow-xs);
+
+  min-width: 40rem;
   position: fixed;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -90%);
-  z-index:1001;
+  z-index: 1001;
 }
+
 .login-form.open {
   display: block;
 }
 
 .login-form h2 {
-  margin-bottom: 20px;
-  color: #333;
-  font-size: 24px;
-  font-weight: 600;
+  margin-bottom: var(--space-xl);
+  color: var(--color-text-heading);
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-semibold);
 }
 
 .form-group {
-  margin-bottom: 15px;
+  margin-bottom: var(--space-5);
 }
 
 .form-group label {
   display: block;
-  margin-bottom: 5px;
-  color: #555;
-  font-size: 14px;
-  font-weight: 500;
+  margin-bottom: var(--space-2);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
 }
 
 .form-group input {
   width: 100%;
-  padding: 10px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 14px;
-  transition: border-color 0.2s;
+  padding: var(--space-4);
+  border: var(--border-width-thin) solid var(--color-border-card);
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-base);
+  transition: border-color var(--transition-base);
 }
 
 .form-group input:focus {
   outline: none;
-  border-color: #007bff;
-  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-focus-light);
 }
 
 .btn {
   width: 100%;
-  padding: 12px;
-  background: #007bff;
-  color: white;
+  padding: var(--space-md);
+  background: var(--color-primary);
+  color: var(--color-bg-white);
   border: none;
-  border-radius: 4px;
+  border-radius: var(--border-radius-sm);
   cursor: pointer;
-  font-size: 14px;
-  font-weight: 600;
-  transition: background 0.2s;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  transition: background var(--transition-base);
 }
 
 .btn:hover {
-  background: #0056b3;
+  background: var(--color-primary-hover);
 }
 
 .btn:active {
-  background: #004085;
+  background: var(--color-primary-active);
 }
 
 .error-message {
-  color: #dc3545;
-  font-size: 14px;
-  margin-top: 10px;
+  color: var(--color-error);
+  font-size: var(--font-size-base);
+  margin-top: var(--space-4);
   display: none;
-  padding: 10px;
-  background: #f8d7da;
-  border: 1px solid #f5c6cb;
-  border-radius: 4px;
+  padding: var(--space-4);
+  background: var(--color-error-bg);
+  border: var(--border-width-thin) solid var(--color-error-border);
+  border-radius: var(--border-radius-sm);
 }
 
 /* Responsive */
 @media (max-width: 768px) {
   .login-form {
-    margin: 20px;
-    padding: 20px;
+    margin: var(--space-xl);
+    padding: var(--space-xl);
   }
 
   .login-form h2 {
-    font-size: 20px;
+    font-size: var(--font-size-xl);
   }
 }

@@ -111,7 +111,6 @@ class CalendarService {
           ORDER BY ${startDateField} ASC
         `;
 
-        console.log(`[CalendarService] SQL Query: ${query.trim()} [${queryParams.join(', ')}]`);
         const [rows] = await pool.query(query, queryParams);
 
         // Filtrer les rows selon les permissions (row-level security)
@@ -224,8 +223,6 @@ class CalendarService {
    */
   static async updateEventDates(user, tableName, eventId, newStartDate, newEndDate) {
     try {
-      console.log(`[CalendarService] updateEventDates - Table: ${tableName}, ID: ${eventId}`);
-
       // Vérifier que la table existe et a une configuration calendar
       const tableConfig = SchemaService.getTableConfig(tableName);
       if (!tableConfig) {
@@ -243,7 +240,6 @@ class CalendarService {
 
       // Récupérer l'événement existant
       const query = `SELECT * FROM ${tableName} WHERE id = ?`;
-      console.log(`[CalendarService] SQL Query: ${query} [${eventId}]`);
       const [rows] = await pool.query(query, [eventId]);
 
       if (rows.length === 0) {
@@ -276,11 +272,8 @@ class CalendarService {
       values.push(eventId);
 
       const updateQuery = `UPDATE ${tableName} SET ${setClause} WHERE id = ?`;
-      console.log(`[CalendarService] SQL Query: ${updateQuery} [${values.join(', ')}]`);
 
       await pool.query(updateQuery, values);
-
-      console.log(`[CalendarService] Événement ${eventId} mis à jour avec succès`);
 
       return { success: true };
 
