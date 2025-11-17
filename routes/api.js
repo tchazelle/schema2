@@ -258,6 +258,20 @@ router.put('/:tableName/:id', async (req, res) => {
       return res.status(403).json({ success: false, error: 'Accès refusé à cet enregistrement' });
     }
 
+    // Special validation for Attachment table: check for duplicate names
+    if (table === 'Attachment' && req.body.name && req.body.name !== existingRecord.name) {
+      const [duplicates] = await pool.query(
+        'SELECT id FROM `Attachment` WHERE rowLink = ? AND name = ? AND id != ?',
+        [existingRecord.rowLink, req.body.name, id]
+      );
+      if (duplicates.length > 0) {
+        return res.status(400).json({
+          success: false,
+          error: `Un fichier nommé "${req.body.name}" existe déjà pour cet enregistrement`
+        });
+      }
+    }
+
     // Prepare update data (remove protected fields and non-schema fields)
     const data = { ...req.body };
     delete data.id;
