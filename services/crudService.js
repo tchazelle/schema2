@@ -221,7 +221,7 @@ class CrudService {
     const allFieldsForSelector = Object.keys(structure.fields);
 
     // Calculate statistics for fields with stat property
-    const statistics = await this.calculateStatistics(user, table, structure.fields, customWhere, searchParams, joins);
+    const statistics = await this.calculateStatistics(user, table, structure.fields, result.rows, customWhere, searchParams, joins);
 
     return {
       success: true,
@@ -639,87 +639,133 @@ class CrudService {
    * @param {Object} user - Current user
    * @param {string} table - Table name
    * @param {Object} fields - Table fields definition
+   * @param {Array} rows - Fetched rows (for calculating stats on calculated fields)
    * @param {string} customWhere - WHERE clause from search
    * @param {Array} searchParams - Parameters for WHERE clause
    * @param {Array} joins - JOIN clauses
    * @returns {Promise<Object>} - Statistics by field name
    */
-  static async calculateStatistics(user, table, fields, customWhere, searchParams, joins) {
+  static async calculateStatistics(user, table, fields, rows, customWhere, searchParams, joins) {
     const statistics = {};
 
-    // Find fields with stat property
-    const statsFields = Object.entries(fields)
+    // Separate database fields from calculated fields
+    const dbStatsFields = Object.entries(fields)
       .filter(([fieldName, field]) => field.stat)
       .filter(([fieldName, field]) => !field.as && !field.calculate); // Only real DB fields
 
-    if (statsFields.length === 0) {
-      return statistics;
-    }
+    const calculatedStatsFields = Object.entries(fields)
+      .filter(([fieldName, field]) => field.stat)
+      .filter(([fieldName, field]) => field.calculate); // Only JavaScript calculated fields
 
-    // Build SQL query to calculate statistics
-    const selectClauses = statsFields.map(([fieldName, field]) => {
-      const stat = field.stat;
-      switch (stat) {
-        case 'sum':
-          return `SUM(${table}.${fieldName}) as ${fieldName}_sum`;
-        case 'average':
-        case 'avg':
-          return `AVG(${table}.${fieldName}) as ${fieldName}_avg`;
-        case 'count':
-          return `COUNT(${table}.${fieldName}) as ${fieldName}_count`;
-        default:
-          return null;
+    // Calculate statistics for database fields using SQL
+    if (dbStatsFields.length > 0) {
+      // Build SQL query to calculate statistics
+      const selectClauses = dbStatsFields.map(([fieldName, field]) => {
+        const stat = field.stat;
+        switch (stat) {
+          case 'sum':
+            return `SUM(${table}.${fieldName}) as ${fieldName}_sum`;
+          case 'average':
+          case 'avg':
+            return `AVG(${table}.${fieldName}) as ${fieldName}_avg`;
+          case 'count':
+            return `COUNT(${table}.${fieldName}) as ${fieldName}_count`;
+          default:
+            return null;
+        }
+      }).filter(Boolean);
+
+      if (selectClauses.length > 0) {
+        try {
+          // Build query with JOINs if needed (for filtered statistics)
+          const joinClause = joins.length > 0 ? joins.join(' ') : '';
+          const sql = `
+            SELECT ${selectClauses.join(', ')}
+            FROM ${table}
+            ${joinClause}
+            WHERE ${customWhere}
+          `;
+
+          const [dbRows] = await pool.query(sql, searchParams);
+
+          if (dbRows && dbRows.length > 0) {
+            const result = dbRows[0];
+
+            // Map results to field names
+            for (const [fieldName, field] of dbStatsFields) {
+              const stat = field.stat;
+              let statKey;
+
+              switch (stat) {
+                case 'sum':
+                  statKey = `${fieldName}_sum`;
+                  break;
+                case 'average':
+                case 'avg':
+                  statKey = `${fieldName}_avg`;
+                  break;
+                case 'count':
+                  statKey = `${fieldName}_count`;
+                  break;
+              }
+
+              if (statKey && result[statKey] !== undefined && result[statKey] !== null) {
+                statistics[fieldName] = {
+                  type: stat === 'average' || stat === 'avg' ? 'avg' : stat,
+                  value: result[statKey]
+                };
+              }
+            }
+          }
+        } catch (error) {
+          console.error('Error calculating database statistics:', error);
+          // Don't fail the whole request if statistics fail
+        }
       }
-    }).filter(Boolean);
-
-    if (selectClauses.length === 0) {
-      return statistics;
     }
 
-    try {
-      // Build query with JOINs if needed (for filtered statistics)
-      const joinClause = joins.length > 0 ? joins.join(' ') : '';
-      const sql = `
-        SELECT ${selectClauses.join(', ')}
-        FROM ${table}
-        ${joinClause}
-        WHERE ${customWhere}
-      `;
+    // Calculate statistics for JavaScript calculated fields in memory
+    if (calculatedStatsFields.length > 0 && rows && rows.length > 0) {
+      for (const [fieldName, field] of calculatedStatsFields) {
+        const stat = field.stat;
+        const values = rows
+          .map(row => row[fieldName])
+          .filter(val => val !== null && val !== undefined && !isNaN(val));
 
-      const [rows] = await pool.query(sql, searchParams);
-
-      if (rows && rows.length > 0) {
-        const result = rows[0];
-
-        // Map results to field names
-        for (const [fieldName, field] of statsFields) {
-          const stat = field.stat;
-          let statKey;
+        if (values.length > 0) {
+          let statValue;
 
           switch (stat) {
             case 'sum':
-              statKey = `${fieldName}_sum`;
+              statValue = values.reduce((acc, val) => acc + parseFloat(val || 0), 0);
+              statistics[fieldName] = {
+                type: 'sum',
+                value: statValue
+              };
               break;
+
             case 'average':
             case 'avg':
-              statKey = `${fieldName}_avg`;
+              const sum = values.reduce((acc, val) => acc + parseFloat(val || 0), 0);
+              statValue = sum / values.length;
+              statistics[fieldName] = {
+                type: 'avg',
+                value: statValue
+              };
               break;
-            case 'count':
-              statKey = `${fieldName}_count`;
-              break;
-          }
 
-          if (statKey && result[statKey] !== undefined && result[statKey] !== null) {
-            statistics[fieldName] = {
-              type: stat === 'average' || stat === 'avg' ? 'avg' : stat,
-              value: result[statKey]
-            };
+            case 'count':
+              statistics[fieldName] = {
+                type: 'count',
+                value: values.length
+              };
+              break;
+
+            default:
+              console.warn(`[CrudService] Unknown stat type: ${stat}`);
           }
         }
       }
-    } catch (error) {
-      console.error('Error calculating statistics:', error);
-      // Don't fail the whole request if statistics fail
     }
 
     return statistics;
