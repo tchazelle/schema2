@@ -120,7 +120,6 @@ module.exports = {
       granted:{
         public:["read"]
       },
-      orderable:"position",
       // ... defaultConfigTable
       fields: {
         id: { type: "integer", isPrimary: true, autoIncrement: true },
@@ -320,9 +319,11 @@ module.exports = {
         "public" : ["read"],
         "admin": ["read", "create", "update", "delete", "publish"]
       },
+      
       hasAttachmentsTab: false, // Table de liaison - pas besoin d'attachments
       fields: {
         id: { type: "integer", isPrimary: true, autoIncrement: true },
+        position: { type: "integer", default: 0 }, // Position de la piste dans l'album
         idMusicAlbum: { 
           type: "integer", 
           relation: "MusicAlbum", 
@@ -330,9 +331,12 @@ module.exports = {
           arrayName: "track", // le nom de la propriété dans le lequel est rangé les rows liées
           arraySchemaorgProperty: "track", // nom selon doctrine schema.org (pour microdata)
           relationshipStrength: "Strong", // signifie une contagion du DELETE et une DUPLICATION en chaine
-          defaultSort: 
-          { field: "position", order: "ASC" }  // si string = {field:<value>, order:"ASC"} // si array [ {field1, order1}, {field2, order2}]
+          defaultSort: { 
+            field: "position", 
+            order: "ASC"  
+          },  // si string = {field:<value>, order:"ASC"} // si array [ {field1, order1}, {field2, order2}]
         },
+      
         idMusicRecording: { 
           type: "integer", 
           relation: "MusicRecording", 
@@ -340,10 +344,14 @@ module.exports = {
           arrayName: "inAlbum", 
           arraySchemaorgProperty: "inAlbum",
           relationshipStrength: "Weak", 
-          defaultSort: { field: "position", order: "ASC" }, 
-          label: "Enregistrement" 
+          defaultSort: { 
+            field: "position", 
+            order: "ASC"  
+          },  // si string = {field:<value>, order:"ASC"} // si array [ {field1, order1}, {field2, order2}]
+          orderable: "position",
+          label: "Enregistrement (idMusicRecording)",
         },
-        position: { type: "integer", default: 0 }, // Position de la piste dans l'album
+      
         // ... commonFields
       }
     },
@@ -467,7 +475,7 @@ module.exports = {
       granted: {
         "admin": ["read", "create", "update", "delete", "publish"]
       },
-      orderable:"position",
+      
       fields: {
         id: { type: "integer", isPrimary: true, autoIncrement: true },
         position:{ type: "integer" },
@@ -477,7 +485,8 @@ module.exports = {
           foreignKey: "id",
           arrayName: "itinerary",
           relationshipStrength: "Strong",
-          defaultSort: { field: "position", order: "ASC" }
+          defaultSort: { field: "position", order: "ASC" },
+          orderable:"position",
         },
         Place: {
           type: "integer",
