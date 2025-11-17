@@ -81,12 +81,6 @@ class TableRow extends React.Component {
     // If in edit mode, clicking should not toggle
     if (editMode) return;
 
-    // If this is a sub-list item (parentTable is provided), open the full CRUD page directly
-    if (parentTable) {
-      window.open(`/_crud/${tableName}/${row.id}`, '_blank');
-      return;
-    }
-
     if (!expanded && !fullData) {
       // First time expanding - fetch full data
       this.setState({ loading: true, expanded: true });
