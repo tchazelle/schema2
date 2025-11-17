@@ -41,10 +41,11 @@ class RowDetailView extends React.Component {
     // Open "Strong" relations by default, keep "Weak" relations closed
     const strongRelations = new Set();
 
-    if (structure && structure.fields) {
-      Object.entries(structure.fields).forEach(([fieldName, field]) => {
-        if (field.arrayName && field.relationshipStrength === 'Strong') {
-          strongRelations.add(field.arrayName);
+    // Check in structure.relations for 1:N relations with Strong relationship
+    if (structure && structure.relations) {
+      Object.entries(structure.relations).forEach(([relationName, relationConfig]) => {
+        if (relationConfig.type === 'one-to-many' && relationConfig.relationshipStrength === 'Strong') {
+          strongRelations.add(relationName);
         }
       });
     }
@@ -142,7 +143,8 @@ class RowDetailView extends React.Component {
             name: relationName,
             data: Array.isArray(relData) ? relData : [],
             relatedTable: relationConfig.relatedTable,
-            relationshipStrength: relationConfig.relationshipStrength
+            relationshipStrength: relationConfig.relationshipStrength,
+            defaultSort: relationConfig.defaultSort
           });
         }
       });
@@ -160,7 +162,8 @@ class RowDetailView extends React.Component {
             name: relName,
             data: Array.isArray(relData) ? relData : [],
             relatedTable: relatedTable,
-            relationshipStrength: field.relationshipStrength
+            relationshipStrength: field.relationshipStrength,
+            defaultSort: field.defaultSort
           });
         }
       });
@@ -308,7 +311,8 @@ class RowDetailView extends React.Component {
                 parentTable: tableName,
                 parentId: row.id,
                 relationName: relName,
-                hideHeader: true
+                hideHeader: true,
+                defaultSort: relation.defaultSort
               })
             )
           );
