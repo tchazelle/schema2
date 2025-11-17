@@ -414,6 +414,7 @@ module.exports = {
       displayFields: ["name"],
       searchFields: ["name", "description"],
       pageSize: 100,
+      hasAttachmentsTab: true, // Permet d'attacher des pièces jointes
       granted: {
         "admin": ["read", "create", "update", "delete", "publish"]
       },
