@@ -3,6 +3,9 @@ const router = express.Router();
 const CalendarService = require('../services/calendarService');
 const TemplateService = require('../services/templateService');
 const UIService = require('../services/uiService');
+const CrudService = require('../services/crudService');
+const TableDataService = require('../services/tableDataService');
+const schema = require('../schema.js');
 
 /**
  * GET /_calendar/events
@@ -166,8 +169,24 @@ router.get(['/', '/:year', '/:year/:month', '/:year/:month/:day'], async (req, r
       }));
     }
 
+    // Get accessible tables for menu (tables user can create or update)
+    const accessibleTables = user ? CrudService.getMenuTables(user) : [];
+
+    // Get pages for menu
+    let pages = [];
+    try {
+      if (schema.menu && schema.menu.page) {
+        const pagesResult = await TableDataService.getTableData(user, schema.menu.page, {});
+        if (pagesResult && pagesResult.rows) {
+          pages = pagesResult.rows;
+        }
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement des pages:', error);
+    }
+
     // Sinon, afficher la page HTML du calendrier
-    const html = TemplateService.htmlCalendar(user, initialDate);
+    const html = TemplateService.htmlCalendar(user, initialDate, pages, accessibleTables);
     res.send(html);
 
   } catch (error) {
