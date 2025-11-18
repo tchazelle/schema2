@@ -33,7 +33,7 @@ Temporary Items
 .apdisk
 
 # Uploads
-uploads/
+storage/
 
 # Logs
 logs
