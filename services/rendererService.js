@@ -1,0 +1,234 @@
+const schema = require('../schema');
+const SchemaService = require('./schemaService');
+const { marked } = require('marked');
+
+/**
+ * Renderer Service
+ * Provides server-side field rendering for API responses
+ * Used when ?renderer=1 is passed to API endpoints
+ */
+class RendererService {
+  /**
+   * Render a field value based on its renderer type
+   * @param {*} value - The field value
+   * @param {Object} field - The field definition from schema
+   * @param {string} fieldName - The field name
+   * @param {Object} row - The full row data (for context)
+   * @param {Object} options - Rendering options
+   * @param {boolean} options.compact - Whether compact mode is enabled
+   * @returns {*} - The rendered value
+   */
+  static renderField(value, field, fieldName, row, options = {}) {
+    if (value === null || value === undefined) {
+      return null;
+    }
+
+    const renderer = field.renderer || field.type;
+
+    switch (renderer) {
+      case 'markdown':
+        return this.renderMarkdown(value);
+
+      case 'date':
+        return this.renderDate(value);
+
+      case 'datetime':
+        return this.renderDateTime(value);
+
+      case 'email':
+      case 'telephone':
+      case 'url':
+      case 'image':
+        // For these types, we could add specific formatting
+        // For now, just return the value as-is
+        return value;
+
+      default:
+        return value;
+    }
+  }
+
+  /**
+   * Render markdown text to HTML
+   * @param {string} markdown - Markdown text
+   * @returns {string} - HTML output
+   */
+  static renderMarkdown(markdown) {
+    if (!markdown || typeof markdown !== 'string') {
+      return '';
+    }
+
+    try {
+      // Configure marked with GFM (GitHub Flavored Markdown) support
+      marked.setOptions({
+        gfm: true,
+        breaks: true,
+        headerIds: true,
+        mangle: false
+      });
+
+      return marked.parse(markdown);
+    } catch (error) {
+      console.error('[RendererService] Error rendering markdown:', error);
+      return markdown; // Fallback to original text
+    }
+  }
+
+  /**
+   * Render date in locale format
+   * @param {string|Date} date - Date value
+   * @returns {string} - Formatted date
+   */
+  static renderDate(date) {
+    if (!date) return '';
+
+    try {
+      const dateObj = typeof date === 'string' ? new Date(date) : date;
+      const locale = this.getLocale();
+
+      return dateObj.toLocaleDateString(locale, {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      });
+    } catch (error) {
+      console.error('[RendererService] Error rendering date:', error);
+      return String(date);
+    }
+  }
+
+  /**
+   * Render datetime in locale format
+   * @param {string|Date} datetime - DateTime value
+   * @returns {string} - Formatted datetime
+   */
+  static renderDateTime(datetime) {
+    if (!datetime) return '';
+
+    try {
+      const dateObj = typeof datetime === 'string' ? new Date(datetime) : datetime;
+      const locale = this.getLocale();
+
+      return dateObj.toLocaleString(locale, {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      });
+    } catch (error) {
+      console.error('[RendererService] Error rendering datetime:', error);
+      return String(datetime);
+    }
+  }
+
+  /**
+   * Get locale from schema configuration
+   * @returns {string} - Locale string (e.g., 'fr-FR', 'en-US')
+   */
+  static getLocale() {
+    const country = schema.country || 'FR';
+    const language = schema.languages || 'fr';
+
+    // Build locale string (e.g., 'fr-FR', 'en-US')
+    const locale = `${language}-${country}`;
+    return locale;
+  }
+
+  /**
+   * Enrich a row with rendered fields (prefixed with _)
+   * @param {Object} row - The row data
+   * @param {string} tableName - The table name
+   * @param {Object} options - Rendering options
+   * @param {boolean} options.compact - Whether compact mode is enabled
+   * @returns {Object} - The enriched row with _fieldName rendered values
+   */
+  static enrichRowWithRenderers(row, tableName, options = {}) {
+    const { compact = false } = options;
+
+    // Get table schema
+    const tableConfig = SchemaService.getTableConfig(tableName);
+    if (!tableConfig || !tableConfig.fields) {
+      return row;
+    }
+
+    // Clone row to avoid mutation
+    const enrichedRow = { ...row };
+
+    // Process each field in the schema
+    for (const [fieldName, field] of Object.entries(tableConfig.fields)) {
+      // Skip computed fields and fields not in the row
+      if (field.as || field.calculate || !(fieldName in row)) {
+        continue;
+      }
+
+      const value = row[fieldName];
+
+      // Check if field has a renderer
+      if (field.renderer) {
+        // Render the field value
+        const renderedValue = this.renderField(value, field, fieldName, row, { compact });
+
+        // Add rendered value with _ prefix
+        enrichedRow[`_${fieldName}`] = renderedValue;
+      }
+      // Check if field is a relation (n:1) in compact mode
+      else if (field.relation && compact) {
+        // If there's a relation loaded in _relations
+        if (row._relations && row._relations[fieldName]) {
+          const relatedRow = row._relations[fieldName];
+
+          // Use the _label if available, otherwise try to construct it
+          if (relatedRow._label) {
+            enrichedRow[`_${fieldName}`] = relatedRow._label;
+          } else {
+            // Try to construct label from displayFields
+            const displayFields = SchemaService.getDisplayFields(field.relation);
+            if (displayFields && displayFields.length > 0) {
+              const labelValues = displayFields
+                .map(df => relatedRow[df])
+                .filter(val => val !== null && val !== undefined && val !== '');
+              if (labelValues.length > 0) {
+                enrichedRow[`_${fieldName}`] = labelValues.join(' ');
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Also process relations if they exist
+    if (row._relations) {
+      const enrichedRelations = {};
+
+      for (const [relationName, relationData] of Object.entries(row._relations)) {
+        if (Array.isArray(relationData)) {
+          // 1:N relation - process each item
+          enrichedRelations[relationName] = relationData.map(relRow => {
+            // Get the related table name
+            const relatedTableName = relRow._table;
+            if (relatedTableName) {
+              return this.enrichRowWithRenderers(relRow, relatedTableName, options);
+            }
+            return relRow;
+          });
+        } else {
+          // N:1 relation - process single item
+          const relatedTableName = relationData._table;
+          if (relatedTableName) {
+            enrichedRelations[relationName] = this.enrichRowWithRenderers(relationData, relatedTableName, options);
+          } else {
+            enrichedRelations[relationName] = relationData;
+          }
+        }
+      }
+
+      enrichedRow._relations = enrichedRelations;
+    }
+
+    return enrichedRow;
+  }
+}
+
+module.exports = RendererService;
