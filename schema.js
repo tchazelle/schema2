@@ -9,6 +9,9 @@ module.exports = {
   maxColWidth:"20em",
   maxColHeight:"3em",
 
+  // Configuration email marketing
+  emailRateLimit: 120, // Limite d'envoi par heure (contrainte hébergeur)
+
   // Enregistrement automatique avec debounce  + sauvegarde garantie
   autosave: 500, // debounce en ms 
   // Actions disponibles pour le système d'autorisation
@@ -173,6 +176,8 @@ module.exports = {
         password: { type: "varchar", grant: { "dev": ["read", "create", "update"], "admin": ["read", "create", "update"] } }, // Mot de passe en clair (phase de développement)
         roles: { type: "varchar" }, // Liste des rôles séparés par des espaces (ex: "@admin @dev")
         isActive: { type: "integer", default: 1 }, // 0 ou 1 pour actif/inactif
+        isSubscribed: { type: "integer", default: 0 }, // 0 ou 1 pour newsletter
+        isSubscribedAt: { type: "datetime" }, // Date d'inscription à la newsletter
         // ... commonFields
       }
     },
@@ -526,6 +531,144 @@ module.exports = {
         "postalCode": { type: "varchar(10)", wrapper:{name: "address", type: "PostalAddress"} },
         "addressLocality": { type: "varchar", wrapper:{name: "address", type: "PostalAddress"} },
         "addressCountry": { type: "varchar", wrapper:{name: "address", type: "PostalAddress"} }
+      }
+    },
+
+    // ========================================
+    // SYSTÈME DE NEWSLETTER & EMAIL MARKETING
+    // ========================================
+
+    Newsletter: {
+      displayFields: ["title"],
+      searchFields: ["title", "subject"],
+      pageSize: 50,
+      hasAttachmentsTab: false,
+      granted: {
+        "admin": ["read", "create", "update", "delete", "publish"]
+      },
+      fields: {
+        id: { type: "integer", isPrimary: true, autoIncrement: true },
+        title: { type: "varchar", length: 255 }, // Titre interne (ex: "Newsletter Février 2025")
+        subject: { type: "varchar", length: 255 }, // Sujet de l'email
+        bodyTemplate: { type: "text" }, // Template Mustache du corps de l'email
+        scheduledAt: { type: "datetime" }, // Date programmée pour l'envoi
+        status: {
+          type: "enum",
+          values: ["draft", "queued", "sending", "sent", "paused", "cancelled"],
+          default: "draft"
+        }, // Statut de la newsletter
+        totalRecipients: { type: "integer", default: 0 }, // Nombre total de destinataires
+        sentCount: { type: "integer", default: 0 }, // Nombre d'emails envoyés
+        openedCount: { type: "integer", default: 0 }, // Nombre d'ouvertures (tracking pixel)
+        failedCount: { type: "integer", default: 0 }, // Nombre d'échecs
+        // ... commonFields
+      }
+    },
+
+    News: {
+      displayFields: ["title"],
+      searchFields: ["title", "content"],
+      pageSize: 100,
+      hasAttachmentsTab: true,
+      granted: {
+        "admin": ["read", "create", "update", "delete", "publish"],
+        "member": ["read"]
+      },
+      fields: {
+        id: { type: "integer", isPrimary: true, autoIncrement: true },
+        title: { type: "varchar", length: 255 },
+        content: { type: "text" },
+        publishedAt: { type: "datetime" },
+        image: { type: "varchar", renderer: "image" },
+        url: { type: "varchar", renderer: "url" },
+        // ... commonFields
+      }
+    },
+
+    NewsletterNews: {
+      // Table de liaison Newsletter <-> News (relation 1:N)
+      displayFields: ["newsletterId", "newsId"],
+      hasAttachmentsTab: false,
+      granted: {
+        "admin": ["read", "create", "update", "delete"]
+      },
+      fields: {
+        id: { type: "integer", isPrimary: true, autoIncrement: true },
+        newsletterId: {
+          type: "integer",
+          relation: "Newsletter",
+          foreignKey: "id",
+          arrayName: "news",
+          relationshipStrength: "Strong", // Suppression en cascade
+          defaultSort: { field: "displayOrder", order: "ASC" },
+          orderable: "displayOrder"
+        },
+        newsId: {
+          type: "integer",
+          relation: "News",
+          foreignKey: "id",
+          arrayName: "inNewsletters",
+          relationshipStrength: "Weak"
+        },
+        displayOrder: { type: "integer", default: 0 }, // Ordre d'affichage dans la newsletter
+        // ... commonFields
+      }
+    },
+
+    EmailQueue: {
+      // File d'attente des emails à envoyer
+      displayFields: ["recipientEmail", "status"],
+      searchFields: ["recipientEmail"],
+      pageSize: 100,
+      hasAttachmentsTab: false,
+      granted: {
+        "admin": ["read", "create", "update", "delete"]
+      },
+      fields: {
+        id: { type: "integer", isPrimary: true, autoIncrement: true },
+        newsletterId: {
+          type: "integer",
+          relation: "Newsletter",
+          foreignKey: "id",
+          arrayName: "emailQueue",
+          relationshipStrength: "Strong"
+        },
+        recipientId: {
+          type: "integer",
+          relation: "Person",
+          foreignKey: "id",
+          arrayName: "emailsReceived",
+          relationshipStrength: "Weak"
+        },
+        recipientEmail: { type: "varchar", length: 255 }, // Email dupliqué pour optimisation
+        recipientData: { type: "json" }, // Données pour personnalisation Mustache: {givenName, familyName, ...}
+        status: {
+          type: "enum",
+          values: ["pending", "sent", "failed", "skipped"],
+          default: "pending"
+        },
+        sentAt: { type: "datetime" }, // Date d'envoi réel
+        openedAt: { type: "datetime" }, // Date de première ouverture (tracking pixel)
+        openCount: { type: "integer", default: 0 }, // Nombre d'ouvertures
+        errorMessage: { type: "text" }, // Message d'erreur en cas d'échec
+        retryCount: { type: "integer", default: 0 }, // Nombre de tentatives
+        // ... commonFields
+      }
+    },
+
+    EmailRateTracker: {
+      // Suivi des limites d'envoi horaires
+      displayFields: ["hourSlot", "emailsSent"],
+      hasAttachmentsTab: false,
+      granted: {
+        "admin": ["read", "create", "update", "delete"]
+      },
+      fields: {
+        id: { type: "integer", isPrimary: true, autoIncrement: true },
+        hourSlot: { type: "datetime" }, // Heure arrondie (ex: 2025-02-15 14:00:00)
+        emailsSent: { type: "integer", default: 0 }, // Nombre d'emails envoyés pendant cette heure
+        lastEmailAt: { type: "datetime" }, // Timestamp du dernier email envoyé
+        // ... commonFields
       }
     }
   }
