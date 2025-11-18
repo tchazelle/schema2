@@ -13,7 +13,7 @@ class ReorderService {
    * @returns {object|null} - Retourne la config du champ si orderable, sinon null
    */
   static getOrderableConfig(tableName, relationField) {
-    const schema = SchemaService.getTableSchema(tableName);
+    const schema = SchemaService.getTableConfig(tableName);
     if (!schema) return null;
 
     const field = schema.fields[relationField];
@@ -21,7 +21,7 @@ class ReorderService {
 
     return {
       orderField: field.orderable,
-      parentTable: schema.name,
+      parentTable: tableName,
       childTable: tableName,
       relationField: relationField,
       arrayName: field.arrayName
@@ -105,7 +105,7 @@ class ReorderService {
    * @returns {Array} - Liste des champs ordonnés
    */
   static getOrderableRelations(tableName) {
-    const schema = SchemaService.getTableSchema(tableName);
+    const schema = SchemaService.getTableConfig(tableName);
     if (!schema) return [];
 
     const orderableFields = [];
