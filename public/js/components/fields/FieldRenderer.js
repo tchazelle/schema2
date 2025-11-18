@@ -111,22 +111,157 @@ class FieldRenderer extends React.Component {
         return e('span', { className: 'field-value text' }, String(value));
 
       case 'filePreview':
-        // Show file path with preview capability
-        if (value) {
-          return e('span', { className: 'field-value file-preview' },
-            e('a', {
-              href: `/${value}`,
-              target: '_blank',
-              rel: 'noopener noreferrer',
-              onClick: (ev) => ev.stopPropagation(),
-              className: 'field-icon-link',
-              title: 'Voir le fichier'
-            }, '📎'),
-            ' ',
-            value
+        // Show file preview for Attachment records
+        // Value is the filePath, row should contain id, fileType, name
+        if (value && row) {
+          const attachmentId = row.id;
+          const fileType = row.fileType || '';
+          const fileName = row.name || value;
+
+          // Determine preview type based on file type
+          const getPreviewType = (mimeType, filename) => {
+            if (mimeType.startsWith('image/')) return 'image';
+            if (mimeType.startsWith('audio/')) return 'audio';
+            if (mimeType.startsWith('video/')) return 'video';
+            if (mimeType === 'application/pdf') return 'pdf';
+            if (mimeType.startsWith('text/') || filename.match(/\.(txt|md|markdown)$/i)) return 'text';
+            return 'other';
+          };
+
+          const previewType = getPreviewType(fileType, fileName);
+          const downloadUrl = `/_api/attachments/${attachmentId}/download`;
+
+          // Render preview based on type
+          return e('div', {
+            className: 'field-value file-preview-container',
+            style: {
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '12px',
+              padding: '12px',
+              border: '1px solid #e0e0e0',
+              borderRadius: '8px',
+              backgroundColor: '#f8f9fa'
+            }
+          },
+            // Preview section
+            e('div', {
+              className: 'preview-area',
+              style: {
+                minHeight: '200px',
+                maxHeight: '400px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: '#fff',
+                borderRadius: '4px',
+                overflow: 'hidden'
+              }
+            },
+              previewType === 'image' && e('img', {
+                src: `${downloadUrl}?inline=1`,
+                alt: fileName,
+                style: {
+                  maxWidth: '100%',
+                  maxHeight: '400px',
+                  objectFit: 'contain'
+                }
+              }),
+              previewType === 'audio' && e('div', { style: { width: '100%', padding: '20px' } },
+                e('div', { style: { fontSize: '48px', textAlign: 'center', marginBottom: '10px' } }, '🎵'),
+                e('audio', {
+                  controls: true,
+                  style: { width: '100%' }
+                },
+                  e('source', { src: `${downloadUrl}?inline=1` })
+                )
+              ),
+              previewType === 'video' && e('video', {
+                controls: true,
+                style: {
+                  maxWidth: '100%',
+                  maxHeight: '400px',
+                  objectFit: 'contain'
+                }
+              },
+                e('source', { src: `${downloadUrl}?inline=1` })
+              ),
+              previewType === 'pdf' && e('div', { style: { padding: '40px', textAlign: 'center' } },
+                e('div', { style: { fontSize: '64px', color: '#dc3545' } }, '📕'),
+                e('div', { style: { marginTop: '10px', color: '#666', fontSize: '14px' } }, 'PDF Document'),
+                e('a', {
+                  href: `${downloadUrl}?inline=1`,
+                  target: '_blank',
+                  rel: 'noopener noreferrer',
+                  style: {
+                    display: 'inline-block',
+                    marginTop: '16px',
+                    padding: '8px 16px',
+                    backgroundColor: '#007bff',
+                    color: 'white',
+                    textDecoration: 'none',
+                    borderRadius: '4px'
+                  }
+                }, 'Ouvrir le PDF')
+              ),
+              previewType === 'text' && e('div', {
+                className: 'text-preview-container',
+                style: { width: '100%', height: '100%', position: 'relative' }
+              },
+                e('iframe', {
+                  src: `${downloadUrl}?inline=1`,
+                  style: {
+                    width: '100%',
+                    height: '400px',
+                    border: 'none',
+                    backgroundColor: 'white'
+                  }
+                })
+              ),
+              previewType === 'other' && e('div', { style: { padding: '40px', textAlign: 'center' } },
+                e('div', { style: { fontSize: '64px' } }, '📄'),
+                e('div', { style: { marginTop: '10px', color: '#999', fontSize: '12px' } }, 'Aperçu non disponible')
+              )
+            ),
+            // File info and download link
+            e('div', {
+              style: {
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '12px',
+                fontSize: '14px'
+              }
+            },
+              e('div', {
+                style: {
+                  fontWeight: '600',
+                  color: '#212529',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap'
+                },
+                title: fileName
+              }, fileName),
+              e('a', {
+                href: downloadUrl,
+                download: fileName,
+                onClick: (ev) => ev.stopPropagation(),
+                style: {
+                  padding: '6px 12px',
+                  backgroundColor: '#007bff',
+                  color: 'white',
+                  textDecoration: 'none',
+                  borderRadius: '4px',
+                  fontSize: '12px',
+                  fontWeight: '500',
+                  whiteSpace: 'nowrap'
+                }
+              }, '⬇️ Télécharger')
+            )
           );
         }
-        return e('span', { className: 'field-value text' }, '');
+        return e('span', { className: 'field-value text' }, '-');
 
       case 'markdown':
         return e('div', {
