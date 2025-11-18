@@ -100,12 +100,8 @@ class CreateFormModal extends React.Component {
       if (['id', 'ownerId', 'granted', 'createdAt', 'updatedAt'].includes(f)) return false;
       if (field.as || field.calculate) return false;
       // Skip parent field if this is a 1:N creation
-      if (parentTable && typeof parentTable === 'string') {
-        const lowerField = f.toLowerCase();
-        const lowerParent = parentTable.toLowerCase();
-        if (lowerField.includes(lowerParent) || lowerField === `${lowerParent}id` || lowerField === `id${lowerParent}`) {
-          return false;
-        }
+      if (this.isParentField(f)) {
+        return false;
       }
       return true;
     });
@@ -120,6 +116,26 @@ class CreateFormModal extends React.Component {
   componentWillUnmount() {
     // Restore body scroll
     document.body.style.overflow = '';
+  }
+
+  isParentField(fieldName) {
+    const { parentTable, structure } = this.props;
+    if (!parentTable) return false;
+
+    // Check if this field is actually a foreign key relation to the parent table
+    if (structure && structure.fields && structure.fields[fieldName]) {
+      const field = structure.fields[fieldName];
+      // Only filter if it's a relation field pointing to the parent table
+      if (field.relation === parentTable) {
+        return true;
+      }
+    }
+
+    // Fallback: check for exact match like "idOrganization" for "Organization"
+    // but NOT partial matches like "organizationRole"
+    const lowerField = fieldName.toLowerCase();
+    const lowerParent = parentTable.toLowerCase();
+    return lowerField === `id${lowerParent}` || lowerField === `${lowerParent}id`;
   }
 
   handleOverlayClick = (e) => {
@@ -239,12 +255,8 @@ class CreateFormModal extends React.Component {
     }
 
     // Hide parent field if this is a 1:N creation (it's pre-filled and hidden)
-    if (parentTable && typeof parentTable === 'string') {
-      const lowerField = fieldName.toLowerCase();
-      const lowerParent = parentTable.toLowerCase();
-      if (lowerField.includes(lowerParent) || lowerField === `${lowerParent}id` || lowerField === `id${lowerParent}`) {
-        return null; // Hidden field
-      }
+    if (this.isParentField(fieldName)) {
+      return null; // Hidden field
     }
 
     // Check if this table has calendar configuration
@@ -390,12 +402,8 @@ class CreateFormModal extends React.Component {
       const field = structure.fields[f];
       if (field.as || field.calculate) return false;
       // Hide parent field if this is a 1:N creation
-      if (parentTable && typeof parentTable === 'string') {
-        const lowerField = f.toLowerCase();
-        const lowerParent = parentTable.toLowerCase();
-        if (lowerField.includes(lowerParent) || lowerField === `${lowerParent}id` || lowerField === `id${lowerParent}`) {
-          return false;
-        }
+      if (this.isParentField(f)) {
+        return false;
       }
       return true;
     });

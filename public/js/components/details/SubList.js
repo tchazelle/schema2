@@ -200,9 +200,22 @@ class SubList extends React.Component {
 
   isParentField(fieldName, parentTable) {
     if (!parentTable || typeof parentTable !== 'string') return false;
+    const { structure } = this.state;
+
+    // Check if this field is actually a foreign key relation to the parent table
+    if (structure && structure.fields && structure.fields[fieldName]) {
+      const field = structure.fields[fieldName];
+      // Only filter if it's a relation field pointing to the parent table
+      if (field.relation === parentTable) {
+        return true;
+      }
+    }
+
+    // Fallback: check for exact match like "idOrganization" for "Organization"
+    // but NOT partial matches like "organizationRole"
     const lowerField = fieldName.toLowerCase();
     const lowerParent = parentTable.toLowerCase();
-    return lowerField.includes(lowerParent) || lowerField === `id${lowerParent}`;
+    return lowerField === `id${lowerParent}`;
   }
 
   handleDragStart = (index) => (e) => {
