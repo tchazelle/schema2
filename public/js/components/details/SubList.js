@@ -219,17 +219,10 @@ class SubList extends React.Component {
 
   handleDragEnd = async (e) => {
     e.preventDefault();
-    const { draggedIndex, dragOverIndex, tableConfig } = this.state;
-    const { rows, tableName, onSubRecordUpdate } = this.props;
+    const { draggedIndex, dragOverIndex } = this.state;
+    const { rows, tableName, parentTable, parentId, relationFieldName, onSubRecordUpdate } = this.props;
 
     if (draggedIndex === null || dragOverIndex === null || draggedIndex === dragOverIndex) {
-      this.setState({ draggedIndex: null, dragOverIndex: null });
-      return;
-    }
-
-    // Get orderable field from table config
-    const orderableField = tableConfig?.orderable;
-    if (!orderableField) {
       this.setState({ draggedIndex: null, dragOverIndex: null });
       return;
     }
@@ -242,20 +235,21 @@ class SubList extends React.Component {
     const [movedRow] = newRows.splice(draggedIndex, 1);
     newRows.splice(dragOverIndex, 0, movedRow);
 
-    // Update position field for all affected rows
-    const updates = newRows.map((row, index) => ({
-      id: row.id,
-      [orderableField]: index
-    }));
+    // Get ordered IDs
+    const orderedIds = newRows.map(row => row.id);
 
     try {
-      // Update all positions in batch
-      for (const update of updates) {
-        await fetch(`/_api/${tableName}/${update.id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ [orderableField]: update[orderableField] })
-        });
+      // Use the new reorder API endpoint
+      const response = await fetch(`/_api/${tableName}/reorder/${relationFieldName}/${parentId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderedIds })
+      });
+
+      const data = await response.json();
+
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to reorder');
       }
 
       // Reload parent data to show updated order
@@ -264,7 +258,7 @@ class SubList extends React.Component {
       }
     } catch (error) {
       console.error('Error updating order:', error);
-      alert('Erreur lors de la mise à jour de l\'ordre');
+      alert('Erreur lors de la mise à jour de l\'ordre: ' + error.message);
     }
 
     this.setState({ draggedIndex: null, dragOverIndex: null });
@@ -354,7 +348,8 @@ class SubList extends React.Component {
       : null;
 
     // Check if table is orderable (supports drag & drop reordering)
-    const isOrderable = tableConfig && tableConfig.orderable;
+    // The orderable property should come from the relation field configuration
+    const isOrderable = this.props.isOrderable || (tableConfig && tableConfig.orderable);
 
     return e('div', { className: 'sub-list-container', style: { position: 'relative' } },
       // Sort indicator (only if not default and not hideHeader)
