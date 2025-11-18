@@ -279,8 +279,8 @@ module.exports = {
       },
       fields: {
         id: { type: "integer", isPrimary: true, autoIncrement: true },
-        name: { type:   "varchar" },
-        description: { type: "text" },
+        name: { type: "varchar" },
+        description: { type: "text", renderer: "markdown" },
         // ... commonFields
       }
     },
