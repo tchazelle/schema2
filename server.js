@@ -19,6 +19,7 @@ const apiRouter = require('./routes/api');
 const attachmentsRouter = require('./routes/attachments');
 const imageEditorRouter = require('./routes/imageEditor');
 const calendarRouter = require('./routes/calendar');
+const emailRouter = require('./routes/email');
 const pagesRouter = require('./routes/pages');
 
 // Création de l'application Express
@@ -43,6 +44,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/_user', authRouter);
 app.use('/_crud', crudRouter);
+app.use('/_api/email', emailRouter);
 app.use('/_api', attachmentsRouter);
 app.use('/_api', imageEditorRouter);
 app.use('/_api', apiRouter);
