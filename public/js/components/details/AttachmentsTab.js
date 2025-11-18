@@ -595,16 +595,7 @@ class AttachmentsTab extends React.Component {
               boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
               transition: 'all 0.2s',
               display: 'flex',
-              flexDirection: 'column',
-              cursor: 'pointer'
-            },
-            onClick: (e) => {
-              // Open fullscreen viewer instead of navigating away
-              // Prevent click if clicking on a button or link
-              if (e.target.closest('button') || e.target.closest('a')) {
-                return;
-              }
-              this.handleOpenFullscreen(att, idx);
+              flexDirection: 'column'
             },
             onMouseEnter: (e) => {
               e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
@@ -615,7 +606,7 @@ class AttachmentsTab extends React.Component {
               e.currentTarget.style.transform = 'translateY(0)';
             }
           },
-            // Preview section (top)
+            // Preview section (top) - Click to open fullscreen
             e('div', {
               className: 'attachment-preview-section',
               style: {
@@ -627,8 +618,10 @@ class AttachmentsTab extends React.Component {
                 justifyContent: 'center',
                 backgroundColor: '#f8f9fa',
                 borderBottom: '1px solid #e0e0e0',
-                position: 'relative'
-              }
+                position: 'relative',
+                cursor: 'pointer'
+              },
+              onClick: () => this.handleOpenFullscreen(att, idx)
             },
               this.renderPreview(att)
             ),

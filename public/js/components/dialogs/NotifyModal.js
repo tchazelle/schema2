@@ -19,7 +19,10 @@ class NotifyModal extends React.Component {
       recipients: [],
       includeSender: false,
       customMessage: '',
-      error: null
+      emailPreview: null,
+      error: null,
+      availableRelations: [],
+      selectedRelations: []
     };
   }
 
@@ -29,22 +32,45 @@ class NotifyModal extends React.Component {
 
   async loadRecipients() {
     const { tableName, rowId } = this.props;
-    const { includeSender } = this.state;
+    const { includeSender, customMessage, selectedRelations, availableRelations } = this.state;
 
     this.setState({ loading: true, error: null });
 
     try {
+      const params = new URLSearchParams({
+        includeSender: includeSender.toString(),
+        customMessage: customMessage
+      });
+
+      // Add selected relations as array parameter
+      if (selectedRelations.length > 0) {
+        params.append('includeRelations', selectedRelations.join(','));
+      }
+
       const response = await fetch(
-        `/_api/${tableName}/${rowId}/notify/preview?includeSender=${includeSender}`
+        `/_api/${tableName}/${rowId}/notify/preview?${params.toString()}`
       );
 
       const data = await response.json();
 
       if (data.success) {
-        this.setState({
+        const newState = {
           recipients: data.recipients || [],
+          emailPreview: data.emailPreview || null,
           loading: false
-        });
+        };
+
+        // If this is the first load (availableRelations is empty), set up relations
+        if (data.availableRelations && availableRelations.length === 0) {
+          newState.availableRelations = data.availableRelations;
+
+          // Pre-select strong relations
+          newState.selectedRelations = data.availableRelations
+            .filter(rel => rel.isStrong)
+            .map(rel => rel.arrayName);
+        }
+
+        this.setState(newState);
       } else {
         this.setState({
           error: data.error || 'Erreur lors du chargement des destinataires',
@@ -68,15 +94,34 @@ class NotifyModal extends React.Component {
 
   handleMessageChange = (e) => {
     this.setState({ customMessage: e.target.value });
+
+    // Debounce the preview reload (reload after 500ms of no typing)
+    clearTimeout(this.messageTimeout);
+    this.messageTimeout = setTimeout(() => {
+      this.loadRecipients();
+    }, 500);
+  }
+
+  handleRelationToggle = (arrayName) => {
+    const { selectedRelations } = this.state;
+    const newSelected = selectedRelations.includes(arrayName)
+      ? selectedRelations.filter(r => r !== arrayName)
+      : [...selectedRelations, arrayName];
+
+    this.setState({ selectedRelations: newSelected }, () => {
+      // Reload preview with new relations
+      this.loadRecipients();
+    });
   }
 
   handleConfirm = () => {
     const { onConfirm } = this.props;
-    const { includeSender, customMessage } = this.state;
+    const { includeSender, customMessage, selectedRelations } = this.state;
 
     onConfirm({
       includeSender,
-      customMessage
+      customMessage,
+      includeRelations: selectedRelations
     });
   }
 
@@ -88,7 +133,7 @@ class NotifyModal extends React.Component {
 
   render() {
     const { onCancel } = this.props;
-    const { loading, recipients, includeSender, customMessage, error } = this.state;
+    const { loading, recipients, includeSender, customMessage, emailPreview, error, availableRelations, selectedRelations } = this.state;
 
     return e('div', {
       className: 'modal-overlay',
@@ -136,6 +181,41 @@ class NotifyModal extends React.Component {
               fontWeight: 'bold'
             }
           }, '📧 Envoyer une notification')
+        ),
+
+        // Email Preview (between the two blue lines)
+        !loading && !error && emailPreview && e('div', {
+          key: 'email-preview',
+          style: {
+            borderTop: '2px solid #007bff',
+            borderBottom: '2px solid #007bff',
+            padding: '16px',
+            marginBottom: '20px',
+            maxHeight: '300px',
+            overflow: 'auto',
+            backgroundColor: '#f8f9fa'
+          }
+        },
+          e('h3', {
+            style: {
+              margin: '0 0 12px 0',
+              fontSize: '14px',
+              color: '#666',
+              fontWeight: 'bold'
+            }
+          }, '📄 Aperçu du message'),
+          e('iframe', {
+            srcDoc: emailPreview,
+            style: {
+              width: '100%',
+              minHeight: '200px',
+              border: '1px solid #dee2e6',
+              borderRadius: '4px',
+              backgroundColor: 'white'
+            },
+            sandbox: 'allow-same-origin',
+            scrolling: 'auto'
+          })
         ),
 
         // Loading state
@@ -270,6 +350,71 @@ class NotifyModal extends React.Component {
                 resize: 'vertical'
               }
             })
+          ),
+
+          // Relations selector
+          availableRelations.length > 0 && e('div', {
+            key: 'relations-selector',
+            style: { marginBottom: '20px' }
+          },
+            e('label', {
+              style: {
+                display: 'block',
+                marginBottom: '8px',
+                fontSize: '14px',
+                fontWeight: 'bold',
+                color: '#333'
+              }
+            }, 'Relations à inclure dans l\'email'),
+            e('div', {
+              style: {
+                backgroundColor: '#f8f9fa',
+                border: '1px solid #dee2e6',
+                borderRadius: '4px',
+                padding: '12px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px'
+              }
+            },
+              availableRelations.map(relation =>
+                e('div', {
+                  key: relation.arrayName,
+                  style: {
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }
+                },
+                  e('input', {
+                    type: 'checkbox',
+                    id: `relation-${relation.arrayName}`,
+                    checked: selectedRelations.includes(relation.arrayName),
+                    onChange: () => this.handleRelationToggle(relation.arrayName),
+                    style: { cursor: 'pointer' }
+                  }),
+                  e('label', {
+                    htmlFor: `relation-${relation.arrayName}`,
+                    style: {
+                      cursor: 'pointer',
+                      fontSize: '14px',
+                      color: '#333',
+                      flex: 1
+                    }
+                  },
+                    `${relation.table} (${relation.arrayName})`,
+                    relation.isStrong && e('span', {
+                      style: {
+                        marginLeft: '8px',
+                        fontSize: '11px',
+                        color: '#28a745',
+                        fontWeight: 'bold'
+                      }
+                    }, '★ Strong')
+                  )
+                )
+              )
+            )
           ),
 
           // Buttons

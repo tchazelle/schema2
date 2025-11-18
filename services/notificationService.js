@@ -153,9 +153,10 @@ class NotificationService {
    * @param {Object} record - The record data
    * @param {Object} sender - User sending the notification
    * @param {string} customMessage - Optional custom message
+   * @param {Array} includeRelations - Array of relation arrayNames to include
    * @returns {string} - HTML email content
    */
-  static formatRecordEmail(tableName, record, sender, customMessage = '') {
+  static formatRecordEmail(tableName, record, sender, customMessage = '', includeRelations = []) {
     const appName = schema.appName || 'Schema2';
     const tableConfig = schema.tables[tableName] || {};
     const displayFields = tableConfig.displayFields || schema.defaultConfigTable.displayFields;
@@ -232,6 +233,42 @@ class NotificationService {
       `;
     }
 
+    // Build relations HTML
+    let relationsHtml = '';
+    if (includeRelations && includeRelations.length > 0) {
+      for (const relationArrayName of includeRelations) {
+        if (record[relationArrayName] && Array.isArray(record[relationArrayName]) && record[relationArrayName].length > 0) {
+          const relationItems = record[relationArrayName];
+
+          // Try to find the table name for this relation
+          let relationTableName = relationArrayName;
+          for (const [otherTableName, otherTableConfig] of Object.entries(schema.tables)) {
+            for (const [otherFieldName, otherFieldConfig] of Object.entries(otherTableConfig.fields || {})) {
+              if (otherFieldConfig.relation === tableName &&
+                  (otherFieldConfig.arrayName === relationArrayName || otherFieldName + 's' === relationArrayName)) {
+                relationTableName = otherTableName;
+                break;
+              }
+            }
+          }
+
+          relationsHtml += `
+  <div style="background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; padding: 15px; margin-bottom: 15px;">
+    <h4 style="margin: 0 0 12px 0; color: #555; font-size: 16px;">
+      📎 ${relationTableName} (${relationItems.length})
+    </h4>
+    <ul style="margin: 0; padding-left: 20px;">
+      ${relationItems.map(item => {
+        const label = item._label || item.name || item.title || `#${item.id}`;
+        return `<li style="margin-bottom: 6px;">${label}</li>`;
+      }).join('')}
+    </ul>
+  </div>
+          `;
+        }
+      }
+    }
+
     // Build email HTML
     const html = `
 <!DOCTYPE html>
@@ -268,6 +305,8 @@ class NotificationService {
       ${fieldsHtml}
     </table>
   </div>
+
+  ${relationsHtml}
 
   <div style="text-align: center; margin: 30px 0;">
     <a href="${recordUrl}"
@@ -318,11 +357,11 @@ class NotificationService {
    * @param {string} tableName - Name of the table
    * @param {number} recordId - ID of the record
    * @param {Object} sender - User sending the notification
-   * @param {Object} options - Options: { includeSender: boolean, customMessage: string }
+   * @param {Object} options - Options: { includeSender: boolean, customMessage: string, includeRelations: array }
    * @returns {Promise<Object>} - Result with count of sent emails
    */
   static async notifyRecord(tableName, recordId, sender, options = {}) {
-    const { includeSender = false, customMessage = '' } = options;
+    const { includeSender = false, customMessage = '', includeRelations = [] } = options;
 
     // Get the record using tableDataService with renderer enabled
     // This will include rendered fields with _ prefix (e.g., _description for markdown)
@@ -367,7 +406,7 @@ class NotificationService {
     }
 
     const subject = `Notification : ${recordTitle}`;
-    const html = this.formatRecordEmail(tableName, record, sender, customMessage);
+    const html = this.formatRecordEmail(tableName, record, sender, customMessage, includeRelations);
 
     // Send emails
     const results = [];
@@ -412,17 +451,83 @@ class NotificationService {
    * @param {string} tableName - Name of the table
    * @param {number} recordId - ID of the record
    * @param {Object} sender - User sending the notification
-   * @param {Object} options - Options: { includeSender: boolean }
-   * @returns {Promise<Array>} - Array of recipients with name and email
+   * @param {Object} options - Options: { includeSender: boolean, customMessage: string, includeRelations: array }
+   * @returns {Promise<Object>} - Object with recipients, email preview, and available relations
    */
   static async getRecipientsPreview(tableName, recordId, sender, options = {}) {
+    const { customMessage = '', includeRelations = [] } = options;
     const recipients = await this.getRecipients(tableName, recordId, sender, options);
 
-    return recipients.map(user => ({
-      id: user.id,
-      name: `${user.givenName || ''} ${user.familyName || ''}`.trim() || user.email,
-      email: user.email
-    }));
+    // Get the record with rendered fields and all relations for preview
+    const response = await getTableData(sender, tableName, {
+      id: recordId,
+      relation: 'all',
+      compact: true,
+      renderer: true
+    });
+
+    let emailPreview = null;
+    let availableRelations = [];
+
+    if (response.success && response.rows && response.rows.length > 0) {
+      const record = response.rows[0];
+
+      // Find available 1:n relations (array fields in the record)
+      const tableSchema = schema.tables[tableName];
+      if (tableSchema && tableSchema.fields) {
+        for (const [fieldName, fieldConfig] of Object.entries(tableSchema.fields)) {
+          // Check if this is a relation field that generates a reverse array
+          if (fieldConfig.relation && fieldConfig.arrayName && record[fieldConfig.arrayName]) {
+            // This is a direct relation, skip it (we want reverse relations)
+            continue;
+          }
+        }
+
+        // Find reverse relations by looking for array fields in the record
+        for (const key in record) {
+          if (Array.isArray(record[key]) && record[key].length > 0 && !key.startsWith('_')) {
+            // This is likely a 1:n relation
+            // Try to find the configuration in other tables
+            let relationTable = null;
+            let isStrong = false;
+
+            // Search through all tables to find which one has this arrayName
+            for (const [otherTableName, otherTableConfig] of Object.entries(schema.tables)) {
+              for (const [otherFieldName, otherFieldConfig] of Object.entries(otherTableConfig.fields || {})) {
+                if (otherFieldConfig.relation === tableName &&
+                    (otherFieldConfig.arrayName === key || otherFieldName + 's' === key)) {
+                  relationTable = otherTableName;
+                  isStrong = otherFieldConfig.relationshipStrength === 'Strong';
+                  break;
+                }
+              }
+              if (relationTable) break;
+            }
+
+            if (relationTable) {
+              availableRelations.push({
+                arrayName: key,
+                table: relationTable,
+                isStrong: isStrong,
+                count: record[key].length
+              });
+            }
+          }
+        }
+      }
+
+      emailPreview = this.formatRecordEmail(tableName, record, sender, customMessage, includeRelations);
+    }
+
+    return {
+      recipients: recipients.map(user => ({
+        id: user.id,
+        name: `${user.givenName || ''} ${user.familyName || ''}`.trim() || user.email,
+        email: user.email
+      })),
+      emailPreview,
+      availableRelations
+    };
   }
 }
 

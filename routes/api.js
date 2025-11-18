@@ -699,7 +699,7 @@ router.post('/:tableName/:id/duplicate-with-relations', async (req, res) => {
 router.get('/:tableName/:id/notify/preview', async (req, res) => {
   try {
     const { tableName, id } = req.params;
-    const { includeSender = 'false' } = req.query;
+    const { includeSender = 'false', customMessage = '', includeRelations = '' } = req.query;
     const user = req.user;
 
     // Normalize table name
@@ -731,18 +731,27 @@ router.get('/:tableName/:id/notify/preview', async (req, res) => {
     // Import NotificationService
     const NotificationService = require('../services/notificationService');
 
-    // Get recipients preview
-    const recipients = await NotificationService.getRecipientsPreview(
+    // Parse includeRelations
+    const includeRelationsArray = includeRelations ? includeRelations.split(',').filter(r => r) : [];
+
+    // Get recipients preview and email preview
+    const previewData = await NotificationService.getRecipientsPreview(
       table,
       parseInt(id),
       user,
-      { includeSender: includeSender === 'true' }
+      {
+        includeSender: includeSender === 'true',
+        customMessage: customMessage,
+        includeRelations: includeRelationsArray
+      }
     );
 
     res.json({
       success: true,
-      recipients,
-      count: recipients.length
+      recipients: previewData.recipients,
+      count: previewData.recipients.length,
+      emailPreview: previewData.emailPreview,
+      availableRelations: previewData.availableRelations || []
     });
 
   } catch (error) {
@@ -758,12 +767,12 @@ router.get('/:tableName/:id/notify/preview', async (req, res) => {
 /**
  * POST /_api/:table/:id/notify
  * Send email notification about a record to all users who have access
- * Body: { includeSender: boolean, customMessage: string }
+ * Body: { includeSender: boolean, customMessage: string, includeRelations: array }
  */
 router.post('/:tableName/:id/notify', async (req, res) => {
   try {
     const { tableName, id } = req.params;
-    const { includeSender = false, customMessage = '' } = req.body;
+    const { includeSender = false, customMessage = '', includeRelations = [] } = req.body;
     const user = req.user;
 
     // Normalize table name
@@ -808,7 +817,7 @@ router.post('/:tableName/:id/notify', async (req, res) => {
       table,
       parseInt(id),
       user,
-      { includeSender, customMessage }
+      { includeSender, customMessage, includeRelations }
     );
 
     res.json(result);
