@@ -487,7 +487,7 @@ module.exports = {
           arrayName: "itinerary",
           relationshipStrength: "Strong",
           defaultSort: { field: "position", order: "ASC" },
-          orderable:"position",
+          orderable: "position",
         },
         Place: {
           type: "integer",
