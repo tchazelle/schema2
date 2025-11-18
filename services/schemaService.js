@@ -97,7 +97,9 @@ class SchemaService {
             relatedField: otherFieldName,
             foreignKey: otherFieldConfig.foreignKey,
             relationshipStrength: otherFieldConfig.relationshipStrength,
-            defaultSort: otherFieldConfig.defaultSort
+            defaultSort: otherFieldConfig.defaultSort,
+            orderable: otherFieldConfig.orderable,
+            relationFieldName: otherFieldName
           };
         }
       }
@@ -340,6 +342,8 @@ class SchemaService {
             arrayName: fieldConfig.arrayName,
             relationshipStrength: fieldConfig.relationshipStrength,
             defaultSort: fieldConfig.defaultSort,
+            orderable: fieldConfig.orderable,
+            relationFieldName: fieldName,
             accessible: true
           };
         } else {
@@ -395,6 +399,8 @@ class SchemaService {
               foreignKey: otherFieldConfig.foreignKey,
               relationshipStrength: otherFieldConfig.relationshipStrength,
               defaultSort: otherFieldConfig.defaultSort,
+              orderable: otherFieldConfig.orderable,
+              relationFieldName: otherFieldName,
               accessible: true
             };
           } else {
