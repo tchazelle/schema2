@@ -6,11 +6,10 @@
  *
  * Dependencies:
  * - React (global)
+ * - e (global React.createElement shorthand)
  *
  * @component
  */
-
-const e = React.createElement;
 
 class NotifyModal extends React.Component {
   constructor(props) {
