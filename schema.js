@@ -209,8 +209,17 @@ module.exports = {
       hasAttachmentsTab: false, // Table de liaison - pas besoin d'attachments
       fields: {
         id: { type: "integer", isPrimary: true, autoIncrement: true, stat: "count" }, // Exemple: compter le nombre de relations
+        position: { type: "integer" },
         idPerson: { type: "integer", relation: "Person", foreignKey: "id", arrayName: "memberOf", relationshipStrength: "Weak", defaultSort: { field: "organizationRole", order: "ASC" } },
-        idOrganization: { type: "integer", relation: "Organization", foreignKey: "id", arrayName: "member", relationshipStrength: "Weak", defaultSort: { field: "organizationRole", order: "ASC" } },
+        idOrganization: { 
+          type: "integer", 
+          relation: "Organization", 
+          foreignKey: "id", 
+          arrayName: "member", 
+          relationshipStrength: "Weak", 
+          defaultSort: { field: "position", order: "ASC" },
+          orderable: "position"
+        },
         organizationRole: { type: "varchar" },
           // ... commonFields
       }
@@ -284,7 +293,6 @@ module.exports = {
       publishableTo: ["public", "member", "premium"],
       hasAttachmentsTab: true, // Permet d'attacher des pièces jointes
       granted: {
-        "public": ["read"],
         "admin": ["read", "create", "update", "delete", "publish"]
       },
       fields: {
@@ -304,7 +312,6 @@ module.exports = {
     MusicRecording: {
       // ... defaultConfigTable
       granted: {
-        "public" : ["read"],
         "admin": ["read", "create", "update", "delete", "publish"]
       },
       fields: {
@@ -319,7 +326,6 @@ module.exports = {
     MusicAlbumTrack: {
       // ... defaultConfigTable
       granted: {
-        "public" : ["read"],
         "admin": ["read", "create", "update", "delete", "publish"]
       },
       hasAttachmentsTab: false, // Table de liaison - pas besoin d'attachments
