@@ -48,7 +48,8 @@ class TableRow extends React.Component {
       editMode: false,
       fullData: null,
       loading: false,
-      focusFieldName: null
+      focusFieldName: null,
+      isDragging: false
     };
     this.handleKeyDown = this.handleKeyDown.bind(this);
   }
@@ -82,11 +83,11 @@ class TableRow extends React.Component {
   }
 
   toggleExpand = async () => {
-    const { expanded, fullData, editMode } = this.state;
+    const { expanded, fullData, editMode, isDragging } = this.state;
     const { row, tableName, parentTable, permissions } = this.props;
 
-    // If in edit mode, clicking should not toggle
-    if (editMode) return;
+    // If in edit mode or dragging, clicking should not toggle
+    if (editMode || isDragging) return;
 
     if (!expanded && !fullData) {
       // First time expanding - fetch full data
@@ -193,6 +194,25 @@ class TableRow extends React.Component {
     }
   }
 
+  handleDragStart = (e) => {
+    const { onDragStart } = this.props;
+    this.setState({ isDragging: true });
+    if (onDragStart) {
+      onDragStart(e);
+    }
+  }
+
+  handleDragEnd = (e) => {
+    const { onDragEnd } = this.props;
+    // Small delay to prevent click from firing
+    setTimeout(() => {
+      this.setState({ isDragging: false });
+    }, 100);
+    if (onDragEnd) {
+      onDragEnd(e);
+    }
+  }
+
   render() {
     const {
       row,
@@ -240,9 +260,9 @@ class TableRow extends React.Component {
         onClick: this.toggleExpand,
         onDoubleClick: this.enterEditMode,
         draggable: draggable || false,
-        onDragStart: onDragStart,
+        onDragStart: this.handleDragStart,
         onDragOver: onDragOver,
-        onDragEnd: onDragEnd,
+        onDragEnd: this.handleDragEnd,
         onDragLeave: onDragLeave,
         style: rowStyle
       },
@@ -250,14 +270,19 @@ class TableRow extends React.Component {
         draggable && e('td', {
           key: 'drag-handle',
           'data-label': '⋮⋮',
+          className: 'drag-handle-cell',
           style: {
-            width: '30px',
+            width: '40px',
             textAlign: 'center',
             cursor: 'grab',
-            fontSize: '16px',
-            color: '#6c757d'
+            fontSize: '18px',
+            color: '#007bff',
+            fontWeight: 'bold',
+            userSelect: 'none',
+            padding: '8px'
           },
-          onClick: (e) => e.stopPropagation() // Prevent row expansion when clicking drag handle
+          onClick: (e) => e.stopPropagation(), // Prevent row expansion when clicking drag handle
+          title: 'Glisser pour réorganiser'
         }, '⋮⋮'),
         // Delete button column (if enabled)
         showDeleteButton && permissions && permissions.canDelete && e('td', {

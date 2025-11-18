@@ -32,7 +32,12 @@ class RowDetailView extends React.Component {
     this.state = {
       openRelations: new Set(),
       showAttachments: false,
-      attachmentCount: 0
+      attachmentCount: 0,
+      showCreateModal: false,
+      createModalTable: null,
+      createModalStructure: null,
+      createModalConfig: null,
+      createModalPermissions: null
     };
     // Store refs to SubList components to access their handlers
     this.subListRefs = {};
@@ -121,9 +126,53 @@ class RowDetailView extends React.Component {
     }
   }
 
+  handleOpenCreateModal = async (relatedTable) => {
+    // Fetch structure and config for the related table
+    try {
+      const [structureResponse, configResponse] = await Promise.all([
+        fetch(`/_crud/${relatedTable}/structure`),
+        fetch(`/_crud/${relatedTable}/data?limit=1`)
+      ]);
+
+      const structureData = await structureResponse.json();
+      const configData = await configResponse.json();
+
+      if (structureData.success && configData.success) {
+        this.setState({
+          showCreateModal: true,
+          createModalTable: relatedTable,
+          createModalStructure: structureData.structure,
+          createModalConfig: configData.tableConfig,
+          createModalPermissions: configData.permissions
+        });
+      }
+    } catch (error) {
+      console.error('Failed to fetch table info:', error);
+      alert('Erreur lors du chargement du formulaire');
+    }
+  }
+
+  handleCloseCreateModal = () => {
+    this.setState({
+      showCreateModal: false,
+      createModalTable: null,
+      createModalStructure: null,
+      createModalConfig: null,
+      createModalPermissions: null
+    });
+  }
+
+  handleCreateSuccess = async (newRecordId) => {
+    // Refresh parent data to show the new record
+    const { onSubRecordUpdate } = this.props;
+    if (onSubRecordUpdate) {
+      await onSubRecordUpdate();
+    }
+  }
+
   render() {
     const { row, structure, tableName, permissions, onEdit, parentTable, hideRelations1N, onSubRecordUpdate } = this.props;
-    const { openRelations, showAttachments, attachmentCount } = this.state;
+    const { openRelations, showAttachments, attachmentCount, showCreateModal, createModalTable, createModalStructure, createModalConfig, createModalPermissions } = this.state;
 
     // Check if table has attachments enabled
     const tableConfig = SCHEMA_CONFIG?.tables?.[tableName];
@@ -351,7 +400,7 @@ class RowDetailView extends React.Component {
                   className: 'btn-add-relation-item',
                   onClick: (ev) => {
                     ev.stopPropagation();
-                    window.open(`/_crud/${relatedTable}?parent=${tableName}&parentId=${row.id}`, '_blank');
+                    this.handleOpenCreateModal(relatedTable);
                   },
                   title: count === 0 ? `Créer la première fiche ${relatedTable}` : `Ajouter un ${relatedTable}`
                 }, count === 0 ? '+ Créer la première fiche' : '+ Ajouter'),
@@ -427,7 +476,19 @@ class RowDetailView extends React.Component {
           permissions: permissions,
           onAttachmentChange: this.loadAttachmentCount
         })
-      )
+      ),
+
+      // Create modal for adding related records
+      showCreateModal && createModalStructure && e(CreateFormModal, {
+        tableName: createModalTable,
+        structure: createModalStructure,
+        tableConfig: createModalConfig || {},
+        permissions: createModalPermissions || {},
+        parentTable: tableName,
+        parentId: row.id,
+        onClose: this.handleCloseCreateModal,
+        onSuccess: this.handleCreateSuccess
+      })
     );
   }
 }
