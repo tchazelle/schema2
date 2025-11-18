@@ -97,13 +97,14 @@ router.get('/search/:tableName', async (req, res) => {
  *   Par défaut : inclut toutes les relations n:1 et les relations 1:n "Strong"
  * - schema: si "1", retourne également le schéma filtré de la table
  * - compact: si "1", réduit les relations n:1 à leur version compacte (displayFields uniquement)
+ * - renderer: si "1", ajoute les champs rendus avec préfixe _ (ex: _description pour markdown, _byArtist pour label compact)
  */
 router.get('/:tableName', async (req, res) => {
   try {
     const { tableName } = req.params;
     const user = req.user;
-    const { limit, offset, orderBy, order, where: customWhere, relation, includeSchema, compact, useProxy, noSystemFields, noId} = req.query;
-    const response = await getTableData(user, tableName, {id:null, limit, offset, orderBy, order, customWhere, relation, includeSchema, compact, useProxy, noSystemFields, noId})
+    const { limit, offset, orderBy, order, where: customWhere, relation, includeSchema, compact, useProxy, noSystemFields, noId, renderer} = req.query;
+    const response = await getTableData(user, tableName, {id:null, limit, offset, orderBy, order, customWhere, relation, includeSchema, compact, useProxy, noSystemFields, noId, renderer})
     res.json(response);
 
   } catch (error) {
@@ -119,8 +120,8 @@ router.get('/:tableName/:id', async (req, res) => {
   try {
     const { tableName, id } = req.params;
     const user = req.user;
-    const { relation, includeSchema, compact } = req.query;
-    const response = await getTableData(user, tableName, {id, relation, includeSchema, compact})
+    const { relation, includeSchema, compact, renderer } = req.query;
+    const response = await getTableData(user, tableName, {id, relation, includeSchema, compact, renderer})
     res.json(response);
 
   } catch (error) {

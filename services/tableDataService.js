@@ -4,6 +4,7 @@ const { hasPermission } = require('./permissionService');
 const SchemaService = require('./schemaService');
 const EntityService = require('./entityService');
 const RepositoryService = require('./repositoryService');
+const RendererService = require('./rendererService');
 const {dataProxy} = require('../utils/dataProxy');
 const { enrichRowWithDateRange, hasCalendar, getCalendarConfig } = require('../utils/dateRangeFormatter');
 
@@ -237,7 +238,8 @@ async function getTableData(user, tableName, options = {}) {
     compact,
     useProxy,
     noSystemFields,
-    noId
+    noId,
+    renderer
   } = options;
 
   // user est déjà enrichi par userEnrichMiddleware (toujours défini, même pour visiteurs publics)
@@ -415,6 +417,13 @@ async function getTableData(user, tableName, options = {}) {
       if (Object.keys(relations).length > 0) {
         filteredRow._relations = relations;
       }
+    }
+
+    // Enrich with rendered fields if renderer option is enabled
+    if (renderer === '1' || renderer === 'true' || renderer === true) {
+      const enrichedRow = RendererService.enrichRowWithRenderers(filteredRow, table, { compact });
+      // Replace filteredRow with enriched version
+      Object.assign(filteredRow, enrichedRow);
     }
 
     filteredRows.push(filteredRow);

@@ -14,6 +14,7 @@ const schema = require('../schema');
 const EntityService = require('./entityService');
 const PermissionService = require('./permissionService');
 const SchemaService = require('./schemaService');
+const { getTableData } = require('./tableDataService');
 const { GRANTED_VALUES, extractRoleFromGranted, isPublishedRole } = require('../constants/permissions');
 
 class NotificationService {
@@ -194,20 +195,35 @@ class NotificationService {
 
       let displayValue = record[fieldName];
 
-      // Format value based on type
-      if (fieldConfig.type === 'datetime' || fieldConfig.type === 'date') {
-        displayValue = new Date(displayValue).toLocaleString('fr-FR');
-      } else if (fieldConfig.type === 'integer' && fieldConfig.relation) {
-        // Skip relation fields for now (they show as IDs)
-        continue;
-      } else if (typeof displayValue === 'object') {
-        displayValue = JSON.stringify(displayValue);
+      // Check if there's a rendered version of this field (prefixed with _)
+      const renderedFieldName = `_${fieldName}`;
+      if (record[renderedFieldName] !== null && record[renderedFieldName] !== undefined && record[renderedFieldName] !== '') {
+        // Use the rendered value
+        displayValue = record[renderedFieldName];
+      } else {
+        // Format value based on type (fallback if no renderer)
+        if (fieldConfig.type === 'datetime' || fieldConfig.type === 'date') {
+          displayValue = new Date(displayValue).toLocaleString('fr-FR');
+        } else if (fieldConfig.type === 'integer' && fieldConfig.relation) {
+          // Check if there's a relation loaded with a label
+          if (record._relations && record._relations[fieldName] && record._relations[fieldName]._label) {
+            displayValue = record._relations[fieldName]._label;
+          } else {
+            // Skip relation fields that don't have a label (they show as IDs)
+            continue;
+          }
+        } else if (typeof displayValue === 'object') {
+          displayValue = JSON.stringify(displayValue);
+        }
       }
+
+      // Get field label (use field name as fallback)
+      const fieldLabel = fieldConfig.label || fieldName;
 
       fieldsHtml += `
         <tr>
           <td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold; color: #555;">
-            ${fieldName}
+            ${fieldLabel}
           </td>
           <td style="padding: 8px; border-bottom: 1px solid #eee;">
             ${displayValue}
@@ -308,17 +324,20 @@ class NotificationService {
   static async notifyRecord(tableName, recordId, sender, options = {}) {
     const { includeSender = false, customMessage = '' } = options;
 
-    // Get the record
-    const [rows] = await pool.query(
-      `SELECT * FROM ${tableName} WHERE id = ?`,
-      [recordId]
-    );
+    // Get the record using tableDataService with renderer enabled
+    // This will include rendered fields with _ prefix (e.g., _description for markdown)
+    const response = await getTableData(sender, tableName, {
+      id: recordId,
+      relation: 'all',
+      compact: true,
+      renderer: true
+    });
 
-    if (rows.length === 0) {
+    if (!response.success || !response.rows || response.rows.length === 0) {
       throw new Error('Record not found');
     }
 
-    const record = rows[0];
+    const record = response.rows[0];
 
     // Get recipients
     const recipients = await this.getRecipients(tableName, recordId, sender, { includeSender });
