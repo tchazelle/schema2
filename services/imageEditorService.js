@@ -94,8 +94,8 @@ class ImageEditorService {
         pipeline = pipeline.normalize();
       }
 
-      // 6. Brightness/Contrast
-      if (operations.brightness || operations.contrast) {
+      // 6. Brightness/Saturation/Hue
+      if (operations.brightness || operations.saturation || operations.hue) {
         pipeline = pipeline.modulate({
           brightness: operations.brightness ? parseFloat(operations.brightness) : 1,
           saturation: operations.saturation ? parseFloat(operations.saturation) : 1,
@@ -103,7 +103,16 @@ class ImageEditorService {
         });
       }
 
-      // 7. Format conversion and quality
+      // 7. Contrast (using linear transformation)
+      // Sharp's modulate() doesn't support contrast, so we use linear()
+      if (operations.contrast && operations.contrast !== 1) {
+        const contrast = parseFloat(operations.contrast);
+        const a = contrast;
+        const b = -(128 * (a - 1)) / 255;
+        pipeline = pipeline.linear(a, b);
+      }
+
+      // 8. Format conversion and quality
       const format = operations.format || metadata.format || 'jpeg';
       const quality = operations.quality ? parseInt(operations.quality) : 90;
 

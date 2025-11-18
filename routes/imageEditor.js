@@ -136,6 +136,18 @@ router.get('/attachments/:id/preview', async (req, res) => {
       operations.sharpen = parseFloat(req.query.sharpen);
     }
 
+    if (req.query.brightness) {
+      operations.brightness = parseFloat(req.query.brightness);
+    }
+
+    if (req.query.contrast) {
+      operations.contrast = parseFloat(req.query.contrast);
+    }
+
+    if (req.query.saturation) {
+      operations.saturation = parseFloat(req.query.saturation);
+    }
+
     if (req.query.format) {
       operations.format = req.query.format;
     }
@@ -192,6 +204,25 @@ router.get('/attachments/:id/preview', async (req, res) => {
 
     if (operations.sharpen) {
       pipeline = pipeline.sharpen(operations.sharpen);
+    }
+
+    // Apply brightness, saturation (and hue if provided)
+    // Note: Sharp's modulate() doesn't support contrast directly - it needs linear() or normalize()
+    if (operations.brightness || operations.saturation) {
+      pipeline = pipeline.modulate({
+        brightness: operations.brightness || 1,
+        saturation: operations.saturation || 1,
+        hue: 0
+      });
+    }
+
+    // Apply contrast using linear transformation
+    // linear() applies: output = (input * a) + b
+    // For contrast adjustment: a = contrast, b = -(128 * (contrast - 1)) / 255
+    if (operations.contrast && operations.contrast !== 1) {
+      const a = operations.contrast;
+      const b = -(128 * (a - 1)) / 255;
+      pipeline = pipeline.linear(a, b);
     }
 
     const format = operations.format || 'jpeg';
