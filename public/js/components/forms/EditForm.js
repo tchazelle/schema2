@@ -62,7 +62,7 @@ class EditForm extends React.Component {
       errors: {},
       openRelations: new Set(), // Track which 1:n relations are expanded
       dirtyFields: new Set(), // Track which fields have been modified
-      showAttachments: false, // Track if attachments section is expanded
+      showAttachments: true, // Track if attachments section is expanded (open by default)
       attachmentCount: 0 // Track number of attachments
     };
 

@@ -92,8 +92,8 @@ class AttachmentService {
       // Create rowLink: "TableName/id"
       const rowLink = `${tableName}/${id}`;
 
-      // Relative path for storage
-      const relativePath = path.join('storage', 'uploads', tableName, id.toString(), file.filename);
+      // Relative path for storage (just TableName/id/filename, without storage/uploads/ prefix)
+      const relativePath = path.join(tableName, id.toString(), file.filename);
 
       // Insert attachment record
       const [result] = await pool.query(
@@ -197,8 +197,8 @@ class AttachmentService {
         throw new Error('Access denied');
       }
 
-      // Delete file from filesystem
-      const filePath = path.join(process.cwd(), attachment.filePath);
+      // Delete file from filesystem (prepend storage/uploads/ to the stored path)
+      const filePath = path.join(process.cwd(), 'storage', 'uploads', attachment.filePath);
       try {
         await fs.unlink(filePath);
       } catch (error) {

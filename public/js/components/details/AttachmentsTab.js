@@ -524,9 +524,13 @@ class AttachmentsTab extends React.Component {
               flexDirection: 'column',
               cursor: 'pointer'
             },
-            onClick: () => {
-              // Navigate to attachment detail page
-              window.location.href = `/_crud/Attachment/${att.id}`;
+            onClick: (e) => {
+              // Open fullscreen viewer instead of navigating away
+              // Prevent click if clicking on a button or link
+              if (e.target.closest('button') || e.target.closest('a')) {
+                return;
+              }
+              this.handleOpenFullscreen(att, idx);
             },
             onMouseEnter: (e) => {
               e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
