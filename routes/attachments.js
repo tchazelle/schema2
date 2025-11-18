@@ -200,6 +200,13 @@ router.get('/attachments/:id/download', async (req, res) => {
         // Dynamically import marked (ES Module)
         const { marked } = await import('marked');
 
+        // Configure marked to support GFM (GitHub Flavored Markdown) including tables
+        marked.setOptions({
+          gfm: true,
+          breaks: true,
+          tables: true
+        });
+
         // Convert markdown to HTML
         const htmlContent = marked.parse(markdownContent);
 
