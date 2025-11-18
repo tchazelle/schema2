@@ -349,6 +349,11 @@ tr.detail-row td {
   gap: var(--space-1);
 }
 
+/* Markdown fields take full width in detail view */
+.detail-field.field-markdown {
+  grid-column: 1 / -1;
+}
+
 .detail-label {
   font-weight: var(--font-weight-semibold);
   font-size: var(--font-size-xs);
@@ -543,6 +548,11 @@ tr.detail-row td {
   display: flex;
   flex-direction: column;
   gap: var(--space-xs);
+}
+
+/* Markdown fields take full width in edit form */
+.edit-field.field-markdown {
+  grid-column: 1 / -1;
 }
 
 .edit-field-label {

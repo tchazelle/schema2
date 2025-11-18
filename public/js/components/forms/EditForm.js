@@ -412,10 +412,14 @@ class EditForm extends React.Component {
       );
     }
 
+    // Check if field is markdown to apply full-width class
+    const isMarkdown = field && (field.renderer === 'markdown' || field.type === 'markdown');
+    const fieldClasses = isMarkdown ? 'edit-field field-markdown' : 'edit-field';
+
     // Render based on field type
     switch (field.type) {
       case 'text':
-        return e('div', { key: fieldName, className: 'edit-field' },
+        return e('div', { key: fieldName, className: fieldClasses },
           e('label', { className: 'edit-field-label' }, label),
           e('textarea', {
             className: 'edit-field-textarea',
@@ -427,7 +431,7 @@ class EditForm extends React.Component {
         );
 
       case 'enum':
-        return e('div', { key: fieldName, className: 'edit-field' },
+        return e('div', { key: fieldName, className: fieldClasses },
           e('label', { className: 'edit-field-label' }, label),
           e('select', {
             className: 'edit-field-select',
@@ -446,7 +450,7 @@ class EditForm extends React.Component {
       case 'boolean':
       case 'integer':
         const inputType = field.type === 'boolean' ? 'checkbox' : 'number';
-        return e('div', { key: fieldName, className: 'edit-field' },
+        return e('div', { key: fieldName, className: fieldClasses },
           e('label', { className: 'edit-field-label' }, label),
           e('input', {
             type: inputType,
@@ -463,7 +467,7 @@ class EditForm extends React.Component {
 
       case 'date':
       case 'datetime':
-        return e('div', { key: fieldName, className: 'edit-field' },
+        return e('div', { key: fieldName, className: fieldClasses },
           e('label', { className: 'edit-field-label' }, label),
           e('input', {
             type: field.type === 'datetime' ? 'datetime-local' : 'date',
@@ -476,7 +480,7 @@ class EditForm extends React.Component {
         );
 
       default:
-        return e('div', { key: fieldName, className: 'edit-field' },
+        return e('div', { key: fieldName, className: fieldClasses },
           e('label', { className: 'edit-field-label' }, label),
           e('input', {
             type: 'text',
@@ -748,7 +752,14 @@ class EditForm extends React.Component {
           tableName: tableName,
           rowId: row.id,
           permissions: permissions,
-          onAttachmentChange: () => this.loadAttachmentCount()
+          structure: structure, // Pass structure to detect markdown fields
+          onAttachmentChange: () => this.loadAttachmentCount(),
+          onAddToMarkdown: (fieldName, markdownLink) => {
+            // Append the markdown link to the end of the field
+            const currentValue = this.state.formData[fieldName] || '';
+            const newValue = currentValue + (currentValue ? '\n\n' : '') + markdownLink;
+            this.handleFieldChange(fieldName, newValue);
+          }
         })
       )
     );

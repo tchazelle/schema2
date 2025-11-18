@@ -370,7 +370,8 @@ class TableRow extends React.Component {
                   tableName,
                   fieldName,
                   row,
-                  tableConfig
+                  tableConfig,
+                  context: 'list' // Mark as list context to prevent markdown interpretation
                 })
           );
         })
