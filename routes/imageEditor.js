@@ -208,10 +208,10 @@ router.get('/attachments/:id/preview', async (req, res) => {
 
     // Apply brightness, saturation (and hue if provided)
     // Note: Sharp's modulate() doesn't support contrast directly - it needs linear() or normalize()
-    if (operations.brightness || operations.saturation) {
+    if (operations.brightness !== undefined || operations.saturation !== undefined) {
       pipeline = pipeline.modulate({
-        brightness: operations.brightness || 1,
-        saturation: operations.saturation || 1,
+        brightness: operations.brightness !== undefined ? operations.brightness : 1,
+        saturation: operations.saturation !== undefined ? operations.saturation : 1,
         hue: 0
       });
     }

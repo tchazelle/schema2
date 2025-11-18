@@ -95,11 +95,11 @@ class ImageEditorService {
       }
 
       // 6. Brightness/Saturation/Hue
-      if (operations.brightness || operations.saturation || operations.hue) {
+      if (operations.brightness !== undefined || operations.saturation !== undefined || operations.hue !== undefined) {
         pipeline = pipeline.modulate({
-          brightness: operations.brightness ? parseFloat(operations.brightness) : 1,
-          saturation: operations.saturation ? parseFloat(operations.saturation) : 1,
-          hue: operations.hue ? parseInt(operations.hue) : 0
+          brightness: operations.brightness !== undefined ? parseFloat(operations.brightness) : 1,
+          saturation: operations.saturation !== undefined ? parseFloat(operations.saturation) : 1,
+          hue: operations.hue !== undefined ? parseInt(operations.hue) : 0
         });
       }
 

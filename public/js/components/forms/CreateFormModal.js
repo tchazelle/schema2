@@ -52,10 +52,16 @@ class CreateFormModal extends React.Component {
 
       // Set parent field if this is a 1:N creation
       if (parentTable && typeof parentTable === 'string' && parentId) {
-        const lowerField = fieldName.toLowerCase();
-        const lowerParent = parentTable.toLowerCase();
-        if (lowerField.includes(lowerParent) || lowerField === `${lowerParent}id` || lowerField === `id${lowerParent}`) {
+        // Check if this field is a relation to the parent table
+        if (field.relation === parentTable) {
           formData[fieldName] = parseInt(parentId);
+        } else {
+          // Fallback: check for exact match like "idOrganization" or "organizationId"
+          const lowerField = fieldName.toLowerCase();
+          const lowerParent = parentTable.toLowerCase();
+          if (lowerField === `${lowerParent}id` || lowerField === `id${lowerParent}`) {
+            formData[fieldName] = parseInt(parentId);
+          }
         }
       }
 
@@ -197,9 +203,15 @@ class CreateFormModal extends React.Component {
 
             // Re-set parent field if this is a 1:N creation
             if (parentTable && typeof parentTable === 'string' && parentId) {
+              // Check if this field is a relation to the parent table
+              if (field.relation === parentTable) {
+                formData[fieldName] = parseInt(parentId);
+                return;
+              }
+              // Fallback: check for exact match like "idOrganization" or "organizationId"
               const lowerField = fieldName.toLowerCase();
               const lowerParent = parentTable.toLowerCase();
-              if (lowerField.includes(lowerParent) || lowerField === `${lowerParent}id` || lowerField === `id${lowerParent}`) {
+              if (lowerField === `${lowerParent}id` || lowerField === `id${lowerParent}`) {
                 formData[fieldName] = parseInt(parentId);
                 return;
               }
