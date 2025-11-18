@@ -7,7 +7,6 @@ const express = require('express');
 const router = express.Router();
 const path = require('path');
 const fs = require('fs').promises;
-const { marked } = require('marked');
 const AttachmentService = require('../services/attachmentService');
 const PermissionService = require('../services/permissionService');
 const SchemaService = require('../services/schemaService');
@@ -197,6 +196,9 @@ router.get('/attachments/:id/download', async (req, res) => {
       try {
         // Read markdown file
         const markdownContent = await fs.readFile(filePath, 'utf8');
+
+        // Dynamically import marked (ES Module)
+        const { marked } = await import('marked');
 
         // Convert markdown to HTML
         const htmlContent = marked.parse(markdownContent);
