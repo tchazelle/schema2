@@ -17,6 +17,7 @@ const authRouter = require('./routes/auth');
 const crudRouter = require('./routes/crud');
 const apiRouter = require('./routes/api');
 const attachmentsRouter = require('./routes/attachments');
+const imageEditorRouter = require('./routes/imageEditor');
 const calendarRouter = require('./routes/calendar');
 const pagesRouter = require('./routes/pages');
 
@@ -43,6 +44,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/_user', authRouter);
 app.use('/_crud', crudRouter);
 app.use('/_api', attachmentsRouter);
+app.use('/_api', imageEditorRouter);
 app.use('/_api', apiRouter);
 app.use('/_calendar', calendarRouter);
 // Route /:page doit être en dernier car c'est un catch-all

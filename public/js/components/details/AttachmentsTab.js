@@ -27,7 +27,8 @@ class AttachmentsTab extends React.Component {
       uploading: false,
       dragOver: false,
       fullscreenAttachment: null,
-      fullscreenIndex: -1
+      fullscreenIndex: -1,
+      editingImageId: null
     };
     this.fileInputRef = React.createRef();
   }
@@ -203,6 +204,33 @@ class AttachmentsTab extends React.Component {
       console.error('Update error:', error);
       alert('Erreur lors de la mise à jour du granted');
     }
+  }
+
+  handleOpenImageEditor = (attachmentId) => {
+    this.setState({ editingImageId: attachmentId });
+  }
+
+  handleCloseImageEditor = () => {
+    this.setState({ editingImageId: null });
+  }
+
+  handleImageEditorSave = async (result) => {
+    // Reload attachments to show the updated/new image
+    await this.loadAttachments();
+
+    // Notify parent to update count
+    if (this.props.onAttachmentChange) {
+      this.props.onAttachmentChange();
+    }
+
+    // Close editor
+    this.handleCloseImageEditor();
+
+    // Show success message
+    alert(result.replaced
+      ? '✓ Image mise à jour avec succès'
+      : '✓ Nouvelle image créée avec succès'
+    );
   }
 
   /**
@@ -496,7 +524,7 @@ class AttachmentsTab extends React.Component {
   }
 
   render() {
-    const { attachments, loading, uploading, dragOver } = this.state;
+    const { attachments, loading, uploading, dragOver, editingImageId } = this.state;
     const { permissions } = this.props;
     const canUpload = permissions && permissions.canUpdate;
 
@@ -509,6 +537,14 @@ class AttachmentsTab extends React.Component {
     return e('div', { className: 'attachments-tab' },
       // Fullscreen viewer
       this.renderFullscreenViewer(),
+
+      // Image Editor Modal
+      editingImageId && e(ImageEditorModal, {
+        attachmentId: editingImageId,
+        attachment: attachments.find(att => att.id === editingImageId),
+        onSave: this.handleImageEditorSave,
+        onCancel: this.handleCloseImageEditor
+      }),
 
       // Attachments grid (including upload zone as first card)
       e('div', { className: 'attachments-list', style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '16px' } },
@@ -709,66 +745,94 @@ class AttachmentsTab extends React.Component {
               e('div', {
                 style: {
                   display: 'flex',
+                  flexDirection: 'column',
                   gap: '8px',
                   marginTop: '8px'
                 }
               },
-                // Edit button (replaces fullscreen button)
-                e('a', {
-                  href: `/_crud/Attachment/${att.id}?parent=${this.props.tableName}&parentId=${this.props.rowId}`,
-                  className: 'btn-edit-card',
-                  style: {
-                    flex: 1,
-                    padding: '6px 12px',
-                    backgroundColor: '#6c757d',
-                    color: 'white',
-                    textDecoration: 'none',
-                    border: 'none',
-                    borderRadius: '4px',
-                    cursor: 'pointer',
-                    fontSize: '12px',
-                    textAlign: 'center',
-                    fontWeight: '500',
-                    display: 'inline-block'
-                  },
-                  onClick: (ev) => ev.stopPropagation()
-                }, '✏️ Modifier'),
-                // Download button
-                e('a', {
-                  href: att.downloadUrl,
-                  download: att.fileName,
-                  className: 'btn-download-card',
-                  style: {
-                    flex: 1,
-                    padding: '6px 12px',
-                    backgroundColor: '#007bff',
-                    color: 'white',
-                    textDecoration: 'none',
-                    borderRadius: '4px',
-                    fontSize: '12px',
-                    textAlign: 'center',
-                    fontWeight: '500'
-                  },
-                  onClick: (ev) => ev.stopPropagation()
-                }, '⬇️ Télécharger'),
-                // Delete button
-                canUpload && e('button', {
+                // First row: Edit Image button (only for images)
+                att.previewType === 'image' && canUpload && e('button', {
                   onClick: (ev) => {
                     ev.stopPropagation();
-                    this.handleDelete(att.id, att.fileName);
+                    this.handleOpenImageEditor(att.id);
                   },
-                  className: 'btn-delete-card',
+                  className: 'btn-edit-image',
                   style: {
                     padding: '6px 12px',
-                    backgroundColor: '#dc3545',
+                    backgroundColor: '#17a2b8',
                     color: 'white',
                     border: 'none',
                     borderRadius: '4px',
                     cursor: 'pointer',
                     fontSize: '12px',
-                    fontWeight: '500'
+                    fontWeight: '500',
+                    textAlign: 'center'
                   }
-                }, '🗑️')
+                }, '🖼️ Éditer l\'image'),
+                // Second row: Other buttons
+                e('div', {
+                  style: {
+                    display: 'flex',
+                    gap: '8px'
+                  }
+                },
+                  // Edit metadata button
+                  e('a', {
+                    href: `/_crud/Attachment/${att.id}?parent=${this.props.tableName}&parentId=${this.props.rowId}`,
+                    className: 'btn-edit-card',
+                    style: {
+                      flex: 1,
+                      padding: '6px 12px',
+                      backgroundColor: '#6c757d',
+                      color: 'white',
+                      textDecoration: 'none',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      fontSize: '12px',
+                      textAlign: 'center',
+                      fontWeight: '500',
+                      display: 'inline-block'
+                    },
+                    onClick: (ev) => ev.stopPropagation()
+                  }, '✏️ Modifier'),
+                  // Download button
+                  e('a', {
+                    href: att.downloadUrl,
+                    download: att.fileName,
+                    className: 'btn-download-card',
+                    style: {
+                      flex: 1,
+                      padding: '6px 12px',
+                      backgroundColor: '#007bff',
+                      color: 'white',
+                      textDecoration: 'none',
+                      borderRadius: '4px',
+                      fontSize: '12px',
+                      textAlign: 'center',
+                      fontWeight: '500'
+                    },
+                    onClick: (ev) => ev.stopPropagation()
+                  }, '⬇️ Télécharger'),
+                  // Delete button
+                  canUpload && e('button', {
+                    onClick: (ev) => {
+                      ev.stopPropagation();
+                      this.handleDelete(att.id, att.fileName);
+                    },
+                    className: 'btn-delete-card',
+                    style: {
+                      padding: '6px 12px',
+                      backgroundColor: '#dc3545',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      fontSize: '12px',
+                      fontWeight: '500'
+                    }
+                  }, '🗑️')
+                )
               )
             )
           ))
