@@ -25,7 +25,9 @@ class AttachmentsTab extends React.Component {
       attachments: [],
       loading: true,
       uploading: false,
-      dragOver: false
+      dragOver: false,
+      fullscreenAttachment: null,
+      fullscreenIndex: -1
     };
     this.fileInputRef = React.createRef();
   }
@@ -143,6 +145,66 @@ class AttachmentsTab extends React.Component {
     this.handleFileSelect(files);
   }
 
+  handleOpenFullscreen = (attachment, index) => {
+    this.setState({
+      fullscreenAttachment: attachment,
+      fullscreenIndex: index
+    });
+  }
+
+  handleCloseFullscreen = () => {
+    this.setState({
+      fullscreenAttachment: null,
+      fullscreenIndex: -1
+    });
+  }
+
+  handlePreviousAttachment = () => {
+    const { fullscreenIndex } = this.state;
+    const { attachments } = this.state;
+    if (fullscreenIndex > 0) {
+      const newIndex = fullscreenIndex - 1;
+      this.setState({
+        fullscreenAttachment: attachments[newIndex],
+        fullscreenIndex: newIndex
+      });
+    }
+  }
+
+  handleNextAttachment = () => {
+    const { fullscreenIndex } = this.state;
+    const { attachments } = this.state;
+    if (fullscreenIndex < attachments.length - 1) {
+      const newIndex = fullscreenIndex + 1;
+      this.setState({
+        fullscreenAttachment: attachments[newIndex],
+        fullscreenIndex: newIndex
+      });
+    }
+  }
+
+  handleGrantedChange = async (attachmentId, newGranted) => {
+    try {
+      const response = await fetch(`/_api/Attachment/${attachmentId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ granted: newGranted })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Reload attachments to reflect changes
+        await this.loadAttachments();
+      } else {
+        alert(`Erreur lors de la mise à jour: ${data.error}`);
+      }
+    } catch (error) {
+      console.error('Update error:', error);
+      alert('Erreur lors de la mise à jour du granted');
+    }
+  }
+
   renderPreview(attachment) {
     const { previewType, downloadUrl, fileName, icon } = attachment;
 
@@ -154,7 +216,7 @@ class AttachmentsTab extends React.Component {
           style: {
             width: '100%',
             height: '100%',
-            objectFit: 'cover'
+            objectFit: 'contain'
           }
         });
 
@@ -195,6 +257,170 @@ class AttachmentsTab extends React.Component {
     }
   }
 
+  renderFullscreenViewer() {
+    const { fullscreenAttachment, fullscreenIndex, attachments } = this.state;
+    if (!fullscreenAttachment) return null;
+
+    const { previewType, downloadUrl, fileName } = fullscreenAttachment;
+    const hasPrevious = fullscreenIndex > 0;
+    const hasNext = fullscreenIndex < attachments.length - 1;
+
+    return e('div', {
+      className: 'attachment-fullscreen-viewer',
+      style: {
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.95)',
+        zIndex: 10000,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center'
+      },
+      onClick: this.handleCloseFullscreen
+    },
+      // Close button
+      e('button', {
+        style: {
+          position: 'absolute',
+          top: '20px',
+          right: '20px',
+          background: 'rgba(255, 255, 255, 0.2)',
+          border: 'none',
+          color: 'white',
+          fontSize: '24px',
+          width: '40px',
+          height: '40px',
+          borderRadius: '50%',
+          cursor: 'pointer',
+          zIndex: 10001
+        },
+        onClick: (e) => {
+          e.stopPropagation();
+          this.handleCloseFullscreen();
+        }
+      }, '✕'),
+
+      // Previous button
+      hasPrevious && e('button', {
+        style: {
+          position: 'absolute',
+          left: '20px',
+          top: '50%',
+          transform: 'translateY(-50%)',
+          background: 'rgba(255, 255, 255, 0.2)',
+          border: 'none',
+          color: 'white',
+          fontSize: '32px',
+          width: '50px',
+          height: '50px',
+          borderRadius: '50%',
+          cursor: 'pointer',
+          zIndex: 10001
+        },
+        onClick: (e) => {
+          e.stopPropagation();
+          this.handlePreviousAttachment();
+        }
+      }, '‹'),
+
+      // Next button
+      hasNext && e('button', {
+        style: {
+          position: 'absolute',
+          right: '20px',
+          top: '50%',
+          transform: 'translateY(-50%)',
+          background: 'rgba(255, 255, 255, 0.2)',
+          border: 'none',
+          color: 'white',
+          fontSize: '32px',
+          width: '50px',
+          height: '50px',
+          borderRadius: '50%',
+          cursor: 'pointer',
+          zIndex: 10001
+        },
+        onClick: (e) => {
+          e.stopPropagation();
+          this.handleNextAttachment();
+        }
+      }, '›'),
+
+      // Content
+      e('div', {
+        style: {
+          maxWidth: '90vw',
+          maxHeight: '90vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        },
+        onClick: (e) => e.stopPropagation()
+      },
+        previewType === 'image' && e('img', {
+          src: `${downloadUrl}?inline=1`,
+          alt: fileName,
+          style: {
+            maxWidth: '100%',
+            maxHeight: '90vh',
+            objectFit: 'contain'
+          }
+        }),
+        previewType === 'video' && e('video', {
+          controls: true,
+          autoPlay: true,
+          style: {
+            maxWidth: '100%',
+            maxHeight: '90vh'
+          }
+        },
+          e('source', { src: `${downloadUrl}?inline=1` })
+        ),
+        previewType === 'pdf' && e('iframe', {
+          src: `${downloadUrl}?inline=1`,
+          style: {
+            width: '90vw',
+            height: '90vh',
+            border: 'none'
+          }
+        }),
+        previewType === 'audio' && e('div', {
+          style: {
+            padding: '40px',
+            backgroundColor: 'white',
+            borderRadius: '8px'
+          }
+        },
+          e('div', { style: { fontSize: '64px', textAlign: 'center', marginBottom: '20px' } }, '🎵'),
+          e('div', { style: { marginBottom: '20px', fontWeight: 'bold' } }, fileName),
+          e('audio', {
+            controls: true,
+            autoPlay: true,
+            style: { width: '400px' }
+          },
+            e('source', { src: `${downloadUrl}?inline=1` })
+          )
+        )
+      ),
+
+      // Filename
+      e('div', {
+        style: {
+          position: 'absolute',
+          bottom: '20px',
+          color: 'white',
+          fontSize: '16px',
+          textAlign: 'center',
+          maxWidth: '80%'
+        }
+      }, `${fullscreenIndex + 1} / ${attachments.length} - ${fileName}`)
+    );
+  }
+
   render() {
     const { attachments, loading, uploading, dragOver } = this.state;
     const { permissions } = this.props;
@@ -207,45 +433,84 @@ class AttachmentsTab extends React.Component {
     }
 
     return e('div', { className: 'attachments-tab' },
-      // Upload zone
-      canUpload && e('div', {
-        className: `attachment-upload-zone ${dragOver ? 'drag-over' : ''}`,
-        onDragOver: this.handleDragOver,
-        onDragLeave: this.handleDragLeave,
-        onDrop: this.handleDrop,
-        style: {
-          border: '2px dashed ' + (dragOver ? '#007bff' : '#ccc'),
-          borderRadius: '8px',
-          padding: '30px',
-          marginBottom: '20px',
-          textAlign: 'center',
-          backgroundColor: dragOver ? '#f0f8ff' : '#fafafa',
-          cursor: 'pointer',
-          transition: 'all 0.3s'
-        },
-        onClick: () => this.fileInputRef.current && this.fileInputRef.current.click()
-      },
-        e('div', { style: { fontSize: '48px', marginBottom: '10px' } }, '📎'),
-        e('div', { style: { fontSize: '16px', marginBottom: '10px' } },
-          dragOver ? 'Déposez le fichier ici' : 'Glissez-déposez un fichier ou cliquez pour sélectionner'
-        ),
-        e('input', {
-          ref: this.fileInputRef,
-          type: 'file',
-          multiple: true,
-          style: { display: 'none' },
-          onChange: (e) => this.handleFileSelect(Array.from(e.target.files))
-        }),
-        uploading && e('div', { style: { marginTop: '10px', color: '#007bff' } }, 'Upload en cours...')
-      ),
+      // Fullscreen viewer
+      this.renderFullscreenViewer(),
 
-      // Attachments list
-      attachments.length === 0 ? e('div', {
-        className: 'no-attachments',
-        style: { padding: '20px', textAlign: 'center', color: '#999' }
-      }, 'Aucune pièce jointe')
-        : e('div', { className: 'attachments-list', style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '16px' } },
-          attachments.map(att => e('div', {
+      // Attachments grid (including upload zone as first card)
+      e('div', { className: 'attachments-list', style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '16px' } },
+        // Upload zone card (first card)
+        canUpload && e('div', {
+          className: `attachment-card upload-card ${dragOver ? 'drag-over' : ''}`,
+          onDragOver: this.handleDragOver,
+          onDragLeave: this.handleDragLeave,
+          onDrop: this.handleDrop,
+          style: {
+            border: '2px dashed ' + (dragOver ? '#007bff' : '#ccc'),
+            borderRadius: '8px',
+            overflow: 'hidden',
+            backgroundColor: dragOver ? '#f0f8ff' : '#fafafa',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+            transition: 'all 0.3s',
+            cursor: 'pointer',
+            display: 'flex',
+            flexDirection: 'column',
+            minHeight: '380px'
+          },
+          onClick: () => this.fileInputRef.current && this.fileInputRef.current.click(),
+          onMouseEnter: (e) => {
+            e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+            e.currentTarget.style.transform = 'translateY(-2px)';
+          },
+          onMouseLeave: (e) => {
+            e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+            e.currentTarget.style.transform = 'translateY(0)';
+          }
+        },
+          // Preview section - empty
+          e('div', {
+            style: {
+              minHeight: '150px',
+              maxHeight: '200px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: '#f8f9fa',
+              borderBottom: '1px solid #e0e0e0'
+            }
+          },
+            e('div', { style: { fontSize: '64px' } }, '📎')
+          ),
+          // Info section
+          e('div', {
+            style: {
+              padding: '12px',
+              flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px'
+            }
+          },
+            e('div', { style: { fontSize: '16px', fontWeight: '600', textAlign: 'center' } },
+              dragOver ? 'Déposez le fichier ici' : 'Ajouter une pièce jointe'
+            ),
+            e('div', { style: { fontSize: '12px', color: '#6c757d', textAlign: 'center' } },
+              'Glissez-déposez ou cliquez'
+            ),
+            e('input', {
+              ref: this.fileInputRef,
+              type: 'file',
+              multiple: true,
+              style: { display: 'none' },
+              onChange: (e) => this.handleFileSelect(Array.from(e.target.files))
+            }),
+            uploading && e('div', { style: { marginTop: '10px', color: '#007bff', fontSize: '12px' } }, 'Upload en cours...')
+          )
+        ),
+
+        // Attachment cards
+        attachments.map((att, idx) => e('div', {
             key: att.id,
             className: 'attachment-card',
             style: {
@@ -255,14 +520,8 @@ class AttachmentsTab extends React.Component {
               backgroundColor: '#fff',
               boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
               transition: 'all 0.2s',
-              cursor: 'pointer',
               display: 'flex',
               flexDirection: 'column'
-            },
-            onClick: () => {
-              // Navigate to attachment edit form with parent context
-              const { tableName, rowId } = this.props;
-              window.location.href = `/_crud/Attachment/${att.id}?parent=${tableName}&parentId=${rowId}`;
             },
             onMouseEnter: (e) => {
               e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
@@ -273,7 +532,7 @@ class AttachmentsTab extends React.Component {
               e.currentTarget.style.transform = 'translateY(0)';
             }
           },
-            // Preview section (top)
+            // Preview section (top) - clickable for fullscreen
             e('div', {
               className: 'attachment-preview-section',
               style: {
@@ -284,10 +543,35 @@ class AttachmentsTab extends React.Component {
                 alignItems: 'center',
                 justifyContent: 'center',
                 backgroundColor: '#f8f9fa',
-                borderBottom: '1px solid #e0e0e0'
-              }
+                borderBottom: '1px solid #e0e0e0',
+                position: 'relative',
+                cursor: 'pointer'
+              },
+              onClick: () => this.handleOpenFullscreen(att, idx)
             },
-              this.renderPreview(att)
+              this.renderPreview(att),
+              // Magnifying glass overlay
+              e('div', {
+                className: 'attachment-preview-overlay',
+                style: {
+                  position: 'absolute',
+                  top: '8px',
+                  right: '8px',
+                  backgroundColor: 'rgba(0, 0, 0, 0.6)',
+                  color: 'white',
+                  borderRadius: '50%',
+                  width: '32px',
+                  height: '32px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '18px',
+                  opacity: 0,
+                  transition: 'opacity 0.2s'
+                },
+                onMouseEnter: (e) => { e.currentTarget.style.opacity = 1; },
+                onMouseLeave: (e) => { e.currentTarget.style.opacity = 0; }
+              }, '🔍')
             ),
             // Info section (bottom)
             e('div', {
@@ -320,6 +604,14 @@ class AttachmentsTab extends React.Component {
                 e('span', null, '•'),
                 e('span', null, new Date(att.createdAt).toLocaleDateString('fr-FR'))
               ),
+              // Granted selector
+              canUpload && e(GrantedSelector, {
+                value: att.granted || 'draft',
+                publishableTo: permissions?.publishableTo || [],
+                tableGranted: permissions?.tableGranted || {},
+                compact: true,
+                onChange: (newGranted) => this.handleGrantedChange(att.id, newGranted)
+              }),
               // Action buttons
               e('div', {
                 style: {
@@ -367,7 +659,7 @@ class AttachmentsTab extends React.Component {
               )
             )
           ))
-        )
+      )
     );
   }
 }

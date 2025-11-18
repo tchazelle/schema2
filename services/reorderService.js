@@ -71,11 +71,11 @@ class ReorderService {
         throw new Error(`IDs invalides détectés: ${invalidIds.join(', ')}`);
       }
 
-      // 5. Mettre à jour les positions
+      // 5. Mettre à jour les positions (commencer à 1 au lieu de 0)
       const updates = orderedIds.map((id, index) => {
         return connection.query(
           `UPDATE ${tableName} SET ${orderField} = ? WHERE id = ?`,
-          [index, id]
+          [index + 1, id]
         );
       });
 
@@ -146,7 +146,7 @@ class ReorderService {
       [parentId]
     );
 
-    const nextPosition = (maxResult[0].maxPosition || -1) + 1;
+    const nextPosition = (maxResult[0].maxPosition || 0) + 1;
 
     // Insérer avec la nouvelle position
     const insertData = {
