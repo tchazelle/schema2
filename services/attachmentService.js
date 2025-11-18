@@ -13,7 +13,7 @@ const PermissionService = require('./permissionService');
 class AttachmentService {
   /**
    * Configure multer storage dynamically based on table and rowId
-   * Creates directory structure: uploads/TableName/id/
+   * Creates directory structure: storage/uploads/TableName/id/
    */
   static getMulterStorage() {
     return multer.diskStorage({
@@ -31,8 +31,8 @@ class AttachmentService {
             return cb(new Error(`Table ${table} not found`));
           }
 
-          // Create directory structure: uploads/TableName/id/
-          const uploadDir = path.join(process.cwd(), 'uploads', tableName, id);
+          // Create directory structure: storage/uploads/TableName/id/
+          const uploadDir = path.join(process.cwd(), 'storage', 'uploads', tableName, id);
 
           // Create directory recursively if it doesn't exist
           await fs.mkdir(uploadDir, { recursive: true });
@@ -64,7 +64,7 @@ class AttachmentService {
     return multer({
       storage: storage,
       limits: {
-        fileSize: 100 * 1024 * 1024, // 100MB max file size
+        fileSize: 1024 * 1024 * 1024, // 1GB max file size (for videos)
       },
       fileFilter: (req, file, cb) => {
         // Accept all file types for now
@@ -93,7 +93,7 @@ class AttachmentService {
       const rowLink = `${tableName}/${id}`;
 
       // Relative path for storage
-      const relativePath = path.join('uploads', tableName, id.toString(), file.filename);
+      const relativePath = path.join('storage', 'uploads', tableName, id.toString(), file.filename);
 
       // Insert attachment record
       const [result] = await pool.query(

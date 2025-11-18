@@ -38,9 +38,6 @@ app.use(userEnrichMiddleware);
 // Servir les fichiers statiques
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Servir les fichiers uploadés (protégés par authentification)
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-
 // Routes
 
 app.use('/_user', authRouter);

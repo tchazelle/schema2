@@ -437,7 +437,7 @@ class AttachmentsTab extends React.Component {
       this.renderFullscreenViewer(),
 
       // Attachments grid (including upload zone as first card)
-      e('div', { className: 'attachments-list', style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '16px' } },
+      e('div', { className: 'attachments-list', style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '16px' } },
         // Upload zone card (first card)
         canUpload && e('div', {
           className: `attachment-card upload-card ${dragOver ? 'drag-over' : ''}`,
@@ -521,7 +521,12 @@ class AttachmentsTab extends React.Component {
               boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
               transition: 'all 0.2s',
               display: 'flex',
-              flexDirection: 'column'
+              flexDirection: 'column',
+              cursor: 'pointer'
+            },
+            onClick: () => {
+              // Navigate to attachment detail page
+              window.location.href = `/_crud/Attachment/${att.id}`;
             },
             onMouseEnter: (e) => {
               e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
@@ -532,7 +537,7 @@ class AttachmentsTab extends React.Component {
               e.currentTarget.style.transform = 'translateY(0)';
             }
           },
-            // Preview section (top) - clickable for fullscreen
+            // Preview section (top)
             e('div', {
               className: 'attachment-preview-section',
               style: {
@@ -544,34 +549,10 @@ class AttachmentsTab extends React.Component {
                 justifyContent: 'center',
                 backgroundColor: '#f8f9fa',
                 borderBottom: '1px solid #e0e0e0',
-                position: 'relative',
-                cursor: 'pointer'
-              },
-              onClick: () => this.handleOpenFullscreen(att, idx)
+                position: 'relative'
+              }
             },
-              this.renderPreview(att),
-              // Magnifying glass overlay
-              e('div', {
-                className: 'attachment-preview-overlay',
-                style: {
-                  position: 'absolute',
-                  top: '8px',
-                  right: '8px',
-                  backgroundColor: 'rgba(0, 0, 0, 0.6)',
-                  color: 'white',
-                  borderRadius: '50%',
-                  width: '32px',
-                  height: '32px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '18px',
-                  opacity: 0,
-                  transition: 'opacity 0.2s'
-                },
-                onMouseEnter: (e) => { e.currentTarget.style.opacity = 1; },
-                onMouseLeave: (e) => { e.currentTarget.style.opacity = 0; }
-              }, '🔍')
+              this.renderPreview(att)
             ),
             // Info section (bottom)
             e('div', {
@@ -620,6 +601,26 @@ class AttachmentsTab extends React.Component {
                   marginTop: '8px'
                 }
               },
+                // Fullscreen button
+                e('button', {
+                  onClick: (ev) => {
+                    ev.stopPropagation();
+                    this.handleOpenFullscreen(att, idx);
+                  },
+                  className: 'btn-fullscreen-card',
+                  style: {
+                    flex: 1,
+                    padding: '6px 12px',
+                    backgroundColor: '#6c757d',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontSize: '12px',
+                    textAlign: 'center',
+                    fontWeight: '500'
+                  }
+                }, '🔍 Plein écran'),
                 // Download button
                 e('a', {
                   href: att.downloadUrl,
