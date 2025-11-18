@@ -1,6 +1,8 @@
 const schema = require('../schema');
 const SchemaService = require('./schemaService');
-const { marked } = require('marked');
+
+// marked is an ES Module, we'll import it dynamically when needed
+let markedModule = null;
 
 /**
  * Renderer Service
@@ -9,6 +11,17 @@ const { marked } = require('marked');
  */
 class RendererService {
   /**
+   * Lazy load the marked module (ES Module)
+   * @private
+   */
+  static async _getMarked() {
+    if (!markedModule) {
+      const { marked } = await import('marked');
+      markedModule = marked;
+    }
+    return markedModule;
+  }
+  /**
    * Render a field value based on its renderer type
    * @param {*} value - The field value
    * @param {Object} field - The field definition from schema
@@ -16,9 +29,9 @@ class RendererService {
    * @param {Object} row - The full row data (for context)
    * @param {Object} options - Rendering options
    * @param {boolean} options.compact - Whether compact mode is enabled
-   * @returns {*} - The rendered value
+   * @returns {Promise<*>} - The rendered value
    */
-  static renderField(value, field, fieldName, row, options = {}) {
+  static async renderField(value, field, fieldName, row, options = {}) {
     if (value === null || value === undefined) {
       return null;
     }
@@ -27,7 +40,7 @@ class RendererService {
 
     switch (renderer) {
       case 'markdown':
-        return this.renderMarkdown(value);
+        return await this.renderMarkdown(value);
 
       case 'date':
         return this.renderDate(value);
@@ -51,14 +64,16 @@ class RendererService {
   /**
    * Render markdown text to HTML
    * @param {string} markdown - Markdown text
-   * @returns {string} - HTML output
+   * @returns {Promise<string>} - HTML output
    */
-  static renderMarkdown(markdown) {
+  static async renderMarkdown(markdown) {
     if (!markdown || typeof markdown !== 'string') {
       return '';
     }
 
     try {
+      const marked = await this._getMarked();
+
       // Configure marked with GFM (GitHub Flavored Markdown) support
       marked.setOptions({
         gfm: true,
@@ -142,9 +157,9 @@ class RendererService {
    * @param {string} tableName - The table name
    * @param {Object} options - Rendering options
    * @param {boolean} options.compact - Whether compact mode is enabled
-   * @returns {Object} - The enriched row with _fieldName rendered values
+   * @returns {Promise<Object>} - The enriched row with _fieldName rendered values
    */
-  static enrichRowWithRenderers(row, tableName, options = {}) {
+  static async enrichRowWithRenderers(row, tableName, options = {}) {
     const { compact = false } = options;
 
     // Get table schema
@@ -168,7 +183,7 @@ class RendererService {
       // Check if field has a renderer
       if (field.renderer) {
         // Render the field value
-        const renderedValue = this.renderField(value, field, fieldName, row, { compact });
+        const renderedValue = await this.renderField(value, field, fieldName, row, { compact });
 
         // Add rendered value with _ prefix
         enrichedRow[`_${fieldName}`] = renderedValue;
@@ -205,19 +220,21 @@ class RendererService {
       for (const [relationName, relationData] of Object.entries(row._relations)) {
         if (Array.isArray(relationData)) {
           // 1:N relation - process each item
-          enrichedRelations[relationName] = relationData.map(relRow => {
-            // Get the related table name
-            const relatedTableName = relRow._table;
-            if (relatedTableName) {
-              return this.enrichRowWithRenderers(relRow, relatedTableName, options);
-            }
-            return relRow;
-          });
+          enrichedRelations[relationName] = await Promise.all(
+            relationData.map(async (relRow) => {
+              // Get the related table name
+              const relatedTableName = relRow._table;
+              if (relatedTableName) {
+                return await this.enrichRowWithRenderers(relRow, relatedTableName, options);
+              }
+              return relRow;
+            })
+          );
         } else {
           // N:1 relation - process single item
           const relatedTableName = relationData._table;
           if (relatedTableName) {
-            enrichedRelations[relationName] = this.enrichRowWithRenderers(relationData, relatedTableName, options);
+            enrichedRelations[relationName] = await this.enrichRowWithRenderers(relationData, relatedTableName, options);
           } else {
             enrichedRelations[relationName] = relationData;
           }
