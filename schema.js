@@ -101,9 +101,10 @@ module.exports = {
   tables: {
     Page: {
       granted:{
-        public:["read"]
+        public: ["read"],
+        dev: ["read", "create", "update", "delete", "publish"]
       },
-      
+
       // ... defaultConfigTable
       fields: {
         id: { type: "integer", isPrimary: true, autoIncrement: true },
@@ -118,7 +119,8 @@ module.exports = {
     },
     Section: {
       granted:{
-        public:["read"]
+        public: ["read"],
+        dev: ["read", "create", "update", "delete", "publish"]
       },
       // ... defaultConfigTable
       fields: {
