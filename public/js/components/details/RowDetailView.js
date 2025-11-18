@@ -91,12 +91,23 @@ class RowDetailView extends React.Component {
   }
 
   isParentField(fieldName) {
-    const { parentTable } = this.props;
+    const { parentTable, structure } = this.props;
     if (!parentTable) return false;
 
+    // Check if this field is actually a foreign key relation to the parent table
+    if (structure && structure.fields && structure.fields[fieldName]) {
+      const field = structure.fields[fieldName];
+      // Only filter if it's a relation field pointing to the parent table
+      if (field.relation === parentTable) {
+        return true;
+      }
+    }
+
+    // Fallback: check for exact match like "idOrganization" for "Organization"
+    // but NOT partial matches like "organizationRole"
     const lowerField = fieldName.toLowerCase();
     const lowerParent = parentTable.toLowerCase();
-    return lowerField.includes(lowerParent) || lowerField === `id${lowerParent}`;
+    return lowerField === `id${lowerParent}`;
   }
 
   handleExtendAuthorizationForRelation = async (relatedTable, relationName) => {
