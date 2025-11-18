@@ -52,6 +52,16 @@ class SchemaService {
   }
 
   /**
+   * Obtient les champs d'une table
+   * @param {string} tableName - Nom de la table
+   * @returns {Object|null} - Objet des champs ou null si table non trouvée
+   */
+  static getTableFields(tableName) {
+    const tableConfig = this.getTableConfig(tableName);
+    return tableConfig ? tableConfig.fields : null;
+  }
+
+  /**
    * Charge les relations d'une table (n:1 et 1:n)
    * Déplacé de apiTables.js ligne 161
    *
