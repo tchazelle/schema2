@@ -264,6 +264,21 @@ class FieldRenderer extends React.Component {
         return e('span', { className: 'field-value text' }, '-');
 
       case 'markdown':
+        // Use marked library for full markdown support (GFM, tables, etc.)
+        // Configure marked with GFM support if available
+        if (typeof marked !== 'undefined') {
+          // Configure marked with GFM support
+          marked.setOptions({
+            gfm: true,
+            breaks: true,
+            tables: true
+          });
+          return e('div', {
+            className: 'field-value markdown',
+            dangerouslySetInnerHTML: { __html: marked.parse(String(value)) }
+          });
+        }
+        // Fallback to simple markdown if marked is not available
         return e('div', {
           className: 'field-value markdown',
           dangerouslySetInnerHTML: { __html: this.simpleMarkdown(value) }
