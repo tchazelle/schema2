@@ -6,6 +6,7 @@ const schema = require('../schema.js');
 const { getTableData } = require('../services/tableDataService');
 const SchemaService = require('../services/schemaService');
 const PermissionService = require('../services/permissionService');
+const ReorderService = require('../services/reorderService');
 const { GRANTED_VALUES, isPublishedRole, extractRoleFromGranted } = require('../constants/permissions');
 
 /**
@@ -802,6 +803,72 @@ router.post('/:parentTable/:parentId/extend-authorization/:childTable', async (r
     res.status(500).json({
       success: false,
       error: 'Erreur serveur lors de l\'extension d\'autorisation',
+      details: error.message
+    });
+  }
+});
+
+/**
+ * POST /_api/:tableName/reorder/:relationField/:parentId
+ * Reorder items in a 1:N orderable relation (drag & drop)
+ * Body: { orderedIds: [3, 1, 2, 5, 4] } - Array of IDs in the new order
+ */
+router.post('/:tableName/reorder/:relationField/:parentId', async (req, res) => {
+  try {
+    const { tableName, relationField, parentId } = req.params;
+    const { orderedIds } = req.body;
+    const user = req.user;
+
+    // Normalize table name
+    const table = SchemaService.getTableName(tableName);
+    if (!table) {
+      return res.status(404).json({
+        success: false,
+        error: 'Table non trouvée'
+      });
+    }
+
+    // Validate input
+    if (!orderedIds || !Array.isArray(orderedIds)) {
+      return res.status(400).json({
+        success: false,
+        error: 'orderedIds doit être un tableau d\'identifiants'
+      });
+    }
+
+    // Verify that the relation is orderable
+    const config = ReorderService.getOrderableConfig(table, relationField);
+    if (!config) {
+      return res.status(400).json({
+        success: false,
+        error: `La relation ${relationField} de la table ${table} n'est pas ordonnée (propriété orderable manquante)`
+      });
+    }
+
+    // Check permissions
+    if (!PermissionService.hasPermission(user, table, 'update')) {
+      return res.status(403).json({
+        success: false,
+        error: `Permission refusée - vous n'avez pas les droits de modification sur la table ${table}`
+      });
+    }
+
+    // Perform reorder
+    const result = await ReorderService.reorderItems(
+      table,
+      relationField,
+      parseInt(parentId),
+      orderedIds.map(id => parseInt(id)),
+      user
+    );
+
+    res.json(result);
+
+  } catch (error) {
+    console.error('Erreur lors de la réorganisation:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erreur serveur lors de la réorganisation',
       details: error.message
     });
   }

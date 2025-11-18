@@ -129,7 +129,8 @@ module.exports = {
           foreignKey: "id",
           arrayName: "sections",
           relationshipStrength: "Strong",
-          defaultSort: { field: "position", order: "ASC" }
+          defaultSort: { field: "position", order: "ASC" },
+          orderable: "position"
         },
         name: { type: "varchar" }, // Nom de la section
         description: { type: "text" }, // Description de la section
@@ -323,17 +324,18 @@ module.exports = {
       fields: {
         id: { type: "integer", isPrimary: true, autoIncrement: true },
         position: { type: "integer", default: 0 }, // Position de la piste dans l'album
-        idMusicAlbum: { 
-          type: "integer", 
-          relation: "MusicAlbum", 
-          foreignKey: "id", 
+        idMusicAlbum: {
+          type: "integer",
+          relation: "MusicAlbum",
+          foreignKey: "id",
           arrayName: "track", // le nom de la propriété dans le lequel est rangé les rows liées
           arraySchemaorgProperty: "track", // nom selon doctrine schema.org (pour microdata)
           relationshipStrength: "Strong", // signifie une contagion du DELETE et une DUPLICATION en chaine
-          defaultSort: { 
-            field: "position", 
-            order: "ASC"  
+          defaultSort: {
+            field: "position",
+            order: "ASC"
           },  // si string = {field:<value>, order:"ASC"} // si array [ {field1, order1}, {field2, order2}]
+          orderable: "position"
         },
       
         idMusicRecording: { 

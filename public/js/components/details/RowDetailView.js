@@ -191,7 +191,10 @@ class RowDetailView extends React.Component {
             data: Array.isArray(relData) ? relData : [],
             relatedTable: relationConfig.relatedTable,
             relationshipStrength: relationConfig.relationshipStrength,
-            defaultSort: relationConfig.defaultSort
+            defaultSort: relationConfig.defaultSort,
+            isOrderable: relationConfig.orderable ? true : false,
+            relationFieldName: relationConfig.relationFieldName,
+            orderField: relationConfig.orderable
           });
         }
       });
@@ -210,7 +213,10 @@ class RowDetailView extends React.Component {
             data: Array.isArray(relData) ? relData : [],
             relatedTable: relatedTable,
             relationshipStrength: field.relationshipStrength,
-            defaultSort: field.defaultSort
+            defaultSort: field.defaultSort,
+            isOrderable: field.orderable ? true : false,
+            relationFieldName: fieldName,
+            orderField: field.orderable
           });
         }
       });
@@ -389,6 +395,9 @@ class RowDetailView extends React.Component {
                 relationName: relName,
                 hideHeader: false,
                 defaultSort: relation.defaultSort,
+                isOrderable: relation.isOrderable,
+                relationFieldName: relation.relationFieldName,
+                orderField: relation.orderField,
                 onSubRecordUpdate: onSubRecordUpdate
               })
             )
