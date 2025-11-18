@@ -205,6 +205,62 @@ class AttachmentsTab extends React.Component {
     }
   }
 
+  /**
+   * Generate intelligent markdown link based on file type
+   */
+  generateMarkdownLink = (attachment) => {
+    const { fileName, fileType, downloadUrl } = attachment;
+
+    // Image files: use markdown image syntax
+    if (fileType.startsWith('image/')) {
+      return `![${fileName}](${downloadUrl})`;
+    }
+
+    // Audio files: use HTML audio tag
+    if (fileType.startsWith('audio/')) {
+      return `<audio controls src="${downloadUrl}">${fileName}</audio>`;
+    }
+
+    // Video files: use HTML video tag
+    if (fileType.startsWith('video/')) {
+      return `<video controls src="${downloadUrl}">${fileName}</video>`;
+    }
+
+    // PDF and other documents: use markdown link
+    return `[${fileName}](${downloadUrl})`;
+  }
+
+  /**
+   * Handle adding attachment link to a markdown field
+   */
+  handleAddToMarkdown = (fieldName, attachment) => {
+    const { onAddToMarkdown } = this.props;
+    if (!onAddToMarkdown) return;
+
+    const markdownLink = this.generateMarkdownLink(attachment);
+    onAddToMarkdown(fieldName, markdownLink);
+
+    // Show feedback
+    alert(`✓ Lien ajouté au champ "${fieldName}"`);
+  }
+
+  /**
+   * Get markdown fields from table structure
+   */
+  getMarkdownFields = () => {
+    const { structure } = this.props;
+    if (!structure || !structure.fields) return [];
+
+    return Object.entries(structure.fields)
+      .filter(([fieldName, field]) =>
+        field && (field.renderer === 'markdown' || field.type === 'markdown')
+      )
+      .map(([fieldName, field]) => ({
+        name: fieldName,
+        label: field.label || fieldName
+      }));
+  }
+
   renderPreview(attachment) {
     const { previewType, downloadUrl, fileName, icon } = attachment;
 
@@ -615,6 +671,47 @@ class AttachmentsTab extends React.Component {
                 compact: true,
                 onChange: (newGranted) => this.handleGrantedChange(att.id, newGranted)
               }),
+              // "Add to markdown field" buttons
+              (() => {
+                const markdownFields = this.getMarkdownFields();
+                if (markdownFields.length === 0 || !this.props.onAddToMarkdown) return null;
+
+                return e('div', {
+                  style: {
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '4px',
+                    marginTop: '8px'
+                  }
+                },
+                  markdownFields.map(field =>
+                    e('button', {
+                      key: field.name,
+                      onClick: (ev) => {
+                        ev.stopPropagation();
+                        this.handleAddToMarkdown(field.name, att);
+                      },
+                      style: {
+                        padding: '4px 8px',
+                        backgroundColor: '#28a745',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        fontSize: '11px',
+                        fontWeight: '500',
+                        textAlign: 'left'
+                      },
+                      onMouseEnter: (e) => {
+                        e.target.style.backgroundColor = '#218838';
+                      },
+                      onMouseLeave: (e) => {
+                        e.target.style.backgroundColor = '#28a745';
+                      }
+                    }, `➕ Ajouter à "${field.label}"`)
+                  )
+                );
+              })(),
               // Action buttons
               e('div', {
                 style: {

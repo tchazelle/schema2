@@ -15,7 +15,7 @@
  */
 class FieldRenderer extends React.Component {
   render() {
-    const { value, field, tableName, fieldName, row, tableConfig } = this.props;
+    const { value, field, tableName, fieldName, row, tableConfig, context } = this.props;
 
     if (value === null || value === undefined) {
       return e('span', { className: 'field-value empty' }, '-');
@@ -264,7 +264,15 @@ class FieldRenderer extends React.Component {
         return e('span', { className: 'field-value text' }, '-');
 
       case 'markdown':
-        // Use marked library for full markdown support (GFM, tables, etc.)
+        // In list view, don't interpret markdown - just show plain text to keep row height consistent
+        if (context === 'list') {
+          return e('span', {
+            className: 'field-value markdown-preview',
+            title: String(value) // Show full content on hover
+          }, String(value));
+        }
+
+        // In detail/form view, use marked library for full markdown support (GFM, tables, etc.)
         // Configure marked with GFM support if available
         if (typeof marked !== 'undefined') {
           // Configure marked with GFM support

@@ -316,9 +316,13 @@ class RowDetailView extends React.Component {
           // Don't allow editing _dateRange (it's a computed field)
           const isClickable = permissions && permissions.canUpdate && fieldName !== '_dateRange';
 
+          // Check if field is markdown to apply full-width class
+          const isMarkdown = field && (field.renderer === 'markdown' || field.type === 'markdown');
+          const fieldClasses = isMarkdown ? 'detail-field field-markdown' : 'detail-field';
+
           return e('div', {
             key: fieldName,
-            className: 'detail-field',
+            className: fieldClasses,
             style: isClickable ? { cursor: 'pointer' } : {},
             onClick: isClickable ? (e) => handleFieldClick(fieldName, e) : undefined
           },
