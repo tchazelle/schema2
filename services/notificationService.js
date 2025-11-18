@@ -237,8 +237,10 @@ class NotificationService {
     let relationsHtml = '';
     if (includeRelations && includeRelations.length > 0) {
       for (const relationArrayName of includeRelations) {
-        if (record[relationArrayName] && Array.isArray(record[relationArrayName]) && record[relationArrayName].length > 0) {
-          const relationItems = record[relationArrayName];
+        // Relations are in record._relations[arrayName]
+        const relationData = record._relations && record._relations[relationArrayName];
+        if (relationData && Array.isArray(relationData) && relationData.length > 0) {
+          const relationItems = relationData;
 
           // Try to find the table name for this relation
           let relationTableName = relationArrayName;
@@ -474,6 +476,7 @@ class NotificationService {
 
       // Find available 1:n relations (reverse relations where this table is the "1")
       // Search through all other tables to find fields that point to this table
+      // Relations are stored in record._relations object
       for (const [otherTableName, otherTableConfig] of Object.entries(schema.tables)) {
         if (!otherTableConfig.fields) continue;
 
@@ -483,7 +486,9 @@ class NotificationService {
             const arrayName = otherFieldConfig.arrayName;
 
             // Check if this relation is present in the record and has data
-            if (record[arrayName] && Array.isArray(record[arrayName]) && record[arrayName].length > 0) {
+            // Relations are in record._relations[arrayName]
+            const relationData = record._relations && record._relations[arrayName];
+            if (relationData && Array.isArray(relationData) && relationData.length > 0) {
               // Avoid duplicates
               const exists = availableRelations.some(rel => rel.arrayName === arrayName);
               if (!exists) {
@@ -491,7 +496,7 @@ class NotificationService {
                   arrayName: arrayName,
                   table: otherTableName,
                   isStrong: otherFieldConfig.relationshipStrength === 'Strong',
-                  count: record[arrayName].length
+                  count: relationData.length
                 });
               }
             }
