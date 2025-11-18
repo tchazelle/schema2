@@ -105,6 +105,9 @@ class ImageEditorModal extends React.Component {
       grayscale,
       blur,
       sharpen,
+      brightness,
+      contrast,
+      saturation,
       format,
       quality
     } = this.state;
@@ -120,6 +123,9 @@ class ImageEditorModal extends React.Component {
     if (grayscale) params.append('grayscale', 'true');
     if (blur > 0) params.append('blur', blur);
     if (sharpen > 0) params.append('sharpen', sharpen);
+    if (brightness !== 1) params.append('brightness', brightness);
+    if (contrast !== 1) params.append('contrast', contrast);
+    if (saturation !== 1) params.append('saturation', saturation);
     if (format) params.append('format', format);
     params.append('quality', quality);
 
