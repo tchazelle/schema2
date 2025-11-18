@@ -692,6 +692,147 @@ router.post('/:tableName/:id/duplicate-with-relations', async (req, res) => {
 });
 
 /**
+ * GET /_api/:table/:id/notify/preview
+ * Get a preview of users who will receive notification for a record
+ */
+router.get('/:tableName/:id/notify/preview', async (req, res) => {
+  try {
+    const { tableName, id } = req.params;
+    const { includeSender = 'false' } = req.query;
+    const user = req.user;
+
+    // Normalize table name
+    const table = SchemaService.getTableName(tableName);
+    if (!table) {
+      return res.status(404).json({
+        success: false,
+        error: 'Table non trouvée'
+      });
+    }
+
+    // Check read permission
+    if (!PermissionService.hasPermission(user, table, 'read')) {
+      return res.status(403).json({
+        success: false,
+        error: 'Permission refusée'
+      });
+    }
+
+    // Get the record to verify access
+    const [rows] = await pool.query(`SELECT * FROM \`${table}\` WHERE id = ?`, [id]);
+    if (rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Enregistrement non trouvé'
+      });
+    }
+
+    // Import NotificationService
+    const NotificationService = require('../services/notificationService');
+
+    // Get recipients preview
+    const recipients = await NotificationService.getRecipientsPreview(
+      table,
+      parseInt(id),
+      user,
+      { includeSender: includeSender === 'true' }
+    );
+
+    res.json({
+      success: true,
+      recipients,
+      count: recipients.length
+    });
+
+  } catch (error) {
+    console.error('Erreur lors de la prévisualisation des destinataires:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erreur serveur lors de la prévisualisation',
+      details: error.message
+    });
+  }
+});
+
+/**
+ * POST /_api/:table/:id/notify
+ * Send email notification about a record to all users who have access
+ * Body: { includeSender: boolean, customMessage: string }
+ */
+router.post('/:tableName/:id/notify', async (req, res) => {
+  try {
+    const { tableName, id } = req.params;
+    const { includeSender = false, customMessage = '' } = req.body;
+    const user = req.user;
+
+    // Normalize table name
+    const table = SchemaService.getTableName(tableName);
+    if (!table) {
+      return res.status(404).json({
+        success: false,
+        error: 'Table non trouvée'
+      });
+    }
+
+    // Check read permission
+    if (!PermissionService.hasPermission(user, table, 'read')) {
+      return res.status(403).json({
+        success: false,
+        error: 'Permission refusée'
+      });
+    }
+
+    // Verify user is logged in
+    if (!user || !user.id) {
+      return res.status(401).json({
+        success: false,
+        error: 'Vous devez être connecté pour envoyer une notification'
+      });
+    }
+
+    // Get the record to verify access
+    const [rows] = await pool.query(`SELECT * FROM \`${table}\` WHERE id = ?`, [id]);
+    if (rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Enregistrement non trouvé'
+      });
+    }
+
+    // Import NotificationService
+    const NotificationService = require('../services/notificationService');
+
+    // Send notifications
+    const result = await NotificationService.notifyRecord(
+      table,
+      parseInt(id),
+      user,
+      { includeSender, customMessage }
+    );
+
+    res.json(result);
+
+  } catch (error) {
+    console.error('Erreur lors de l\'envoi des notifications:', error);
+
+    // Check if it's an email configuration error
+    if (error.message.includes('Email not configured')) {
+      return res.status(500).json({
+        success: false,
+        error: 'Email non configuré. Veuillez contacter l\'administrateur.',
+        details: error.message
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      error: 'Erreur serveur lors de l\'envoi des notifications',
+      details: error.message
+    });
+  }
+});
+
+/**
  * POST /_api/:parentTable/:parentId/extend-authorization/:childTable
  * Extend the authorization (granted field) from parent to all linked child records
  */

@@ -23,7 +23,9 @@ class RowDetailModal extends React.Component {
     this.state = {
       showDuplicateMenu: false,
       showRelationSelector: false,
-      duplicating: false
+      duplicating: false,
+      showNotifyModal: false,
+      notifying: false
     };
     this.menuRef = React.createRef();
   }
@@ -113,6 +115,40 @@ class RowDetailModal extends React.Component {
 
   handleCancelRelationSelector = () => {
     this.setState({ showRelationSelector: false });
+  }
+
+  handleNotifyClick = () => {
+    this.setState({ showNotifyModal: true });
+  }
+
+  handleCancelNotify = () => {
+    this.setState({ showNotifyModal: false });
+  }
+
+  handleConfirmNotify = async (options) => {
+    const { tableName, row, onUpdate } = this.props;
+    this.setState({ showNotifyModal: false, notifying: true });
+
+    try {
+      const response = await fetch(`/_api/${tableName}/${row.id}/notify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(options)
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        alert(data.message || 'Notifications envoyées avec succès');
+      } else {
+        alert(`Erreur : ${data.error}`);
+      }
+    } catch (error) {
+      console.error('Notify error:', error);
+      alert(`Erreur lors de l'envoi des notifications : ${error.message}`);
+    } finally {
+      this.setState({ notifying: false });
+    }
   }
 
   handleOverlayClick = (e) => {
@@ -268,6 +304,23 @@ class RowDetailModal extends React.Component {
                 }, '📋 Dupliquer avec relations...')
               )
             ),
+            // Notify button (only show if not in edit mode and user has read permission)
+            !editMode && permissions && permissions.canRead && e('button', {
+              className: 'btn-notify',
+              onClick: this.handleNotifyClick,
+              title: 'Envoyer une notification par email',
+              disabled: this.state.notifying,
+              style: {
+                background: '#007bff',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                padding: '6px 12px',
+                cursor: this.state.notifying ? 'wait' : 'pointer',
+                fontSize: '14px',
+                fontWeight: 'bold'
+              }
+            }, this.state.notifying ? '⏳ Envoi...' : '📧 Notifier'),
             // Close button (X exits edit mode if in edit, otherwise closes modal)
             // Special case: if parentTable is set and in edit mode, close the entire modal
             // instead of going back to detail view (for sub-records)
@@ -333,7 +386,14 @@ class RowDetailModal extends React.Component {
           onConfirm: this.handleConfirmDuplicateWithRelations,
           onCancel: this.handleCancelRelationSelector
         });
-      })()
+      })(),
+      // Notify modal
+      this.state.showNotifyModal && e(NotifyModal, {
+        tableName,
+        rowId: row.id,
+        onConfirm: this.handleConfirmNotify,
+        onCancel: this.handleCancelNotify
+      })
     );
   }
 }
