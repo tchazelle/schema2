@@ -210,17 +210,25 @@ module.exports = {
       fields: {
         id: { type: "integer", isPrimary: true, autoIncrement: true, stat: "count" }, // Exemple: compter le nombre de relations
         position: { type: "integer" },
-        idPerson: { type: "integer", relation: "Person", foreignKey: "id", arrayName: "memberOf", relationshipStrength: "Weak", defaultSort: { field: "organizationRole", order: "ASC" } },
-        idOrganization: { 
+        organizationRole: { type: "varchar" },
+          idOrganization: { 
           type: "integer", 
           relation: "Organization", 
           foreignKey: "id", 
           arrayName: "member", 
-          relationshipStrength: "Weak", 
+          relationshipStrength: "Strong", 
           defaultSort: { field: "position", order: "ASC" },
           orderable: "position"
         },
-        organizationRole: { type: "varchar" },
+        idPerson: { 
+          type: "integer", 
+          relation: "Person", 
+          foreignKey: "id", 
+          arrayName: "memberOf", 
+          relationshipStrength: "Weak", 
+          defaultSort: { field: "organizationRole", order: "ASC" } },
+      
+        
           // ... commonFields
       }
     },
