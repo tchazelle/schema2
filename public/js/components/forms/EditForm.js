@@ -687,7 +687,7 @@ class EditForm extends React.Component {
               },
                 e('span', { className: 'relation-toggle' }, isOpen ? '▼' : '▶'),
                 e('strong', null, relName),
-                e('span', { className: 'relation-count badge' }, count),
+                count > 0 && e('span', { className: 'relation-count badge' }, count),
                 // Add calendar icon if related table has calendar configuration
                 (() => {
                   const relatedTableConfig = SCHEMA_CONFIG?.tables?.[relatedTable];
@@ -741,7 +741,7 @@ class EditForm extends React.Component {
           },
             e('span', { className: 'relation-toggle' }, showAttachments ? '▼' : '▶'),
             e('strong', null, 'Pièces jointes'),
-            e('span', { className: 'relation-count badge' }, attachmentCount || 0)
+            (attachmentCount > 0) && e('span', { className: 'relation-count badge' }, attachmentCount)
           )
         ),
         showAttachments && e(AttachmentsTab, {
