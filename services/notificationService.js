@@ -472,45 +472,28 @@ class NotificationService {
     if (response.success && response.rows && response.rows.length > 0) {
       const record = response.rows[0];
 
-      // Find available 1:n relations (array fields in the record)
-      const tableSchema = schema.tables[tableName];
-      if (tableSchema && tableSchema.fields) {
-        for (const [fieldName, fieldConfig] of Object.entries(tableSchema.fields)) {
-          // Check if this is a relation field that generates a reverse array
-          if (fieldConfig.relation && fieldConfig.arrayName && record[fieldConfig.arrayName]) {
-            // This is a direct relation, skip it (we want reverse relations)
-            continue;
-          }
-        }
+      // Find available 1:n relations (reverse relations where this table is the "1")
+      // Search through all other tables to find fields that point to this table
+      for (const [otherTableName, otherTableConfig] of Object.entries(schema.tables)) {
+        if (!otherTableConfig.fields) continue;
 
-        // Find reverse relations by looking for array fields in the record
-        for (const key in record) {
-          if (Array.isArray(record[key]) && record[key].length > 0 && !key.startsWith('_')) {
-            // This is likely a 1:n relation
-            // Try to find the configuration in other tables
-            let relationTable = null;
-            let isStrong = false;
+        for (const [otherFieldName, otherFieldConfig] of Object.entries(otherTableConfig.fields)) {
+          // Check if this field is a relation pointing to our table
+          if (otherFieldConfig.relation === tableName && otherFieldConfig.arrayName) {
+            const arrayName = otherFieldConfig.arrayName;
 
-            // Search through all tables to find which one has this arrayName
-            for (const [otherTableName, otherTableConfig] of Object.entries(schema.tables)) {
-              for (const [otherFieldName, otherFieldConfig] of Object.entries(otherTableConfig.fields || {})) {
-                if (otherFieldConfig.relation === tableName &&
-                    (otherFieldConfig.arrayName === key || otherFieldName + 's' === key)) {
-                  relationTable = otherTableName;
-                  isStrong = otherFieldConfig.relationshipStrength === 'Strong';
-                  break;
-                }
+            // Check if this relation is present in the record and has data
+            if (record[arrayName] && Array.isArray(record[arrayName]) && record[arrayName].length > 0) {
+              // Avoid duplicates
+              const exists = availableRelations.some(rel => rel.arrayName === arrayName);
+              if (!exists) {
+                availableRelations.push({
+                  arrayName: arrayName,
+                  table: otherTableName,
+                  isStrong: otherFieldConfig.relationshipStrength === 'Strong',
+                  count: record[arrayName].length
+                });
               }
-              if (relationTable) break;
-            }
-
-            if (relationTable) {
-              availableRelations.push({
-                arrayName: key,
-                table: relationTable,
-                isStrong: isStrong,
-                count: record[key].length
-              });
             }
           }
         }
