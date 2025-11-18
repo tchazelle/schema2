@@ -31,7 +31,7 @@ class RowDetailView extends React.Component {
     super(props);
     this.state = {
       openRelations: new Set(),
-      showAttachments: false,
+      showAttachments: true, // Open by default
       attachmentCount: 0,
       showCreateModal: false,
       createModalTable: null,

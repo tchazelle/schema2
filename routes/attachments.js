@@ -185,8 +185,8 @@ router.get('/attachments/:id/download', async (req, res) => {
       return res.status(403).json(UIService.jsonError(UIService.messages.ACCESS_DENIED));
     }
 
-    // Build file path
-    const filePath = path.join(process.cwd(), attachment.filePath);
+    // Build file path (prepend storage/uploads/ to the stored path)
+    const filePath = path.join(process.cwd(), 'storage', 'uploads', attachment.filePath);
 
     // Set content type
     res.setHeader('Content-Type', attachment.fileType);
