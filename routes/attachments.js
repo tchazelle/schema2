@@ -81,7 +81,7 @@ router.post('/:table/:id/attachments', async (req, res) => {
             fileType: attachment.fileType,
             fileSize: attachment.fileSize,
             fileSizeFormatted: AttachmentService.formatFileSize(attachment.fileSize),
-            previewType: AttachmentService.getPreviewType(attachment.fileType),
+            previewType: AttachmentService.getPreviewType(attachment.fileType, attachment.name),
             icon: AttachmentService.getFileIcon(attachment.fileType),
             downloadUrl: `/_api/attachments/${attachment.id}/download`,
             createdAt: attachment.createdAt
@@ -135,11 +135,12 @@ router.get('/:table/:id/attachments', async (req, res) => {
       fileType: att.fileType,
       fileSize: att.fileSize,
       fileSizeFormatted: AttachmentService.formatFileSize(att.fileSize),
-      previewType: AttachmentService.getPreviewType(att.fileType),
+      previewType: AttachmentService.getPreviewType(att.fileType, att.name),
       icon: AttachmentService.getFileIcon(att.fileType),
       downloadUrl: `/_api/attachments/${att.id}/download`,
       createdAt: att.createdAt,
-      updatedAt: att.updatedAt
+      updatedAt: att.updatedAt,
+      granted: att.granted
     }));
 
     res.json({

@@ -219,15 +219,27 @@ class AttachmentService {
   /**
    * Check if file type supports preview
    * @param {string} mimeType - File MIME type
-   * @returns {string} - Preview type: 'image', 'audio', 'video', 'pdf', 'none'
+   * @param {string} fileName - File name (optional, for extension-based detection)
+   * @returns {string} - Preview type: 'image', 'audio', 'video', 'pdf', 'text', 'none'
    */
-  static getPreviewType(mimeType) {
+  static getPreviewType(mimeType, fileName = '') {
     if (!mimeType) return 'none';
 
     if (mimeType.startsWith('image/')) return 'image';
     if (mimeType.startsWith('audio/')) return 'audio';
     if (mimeType.startsWith('video/')) return 'video';
     if (mimeType === 'application/pdf') return 'pdf';
+
+    // Check for text-based files
+    if (mimeType.startsWith('text/')) return 'text';
+
+    // Check by file extension for markdown and text files
+    if (fileName) {
+      const ext = fileName.toLowerCase();
+      if (ext.endsWith('.txt') || ext.endsWith('.md') || ext.endsWith('.markdown')) {
+        return 'text';
+      }
+    }
 
     return 'none';
   }

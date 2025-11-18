@@ -249,6 +249,15 @@ class AttachmentsTab extends React.Component {
           e('div', { style: { marginTop: '10px', color: '#666', fontSize: '14px' } }, 'PDF')
         );
 
+      case 'text':
+        // Preview for .txt, .md, .markdown files
+        return e('div', { style: { padding: '40px', textAlign: 'center' } },
+          e('div', { style: { fontSize: '64px' } }, fileName.match(/\.md$|\.markdown$/i) ? '📝' : '📄'),
+          e('div', { style: { marginTop: '10px', color: '#666', fontSize: '14px' } },
+            fileName.match(/\.md$|\.markdown$/i) ? 'Markdown' : 'Texte'
+          )
+        );
+
       default:
         return e('div', { style: { padding: '40px', textAlign: 'center' } },
           e('div', { style: { fontSize: '64px' } }, icon),
@@ -386,6 +395,15 @@ class AttachmentsTab extends React.Component {
             width: '90vw',
             height: '90vh',
             border: 'none'
+          }
+        }),
+        previewType === 'text' && e('iframe', {
+          src: `${downloadUrl}?inline=1`,
+          style: {
+            width: '90vw',
+            height: '90vh',
+            border: 'none',
+            backgroundColor: 'white'
           }
         }),
         previewType === 'audio' && e('div', {
@@ -605,26 +623,26 @@ class AttachmentsTab extends React.Component {
                   marginTop: '8px'
                 }
               },
-                // Fullscreen button
-                e('button', {
-                  onClick: (ev) => {
-                    ev.stopPropagation();
-                    this.handleOpenFullscreen(att, idx);
-                  },
-                  className: 'btn-fullscreen-card',
+                // Edit button (replaces fullscreen button)
+                e('a', {
+                  href: `/_crud/Attachment/${att.id}?parent=${this.props.tableName}&parentId=${this.props.rowId}`,
+                  className: 'btn-edit-card',
                   style: {
                     flex: 1,
                     padding: '6px 12px',
                     backgroundColor: '#6c757d',
                     color: 'white',
+                    textDecoration: 'none',
                     border: 'none',
                     borderRadius: '4px',
                     cursor: 'pointer',
                     fontSize: '12px',
                     textAlign: 'center',
-                    fontWeight: '500'
-                  }
-                }, '🔍 Plein écran'),
+                    fontWeight: '500',
+                    display: 'inline-block'
+                  },
+                  onClick: (ev) => ev.stopPropagation()
+                }, '✏️ Modifier'),
                 // Download button
                 e('a', {
                   href: att.downloadUrl,
