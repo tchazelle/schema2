@@ -729,8 +729,8 @@ class EditForm extends React.Component {
         })
       ),
 
-      // Attachments section (always shown)
-      e('div', { className: 'edit-form-attachments-section' },
+      // Attachments section (only shown if hasAttachmentsTab is true)
+      (tableConfig?.hasAttachmentsTab !== false) && e('div', { className: 'edit-form-attachments-section' },
         e('div', {
           className: 'relation-header',
           style: { display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'space-between' }

@@ -6,6 +6,8 @@
 const express = require('express');
 const router = express.Router();
 const path = require('path');
+const fs = require('fs').promises;
+const { marked } = require('marked');
 const AttachmentService = require('../services/attachmentService');
 const PermissionService = require('../services/permissionService');
 const SchemaService = require('../services/schemaService');
@@ -188,6 +190,121 @@ router.get('/attachments/:id/download', async (req, res) => {
 
     // Build file path (prepend storage/uploads/ to the stored path)
     const filePath = path.join(process.cwd(), 'storage', 'uploads', attachment.filePath);
+
+    // Check if file is markdown and inline preview is requested
+    const isMarkdown = attachment.name.match(/\.(md|markdown)$/i);
+    if (inline && isMarkdown) {
+      try {
+        // Read markdown file
+        const markdownContent = await fs.readFile(filePath, 'utf8');
+
+        // Convert markdown to HTML
+        const htmlContent = marked.parse(markdownContent);
+
+        // Send HTML wrapped in a nice template
+        const htmlPage = `
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${attachment.name}</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      line-height: 1.6;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      color: #333;
+      background-color: #fff;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 24px;
+      margin-bottom: 16px;
+      font-weight: 600;
+      line-height: 1.25;
+    }
+    h1 { font-size: 2em; border-bottom: 1px solid #eaecef; padding-bottom: 0.3em; }
+    h2 { font-size: 1.5em; border-bottom: 1px solid #eaecef; padding-bottom: 0.3em; }
+    h3 { font-size: 1.25em; }
+    h4 { font-size: 1em; }
+    code {
+      background-color: rgba(27, 31, 35, 0.05);
+      border-radius: 3px;
+      padding: 0.2em 0.4em;
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 85%;
+    }
+    pre {
+      background-color: #f6f8fa;
+      border-radius: 6px;
+      padding: 16px;
+      overflow: auto;
+      line-height: 1.45;
+    }
+    pre code {
+      background-color: transparent;
+      padding: 0;
+      border-radius: 0;
+    }
+    blockquote {
+      padding: 0 1em;
+      color: #6a737d;
+      border-left: 0.25em solid #dfe2e5;
+      margin: 0 0 16px 0;
+    }
+    a {
+      color: #0366d6;
+      text-decoration: none;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+    table {
+      border-spacing: 0;
+      border-collapse: collapse;
+      width: 100%;
+      margin-bottom: 16px;
+    }
+    table th, table td {
+      padding: 6px 13px;
+      border: 1px solid #dfe2e5;
+    }
+    table tr {
+      background-color: #fff;
+      border-top: 1px solid #c6cbd1;
+    }
+    table tr:nth-child(2n) {
+      background-color: #f6f8fa;
+    }
+    img {
+      max-width: 100%;
+      height: auto;
+    }
+    ul, ol {
+      padding-left: 2em;
+      margin-bottom: 16px;
+    }
+    li + li {
+      margin-top: 0.25em;
+    }
+  </style>
+</head>
+<body>
+  ${htmlContent}
+</body>
+</html>
+        `;
+
+        res.setHeader('Content-Type', 'text/html; charset=utf-8');
+        res.send(htmlPage);
+        return;
+      } catch (error) {
+        console.error('Error converting markdown:', error);
+        // Fall through to normal file sending if conversion fails
+      }
+    }
 
     // Set content type
     res.setHeader('Content-Type', attachment.fileType);
