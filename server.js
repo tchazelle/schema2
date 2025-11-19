@@ -18,6 +18,7 @@ const crudRouter = require('./routes/crud');
 const apiRouter = require('./routes/api');
 const attachmentsRouter = require('./routes/attachments');
 const imagesRouter = require('./routes/images');
+const imageApiRouter = require('./routes/imageApi');
 const imageEditorRouter = require('./routes/imageEditor');
 const calendarRouter = require('./routes/calendar');
 const emailRouter = require('./routes/email');
@@ -48,6 +49,7 @@ app.use('/_crud', crudRouter);
 app.use('/_api/email', emailRouter);
 app.use('/_api', attachmentsRouter);
 app.use('/_images', imagesRouter);
+app.use('/_api', imageApiRouter);  // Image upload/delete routes (must be before general apiRouter)
 app.use('/_api', imageEditorRouter);
 app.use('/_api', apiRouter);
 app.use('/_calendar', calendarRouter);
