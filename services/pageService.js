@@ -15,7 +15,7 @@ const CrudService = require('../services/crudService');
 class PageService {
 
   static async pagesLoad(user) {
-    const pagesFromTablePage = await getTableData(user, schema.menu.page, {useProxy:1});
+    const pagesFromTablePage = await getTableData(user, schema.menu.page, {resolvedRelations:1});
     return pagesFromTablePage.rows;
   }
 
@@ -40,7 +40,7 @@ class PageService {
           .filter(([newKey, oldKey]) => section[oldKey])
           .map(([newKey, oldKey]) => [newKey, section[oldKey]])
       );
-      tableDataOptions.useProxy = 1;
+      tableDataOptions.resolvedRelations = 1;
       // DEBUG : ici on a bien les options noId et noSystemFields
       return ({ tableName: tableDataOptions.tableName, tableDataOptions });
     })

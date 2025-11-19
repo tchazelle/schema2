@@ -103,8 +103,8 @@ router.get('/:tableName', async (req, res) => {
   try {
     const { tableName } = req.params;
     const user = req.user;
-    const { limit, offset, orderBy, order, where: customWhere, relation, includeSchema, compact, useProxy, noSystemFields, noId, renderer} = req.query;
-    const response = await getTableData(user, tableName, {id:null, limit, offset, orderBy, order, customWhere, relation, includeSchema, compact, useProxy, noSystemFields, noId, renderer})
+    const { limit, offset, orderBy, order, where: customWhere, relation, includeSchema, compact, resolvedRelations, noSystemFields, noId, renderer} = req.query;
+    const response = await getTableData(user, tableName, {id:null, limit, offset, orderBy, order, customWhere, relation, includeSchema, compact, resolvedRelations, noSystemFields, noId, renderer})
     res.json(response);
 
   } catch (error) {
@@ -120,8 +120,8 @@ router.get('/:tableName/:id', async (req, res) => {
   try {
     const { tableName, id } = req.params;
     const user = req.user;
-    const { relation, includeSchema, compact, renderer } = req.query;
-    const response = await getTableData(user, tableName, {id, relation, includeSchema, compact, renderer})
+    const { relation, includeSchema, compact, renderer, resolvedRelations } = req.query;
+    const response = await getTableData(user, tableName, {id, relation, includeSchema, compact, renderer, resolvedRelations})
     res.json(response);
 
   } catch (error) {

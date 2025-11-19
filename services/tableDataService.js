@@ -236,7 +236,7 @@ async function getTableData(user, tableName, options = {}) {
     relation,
     includeSchema,
     compact,
-    useProxy,
+    resolvedRelations,
     noSystemFields,
     noId,
     renderer
@@ -496,7 +496,7 @@ async function getTableData(user, tableName, options = {}) {
   if (includeSchema === '1') {
     response.schema = SchemaService.buildFilteredSchema(user, table);
   }
-  if(useProxy) {
+  if(resolvedRelations) {
     const response2  = dataProxy(response)
     return JSON.parse(JSON.stringify(response2))
 
