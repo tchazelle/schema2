@@ -2,6 +2,15 @@ const pool = require('../config/database');
 const schema = require('../schema.js');
 
 /**
+ * Convertit un nom de champ camelCase en snake_case pour MySQL
+ * @param {string} str - Nom du champ en camelCase
+ * @returns {string} - Nom du champ en snake_case
+ */
+function toSnakeCase(str) {
+  return str.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+}
+
+/**
  * Convertit un type de champ du schéma en type MySQL
  * @param {Object} fieldDef - Définition du champ
  * @returns {string} - Type MySQL
@@ -21,12 +30,13 @@ function getSQLType(fieldDef) {
 
 /**
  * Génère la définition SQL d'un champ
- * @param {string} fieldName - Nom du champ
+ * @param {string} fieldName - Nom du champ (camelCase)
  * @param {Object} fieldDef - Définition du champ
- * @returns {string} - Définition SQL du champ
+ * @returns {string} - Définition SQL du champ (avec nom en snake_case)
  */
 function buildSQLFieldDefinition(fieldName, fieldDef) {
-  let sql = `\`${fieldName}\` ${getSQLType(fieldDef)}`;
+  const columnName = toSnakeCase(fieldName);
+  let sql = `\`${columnName}\` ${getSQLType(fieldDef)}`;
 
   // Auto increment
   if (fieldDef.autoIncrement) {
@@ -119,9 +129,10 @@ async function createTable(tableName, tableDef) {
       fields.push(buildSQLFieldDefinition(fieldName, fieldDef));
     }
 
-    // Ajouter la clé primaire
+    // Ajouter la clé primaire (convertir en snake_case)
     if (primaryKey) {
-      fields.push(`PRIMARY KEY (\`${primaryKey}\`)`);
+      const primaryKeyColumn = toSnakeCase(primaryKey);
+      fields.push(`PRIMARY KEY (\`${primaryKeyColumn}\`)`);
     }
 
     const createTableSQL = `CREATE TABLE IF NOT EXISTS \`${tableName}\` (
@@ -184,18 +195,20 @@ async function syncDatabase() {
             continue;
           }
 
-          const fieldExist = await fieldExists(tableName, fieldName);
+          const columnName = toSnakeCase(fieldName);
+          const fieldExist = await fieldExists(tableName, columnName);
           if (!fieldExist) {
-            console.log(`  → Champ ${fieldName} manquant, ajout...`);
+            console.log(`  → Champ ${fieldName} (${columnName}) manquant, ajout...`);
             await addField(tableName, fieldName, fieldDef);
           }
         }
 
         // Vérifier les champs communs
         for (const [fieldName, fieldDef] of Object.entries(schema.commonFields)) {
-          const fieldExist = await fieldExists(tableName, fieldName);
+          const columnName = toSnakeCase(fieldName);
+          const fieldExist = await fieldExists(tableName, columnName);
           if (!fieldExist) {
-            console.log(`  → Champ commun ${fieldName} manquant, ajout...`);
+            console.log(`  → Champ commun ${fieldName} (${columnName}) manquant, ajout...`);
             await addField(tableName, fieldName, fieldDef);
           }
         }
