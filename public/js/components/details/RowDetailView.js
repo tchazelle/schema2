@@ -365,7 +365,8 @@ class RowDetailView extends React.Component {
                     tableName,
                     fieldName,
                     row,
-                    tableConfig
+                    tableConfig,
+                    context: 'detail'
                   })
             )
           );
