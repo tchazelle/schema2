@@ -43,16 +43,16 @@ class EmailQueueService {
 
       // 2. Supprimer les anciennes entrées de queue si elles existent
       await connection.query(
-        'DELETE FROM EmailQueue WHERE newsletter_id = ?',
+        'DELETE FROM EmailQueue WHERE newsletterId = ?',
         [newsletterId]
       );
 
       // 3. Récupérer tous les abonnés actifs
       const [subscribers] = await connection.query(
-        `SELECT id, email, given_name, family_name, full_name
+        `SELECT id, email, givenName, familyName, fullName
          FROM Person
-         WHERE is_subscribed = 1
-           AND is_active = 1
+         WHERE isSubscribed = 1
+           AND isActive = 1
            AND email IS NOT NULL
            AND email != ''
          ORDER BY id ASC`
@@ -68,16 +68,16 @@ class EmailQueueService {
         sub.id,
         sub.email,
         JSON.stringify({
-          givenName: sub.given_name || '',
-          familyName: sub.family_name || '',
-          fullName: sub.full_name || '',
+          givenName: sub.givenName || '',
+          familyName: sub.familyName || '',
+          fullName: sub.fullName || '',
           email: sub.email
         }),
         'pending'
       ]);
 
       await connection.query(
-        `INSERT INTO EmailQueue (newsletter_id, recipient_id, recipient_email, recipient_data, status)
+        `INSERT INTO EmailQueue (newsletterId, recipientId, recipientEmail, recipientData, status)
          VALUES ?`,
         [values]
       );
@@ -86,8 +86,8 @@ class EmailQueueService {
       await connection.query(
         `UPDATE Newsletter
          SET status = 'queued',
-             total_recipients = ?,
-             updated_at = NOW()
+             totalRecipients = ?,
+             updatedAt = NOW()
          WHERE id = ?`,
         [subscribers.length, newsletterId]
       );
@@ -127,15 +127,15 @@ class EmailQueueService {
 
       // Récupérer ou créer le tracker pour cette heure
       const [rows] = await pool.query(
-        `SELECT emails_sent
+        `SELECT emailsSent
          FROM EmailRateTracker
-         WHERE hour_slot = ?`,
+         WHERE hourSlot = ?`,
         [hourSlotStr]
       );
 
       let emailsSent = 0;
       if (rows.length > 0) {
-        emailsSent = rows[0].emails_sent;
+        emailsSent = rows[0].emailsSent;
       }
 
       const available = Math.max(0, limit - emailsSent);
@@ -167,11 +167,11 @@ class EmailQueueService {
       const hourSlotStr = hourSlot.toISOString().slice(0, 19).replace('T', ' ');
 
       await pool.query(
-        `INSERT INTO EmailRateTracker (hour_slot, emails_sent, last_email_at)
+        `INSERT INTO EmailRateTracker (hourSlot, emailsSent, lastEmailAt)
          VALUES (?, ?, NOW())
          ON DUPLICATE KEY UPDATE
-           emails_sent = emails_sent + ?,
-           last_email_at = NOW()`,
+           emailsSent = emailsSent + ?,
+           lastEmailAt = NOW()`,
         [hourSlotStr, count, count]
       );
     } catch (error) {
@@ -221,13 +221,13 @@ class EmailQueueService {
 
       // 3. Récupérer les emails en attente
       const [pendingEmails] = await connection.query(
-        `SELECT eq.id, eq.newsletter_id, eq.recipient_email, eq.recipient_data, eq.retry_count,
-                n.subject, n.body_template
+        `SELECT eq.id, eq.newsletterId, eq.recipientEmail, eq.recipientData, eq.retryCount,
+                n.subject, n.bodyTemplate
          FROM EmailQueue eq
-         INNER JOIN Newsletter n ON eq.newsletter_id = n.id
+         INNER JOIN Newsletter n ON eq.newsletterId = n.id
          WHERE eq.status = 'pending'
            AND n.status IN ('queued', 'sending')
-         ORDER BY eq.created_at ASC
+         ORDER BY eq.createdAt ASC
          LIMIT ?`,
         [toSend]
       );
@@ -243,7 +243,7 @@ class EmailQueueService {
       }
 
       // 4. Marquer la newsletter comme "sending" si elle était "queued"
-      const newsletterIds = [...new Set(pendingEmails.map(e => e.newsletter_id))];
+      const newsletterIds = [...new Set(pendingEmails.map(e => e.newsletterId))];
       for (const nid of newsletterIds) {
         await connection.query(
           `UPDATE Newsletter
@@ -261,17 +261,17 @@ class EmailQueueService {
       for (const emailQueue of pendingEmails) {
         try {
           // Désérialiser les données du destinataire
-          const recipientData = JSON.parse(emailQueue.recipient_data);
+          const recipientData = JSON.parse(emailQueue.recipientData);
 
           // Rendre le template avec Mustache
           const html = await NewsletterService.renderEmailTemplate(
-            emailQueue.newsletter_id,
+            emailQueue.newsletterId,
             recipientData
           );
 
           // Envoyer l'email
           const result = await EmailService.sendEmail({
-            to: emailQueue.recipient_email,
+            to: emailQueue.recipientEmail,
             subject: emailQueue.subject,
             html,
             emailQueueId: emailQueue.id
@@ -282,8 +282,8 @@ class EmailQueueService {
             await connection.query(
               `UPDATE EmailQueue
                SET status = 'sent',
-                   sent_at = NOW(),
-                   updated_at = NOW()
+                   sentAt = NOW(),
+                   updatedAt = NOW()
                WHERE id = ?`,
               [emailQueue.id]
             );
@@ -291,10 +291,10 @@ class EmailQueueService {
             // Incrémenter le compteur dans Newsletter
             await connection.query(
               `UPDATE Newsletter
-               SET sent_count = sent_count + 1,
-                   updated_at = NOW()
+               SET sentCount = sentCount + 1,
+                   updatedAt = NOW()
                WHERE id = ?`,
-              [emailQueue.newsletter_id]
+              [emailQueue.newsletterId]
             );
 
             sent++;
@@ -308,9 +308,9 @@ class EmailQueueService {
           await connection.query(
             `UPDATE EmailQueue
              SET status = 'failed',
-                 error_message = ?,
-                 retry_count = retry_count + 1,
-                 updated_at = NOW()
+                 errorMessage = ?,
+                 retryCount = retryCount + 1,
+                 updatedAt = NOW()
              WHERE id = ?`,
             [error.message, emailQueue.id]
           );
@@ -318,10 +318,10 @@ class EmailQueueService {
           // Incrémenter le compteur d'échecs dans Newsletter
           await connection.query(
             `UPDATE Newsletter
-             SET failed_count = failed_count + 1,
-                 updated_at = NOW()
+             SET failedCount = failedCount + 1,
+                 updatedAt = NOW()
              WHERE id = ?`,
-            [emailQueue.newsletter_id]
+            [emailQueue.newsletterId]
           );
 
           failed++;
@@ -335,8 +335,8 @@ class EmailQueueService {
       for (const nid of newsletterIds) {
         const [stats] = await connection.query(
           `SELECT
-             (SELECT COUNT(*) FROM EmailQueue WHERE newsletter_id = ? AND status = 'pending') as pending,
-             (SELECT COUNT(*) FROM EmailQueue WHERE newsletter_id = ?) as total
+             (SELECT COUNT(*) FROM EmailQueue WHERE newsletterId = ? AND status = 'pending') as pending,
+             (SELECT COUNT(*) FROM EmailQueue WHERE newsletterId = ?) as total
            FROM dual`,
           [nid, nid]
         );
@@ -346,7 +346,7 @@ class EmailQueueService {
           await connection.query(
             `UPDATE Newsletter
              SET status = 'sent',
-                 updated_at = NOW()
+                 updatedAt = NOW()
              WHERE id = ?`,
             [nid]
           );
@@ -396,14 +396,14 @@ class EmailQueueService {
            n.id,
            n.title,
            n.status,
-           n.total_recipients,
-           n.sent_count,
-           n.opened_count,
-           n.failed_count,
-           (SELECT COUNT(*) FROM EmailQueue WHERE newsletter_id = n.id AND status = 'pending') as pending_count,
-           (SELECT COUNT(*) FROM EmailQueue WHERE newsletter_id = n.id AND status = 'sent') as sent_queue_count,
-           (SELECT COUNT(*) FROM EmailQueue WHERE newsletter_id = n.id AND status = 'failed') as failed_queue_count,
-           ROUND((n.opened_count / NULLIF(n.sent_count, 0)) * 100, 2) as open_rate
+           n.totalRecipients,
+           n.sentCount,
+           n.openedCount,
+           n.failedCount,
+           (SELECT COUNT(*) FROM EmailQueue WHERE newsletterId = n.id AND status = 'pending') as pendingCount,
+           (SELECT COUNT(*) FROM EmailQueue WHERE newsletterId = n.id AND status = 'sent') as sentQueueCount,
+           (SELECT COUNT(*) FROM EmailQueue WHERE newsletterId = n.id AND status = 'failed') as failedQueueCount,
+           ROUND((n.openedCount / NULLIF(n.sentCount, 0)) * 100, 2) as openRate
          FROM Newsletter n
          WHERE n.id = ?`,
         [newsletterId]
@@ -433,9 +433,9 @@ class EmailQueueService {
       const [result] = await pool.query(
         `UPDATE EmailQueue
          SET status = 'pending',
-             error_message = NULL,
-             updated_at = NOW()
-         WHERE newsletter_id = ?
+             errorMessage = NULL,
+             updatedAt = NOW()
+         WHERE newsletterId = ?
            AND status = 'failed'`,
         [newsletterId]
       );
@@ -466,8 +466,8 @@ class EmailQueueService {
       await connection.query(
         `UPDATE EmailQueue
          SET status = 'skipped',
-             updated_at = NOW()
-         WHERE newsletter_id = ?
+             updatedAt = NOW()
+         WHERE newsletterId = ?
            AND status = 'pending'`,
         [newsletterId]
       );
@@ -476,7 +476,7 @@ class EmailQueueService {
       await connection.query(
         `UPDATE Newsletter
          SET status = 'cancelled',
-             updated_at = NOW()
+             updatedAt = NOW()
          WHERE id = ?`,
         [newsletterId]
       );

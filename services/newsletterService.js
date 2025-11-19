@@ -31,11 +31,11 @@ class NewsletterService {
 
       // 2. Récupérer les News associées via NewsletterNews
       const [newsItems] = await pool.query(
-        `SELECT n.*, nn.display_order
+        `SELECT n.*, nn.displayOrder
          FROM NewsletterNews nn
-         INNER JOIN News n ON nn.news_id = n.id
-         WHERE nn.newsletter_id = ?
-         ORDER BY nn.display_order ASC`,
+         INNER JOIN News n ON nn.newsId = n.id
+         WHERE nn.newsletterId = ?
+         ORDER BY nn.displayOrder ASC`,
         [newsletterId]
       );
 
@@ -84,7 +84,7 @@ class NewsletterService {
           content: item.content,
           image: item.image,
           url: item.url,
-          publishedAt: item.published_at,
+          publishedAt: item.publishedAt,
           hasImage: !!item.image,
           hasUrl: !!item.url
         })),
@@ -95,7 +95,7 @@ class NewsletterService {
       };
 
       // 3. Si pas de template, utiliser le template par défaut
-      let template = newsletter.body_template;
+      let template = newsletter.bodyTemplate;
       if (!template || template.trim() === '') {
         template = this.getDefaultTemplate();
       }
@@ -296,7 +296,7 @@ class NewsletterService {
 
       // 1. Créer la newsletter
       const [nlResult] = await connection.query(
-        `INSERT INTO Newsletter (title, subject, body_template, scheduled_at, status)
+        `INSERT INTO Newsletter (title, subject, bodyTemplate, scheduledAt, status)
          VALUES (?, ?, ?, NOW(), 'draft')`,
         [
           'Newsletter de test',
@@ -334,7 +334,7 @@ class NewsletterService {
 
         // Créer la News
         const [newsResult] = await connection.query(
-          `INSERT INTO News (title, content, image, url, published_at, granted)
+          `INSERT INTO News (title, content, image, url, publishedAt, granted)
            VALUES (?, ?, ?, ?, NOW(), 'published @public')`,
           [news.title, news.content, news.image, news.url]
         );
@@ -343,7 +343,7 @@ class NewsletterService {
 
         // Lier à la newsletter
         await connection.query(
-          `INSERT INTO NewsletterNews (newsletter_id, news_id, display_order)
+          `INSERT INTO NewsletterNews (newsletterId, newsId, displayOrder)
            VALUES (?, ?, ?)`,
           [newsletterId, newsId, i]
         );
