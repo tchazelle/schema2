@@ -326,6 +326,27 @@ class CreateFormModal extends React.Component {
       return null;
     }
 
+    // Special handling for image fields (not supported during creation)
+    if (field.renderer === 'image') {
+      return e('div', { key: fieldName, className: 'edit-field field-image-create' },
+        e('label', { className: 'edit-field-label' }, label),
+        e('div', {
+          className: 'create-image-notice',
+          style: {
+            padding: '16px',
+            backgroundColor: '#fff3cd',
+            border: '1px solid #ffc107',
+            borderRadius: '8px',
+            fontSize: '14px',
+            color: '#856404'
+          }
+        },
+          e('span', { style: { marginRight: '8px' } }, 'ℹ️'),
+          'Vous pourrez ajouter une image après la création de l\'enregistrement.'
+        )
+      );
+    }
+
     // Render based on field type
     switch (field.type) {
       case 'text':

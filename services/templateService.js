@@ -86,6 +86,7 @@ class TemplateService {
   <!-- 4. Form Input Components (small, few dependencies) -->
   <script src="/js/components/forms/GrantedSelector.js"></script>
   <script src="/js/components/forms/RelationAutocomplete.js"></script>
+  <script src="/js/components/forms/ImageFieldUploader.js"></script>
 
   <!-- 5. Search/Filter Components (no dependencies) -->
   <script src="/js/components/search/FieldSelectorModal.js"></script>
