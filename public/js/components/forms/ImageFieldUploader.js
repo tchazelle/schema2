@@ -17,7 +17,8 @@ class ImageFieldUploader extends React.Component {
     this.state = {
       uploading: false,
       dragOver: false,
-      previewUrl: props.value || null
+      previewUrl: props.value || null,
+      showEditor: false
     };
     this.fileInputRef = React.createRef();
   }
@@ -142,9 +143,43 @@ class ImageFieldUploader extends React.Component {
     }
   }
 
+  handleDownload = () => {
+    const { tableName, rowId, fieldName } = this.props;
+    const downloadUrl = `/_api/${tableName}/${rowId}/image/${fieldName}/download`;
+    window.open(downloadUrl, '_blank');
+  }
+
+  handleEdit = () => {
+    this.setState({ showEditor: true });
+  }
+
+  handleEditorSave = (result) => {
+    const { onChange } = this.props;
+
+    // Update preview with new image URL
+    if (result.imageUrl) {
+      this.setState({
+        previewUrl: result.imageUrl,
+        showEditor: false
+      });
+
+      // Notify parent
+      if (onChange) {
+        onChange(result.imageUrl);
+      }
+
+      // Show success feedback
+      alert('✓ Image modifiée avec succès');
+    }
+  }
+
+  handleEditorCancel = () => {
+    this.setState({ showEditor: false });
+  }
+
   render() {
-    const { previewUrl, uploading, dragOver } = this.state;
-    const { disabled } = this.props;
+    const { previewUrl, uploading, dragOver, showEditor } = this.state;
+    const { disabled, tableName, rowId, fieldName } = this.props;
 
     return e('div', {
       className: 'image-field-uploader',
@@ -234,6 +269,44 @@ class ImageFieldUploader extends React.Component {
           }
         }),
 
+        // Edit button (only show if there's an image)
+        previewUrl && e('button', {
+          type: 'button',
+          className: 'btn-edit-image',
+          style: {
+            padding: '8px 16px',
+            backgroundColor: '#17a2b8',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: disabled ? 'not-allowed' : 'pointer',
+            fontSize: '14px',
+            fontWeight: '500',
+            opacity: disabled ? 0.6 : 1
+          },
+          onClick: this.handleEdit,
+          disabled: disabled
+        }, '🖼️ Éditer'),
+
+        // Download button (only show if there's an image)
+        previewUrl && e('button', {
+          type: 'button',
+          className: 'btn-download-image',
+          style: {
+            padding: '8px 16px',
+            backgroundColor: '#28a745',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: disabled ? 'not-allowed' : 'pointer',
+            fontSize: '14px',
+            fontWeight: '500',
+            opacity: disabled ? 0.6 : 1
+          },
+          onClick: this.handleDownload,
+          disabled: disabled
+        }, '📥 Télécharger'),
+
         // Delete button (only show if there's an image)
         previewUrl && e('button', {
           type: 'button',
@@ -266,7 +339,17 @@ class ImageFieldUploader extends React.Component {
         dragOver
           ? 'Déposez l\'image ici'
           : 'Glissez-déposez une image ou cliquez sur le bouton (max 10MB)'
-      )
+      ),
+
+      // Image editor modal
+      showEditor && previewUrl && window.ImageFieldEditorModal && e(window.ImageFieldEditorModal, {
+        tableName: tableName,
+        rowId: rowId,
+        fieldName: fieldName,
+        imageUrl: previewUrl,
+        onSave: this.handleEditorSave,
+        onCancel: this.handleEditorCancel
+      })
     );
   }
 }
