@@ -101,7 +101,7 @@ class ImageService {
       }
 
       // Check if field exists and has image renderer
-      const fieldDef = SchemaService.getFieldDefinition(tableName, field);
+      const fieldDef = SchemaService.getFieldConfig(tableName, field);
       if (!fieldDef) {
         throw new Error(`Field ${field} not found in table ${tableName}`);
       }
