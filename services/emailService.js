@@ -62,7 +62,7 @@ class EmailService {
       try {
         // Vérifier si c'est la première ouverture
         const [rows] = await connection.query(
-          'SELECT opened_at, open_count FROM EmailQueue WHERE id = ?',
+          'SELECT openedAt, openCount FROM EmailQueue WHERE id = ?',
           [emailQueueId]
         );
 
@@ -70,14 +70,14 @@ class EmailService {
           throw new Error(`EmailQueue ${emailQueueId} not found`);
         }
 
-        const isFirstOpen = !rows[0].opened_at;
+        const isFirstOpen = !rows[0].openedAt;
 
         // Incrémenter le compteur d'ouvertures
         await connection.query(
           `UPDATE EmailQueue
-           SET open_count = open_count + 1,
-               opened_at = COALESCE(opened_at, NOW()),
-               updated_at = NOW()
+           SET openCount = openCount + 1,
+               openedAt = COALESCE(openedAt, NOW()),
+               updatedAt = NOW()
            WHERE id = ?`,
           [emailQueueId]
         );
@@ -86,8 +86,8 @@ class EmailService {
         if (isFirstOpen) {
           await connection.query(
             `UPDATE Newsletter n
-             INNER JOIN EmailQueue eq ON n.id = eq.newsletter_id
-             SET n.opened_count = n.opened_count + 1
+             INNER JOIN EmailQueue eq ON n.id = eq.newsletterId
+             SET n.openedCount = n.openedCount + 1
              WHERE eq.id = ?`,
             [emailQueueId]
           );
