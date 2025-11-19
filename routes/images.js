@@ -13,12 +13,12 @@ const ImageService = require('../services/imageService');
 const SchemaService = require('../services/schemaService');
 
 /**
- * GET /_images/:table/:filename
+ * GET /_images/:table/:id/:filename
  * Serve an image file
  */
-router.get('/:table/:filename', async (req, res) => {
+router.get('/:table/:id/:filename', async (req, res) => {
   try {
-    const { table, filename } = req.params;
+    const { table, id, filename } = req.params;
 
     // Validate table name (prevent directory traversal)
     const tableName = SchemaService.getTableName(table);
@@ -26,6 +26,14 @@ router.get('/:table/:filename', async (req, res) => {
       return res.status(404).json({
         success: false,
         error: 'Table not found'
+      });
+    }
+
+    // Validate id (must be numeric)
+    if (!/^\d+$/.test(id)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid row ID'
       });
     }
 
@@ -39,7 +47,7 @@ router.get('/:table/:filename', async (req, res) => {
     }
 
     // Build file path
-    const imageUrl = `/_images/${tableName}/${safeFilename}`;
+    const imageUrl = `/_images/${tableName}/${id}/${safeFilename}`;
     const filePath = ImageService.getImagePath(imageUrl);
 
     // Check if file exists

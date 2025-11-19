@@ -14,16 +14,20 @@ const PermissionService = require('./permissionService');
 class ImageService {
   /**
    * Configure multer storage for image fields
-   * Creates directory structure: storage/images/TableName/
+   * Creates directory structure: storage/images/TableName/id/
    */
   static getMulterStorage() {
     return multer.diskStorage({
       destination: async (req, file, cb) => {
         try {
-          const { table } = req.params;
+          const { table, id } = req.params;
 
           if (!table) {
             return cb(new Error('Table is required for image upload'));
+          }
+
+          if (!id) {
+            return cb(new Error('Row ID is required for image upload'));
           }
 
           // Normalize table name
@@ -32,8 +36,8 @@ class ImageService {
             return cb(new Error(`Table ${table} not found`));
           }
 
-          // Create directory structure: storage/images/TableName/
-          const uploadDir = path.join(process.cwd(), 'storage', 'images', tableName);
+          // Create directory structure: storage/images/TableName/id/
+          const uploadDir = path.join(process.cwd(), 'storage', 'images', tableName, id.toString());
 
           // Create directory recursively if it doesn't exist
           await fs.mkdir(uploadDir, { recursive: true });
@@ -44,11 +48,9 @@ class ImageService {
         }
       },
       filename: (req, file, cb) => {
-        // Use timestamp and random string to avoid conflicts
-        const timestamp = Date.now();
-        const random = Math.random().toString(36).substring(2, 8);
-        const ext = path.extname(file.originalname);
-        cb(null, `${timestamp}_${random}${ext}`);
+        // Keep original filename (sanitized)
+        const originalName = path.basename(file.originalname);
+        cb(null, originalName);
       }
     });
   }
@@ -86,15 +88,136 @@ class ImageService {
   }
 
   /**
+   * Get next version filename if file already exists
+   * @param {string} dirPath - Directory path
+   * @param {string} filename - Original filename
+   * @returns {Promise<string>} - Filename with version if needed
+   */
+  static async getVersionedFilename(dirPath, filename) {
+    try {
+      const ext = path.extname(filename);
+      const baseName = path.basename(filename, ext);
+      let versionedFilename = filename;
+      let version = 1;
+
+      // Check if file exists
+      const filePath = path.join(dirPath, versionedFilename);
+      try {
+        await fs.access(filePath);
+        // File exists, need to version it
+        version = 2;
+        versionedFilename = `${baseName}_v${version}${ext}`;
+
+        // Find next available version
+        while (true) {
+          const versionPath = path.join(dirPath, versionedFilename);
+          try {
+            await fs.access(versionPath);
+            version++;
+            versionedFilename = `${baseName}_v${version}${ext}`;
+          } catch {
+            // This version doesn't exist, use it
+            break;
+          }
+        }
+      } catch {
+        // File doesn't exist, use original name
+      }
+
+      return versionedFilename;
+    } catch (error) {
+      console.error('Error getting versioned filename:', error);
+      return filename;
+    }
+  }
+
+  /**
+   * List all versions of an image for a specific row/field
+   * @param {string} table - Table name
+   * @param {number} id - Row ID
+   * @param {string} field - Field name
+   * @param {Object} user - Current user
+   * @returns {Promise<Array>} - Array of version objects with metadata
+   */
+  static async listImageVersions(table, id, field, user) {
+    try {
+      const tableName = SchemaService.getTableName(table);
+      if (!tableName) {
+        throw new Error(`Table ${table} not found`);
+      }
+
+      // Check permissions
+      if (!PermissionService.hasPermission(user, tableName, 'read')) {
+        throw new Error('Permission denied');
+      }
+
+      // Get current image URL from database
+      const [rows] = await pool.query(
+        `SELECT ${field} FROM ${tableName} WHERE id = ?`,
+        [id]
+      );
+
+      if (!rows || rows.length === 0) {
+        throw new Error('Row not found');
+      }
+
+      const currentImageUrl = rows[0][field];
+      const dirPath = path.join(process.cwd(), 'storage', 'images', tableName, id.toString());
+
+      // Check if directory exists
+      try {
+        await fs.access(dirPath);
+      } catch {
+        return []; // No versions exist
+      }
+
+      // Read all files in directory
+      const files = await fs.readdir(dirPath);
+
+      // Get metadata for each image file
+      const versions = [];
+      for (const filename of files) {
+        const filePath = path.join(dirPath, filename);
+        const stats = await fs.stat(filePath);
+
+        // Only include image files
+        const ext = path.extname(filename).toLowerCase();
+        if (['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg'].includes(ext)) {
+          const imageUrl = `/_images/${tableName}/${id}/${filename}`;
+
+          versions.push({
+            filename: filename,
+            url: imageUrl,
+            size: stats.size,
+            sizeFormatted: ImageService.formatFileSize(stats.size),
+            createdAt: stats.birthtime,
+            modifiedAt: stats.mtime,
+            isCurrent: imageUrl === currentImageUrl
+          });
+        }
+      }
+
+      // Sort by creation time (newest first)
+      versions.sort((a, b) => b.createdAt - a.createdAt);
+
+      return versions;
+    } catch (error) {
+      console.error('Error listing image versions:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Upload image and update field value
    * @param {string} table - Table name
    * @param {number} id - Row ID
    * @param {string} field - Field name
    * @param {Object} file - Multer file object
    * @param {Object} user - Current user
+   * @param {boolean} createVersion - If true, create a new version instead of replacing
    * @returns {Promise<string>} - Image URL
    */
-  static async uploadImage(table, id, field, file, user) {
+  static async uploadImage(table, id, field, file, user, createVersion = true) {
     try {
       const tableName = SchemaService.getTableName(table);
       if (!tableName) {
@@ -116,7 +239,7 @@ class ImageService {
         throw new Error('Permission denied');
       }
 
-      // Get existing row to check if there's an old image to delete
+      // Get existing row
       const [rows] = await pool.query(
         `SELECT ${field} FROM ${tableName} WHERE id = ?`,
         [id]
@@ -127,13 +250,21 @@ class ImageService {
         throw new Error('Row not found');
       }
 
-      // Delete old image if exists
-      if (existingRow[field]) {
-        await ImageService.deleteImageFile(existingRow[field]);
+      // Handle versioning
+      const uploadDir = path.join(process.cwd(), 'storage', 'images', tableName, id.toString());
+      const finalFilename = createVersion
+        ? await ImageService.getVersionedFilename(uploadDir, file.filename)
+        : file.filename;
+
+      // If filename changed due to versioning, rename the file
+      if (finalFilename !== file.filename) {
+        const oldPath = path.join(uploadDir, file.filename);
+        const newPath = path.join(uploadDir, finalFilename);
+        await fs.rename(oldPath, newPath);
       }
 
-      // Build relative URL for storage (e.g., "/_images/Person/123456_abc.jpg")
-      const imageUrl = `/_images/${tableName}/${file.filename}`;
+      // Build relative URL for storage (e.g., "/_images/Person/123/image.jpg")
+      const imageUrl = `/_images/${tableName}/${id}/${finalFilename}`;
 
       // Update database with new image URL
       await pool.query(
@@ -200,8 +331,53 @@ class ImageService {
   }
 
   /**
+   * Switch to a different version of an image
+   * @param {string} table - Table name
+   * @param {number} id - Row ID
+   * @param {string} field - Field name
+   * @param {string} filename - Filename of the version to use
+   * @param {Object} user - Current user
+   * @returns {Promise<string>} - New image URL
+   */
+  static async switchToVersion(table, id, field, filename, user) {
+    try {
+      const tableName = SchemaService.getTableName(table);
+      if (!tableName) {
+        throw new Error(`Table ${table} not found`);
+      }
+
+      // Check permissions
+      if (!PermissionService.hasPermission(user, tableName, 'update')) {
+        throw new Error('Permission denied');
+      }
+
+      // Verify file exists
+      const filePath = path.join(process.cwd(), 'storage', 'images', tableName, id.toString(), filename);
+      try {
+        await fs.access(filePath);
+      } catch {
+        throw new Error('Version file not found');
+      }
+
+      // Build new image URL
+      const imageUrl = `/_images/${tableName}/${id}/${filename}`;
+
+      // Update database with new image URL
+      await pool.query(
+        `UPDATE ${tableName} SET ${field} = ?, updatedAt = NOW() WHERE id = ?`,
+        [imageUrl, id]
+      );
+
+      return imageUrl;
+    } catch (error) {
+      console.error('Error switching to version:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Delete image file from filesystem
-   * @param {string} imageUrl - Image URL (e.g., "/_images/Person/123456_abc.jpg")
+   * @param {string} imageUrl - Image URL (e.g., "/_images/Person/123/image.jpg")
    * @returns {Promise<void>}
    */
   static async deleteImageFile(imageUrl) {
@@ -228,7 +404,7 @@ class ImageService {
 
   /**
    * Get image file path from URL
-   * @param {string} imageUrl - Image URL (e.g., "/_images/Person/123456_abc.jpg")
+   * @param {string} imageUrl - Image URL (e.g., "/_images/Person/123/image.jpg")
    * @returns {string} - Absolute file path
    */
   static getImagePath(imageUrl) {
@@ -430,8 +606,6 @@ class ImageService {
       // Determine output format
       const outputFormat = operations.format || path.extname(inputPath).substring(1) || 'jpg';
       const baseFilename = path.basename(inputPath, path.extname(inputPath));
-      const timestamp = Date.now();
-      const random = Math.random().toString(36).substring(2, 8);
 
       let outputFilename, outputPath, newImageUrl;
 
@@ -460,16 +634,22 @@ class ImageService {
           await fs.unlink(inputPath);
         }
 
-        newImageUrl = `/_images/${tableName}/${outputFilename}`;
+        newImageUrl = `/_images/${tableName}/${id}/${outputFilename}`;
       } else {
-        // Create new file
-        outputFilename = `${timestamp}_${random}_edited.${outputFormat}`;
-        outputPath = path.join(path.dirname(inputPath), outputFilename);
+        // Create new version with auto-versioning
+        const uploadDir = path.dirname(inputPath);
+        const ext = path.extname(baseFilename);
+        const nameWithoutExt = ext ? baseFilename.substring(0, baseFilename.length - ext.length) : baseFilename;
+        const originalFilename = `${nameWithoutExt}_edited.${outputFormat}`;
+
+        // Get versioned filename (e.g., image_edited_v2.jpg)
+        outputFilename = await ImageService.getVersionedFilename(uploadDir, originalFilename);
+        outputPath = path.join(uploadDir, outputFilename);
 
         // Apply transformations
         await ImageService.applyTransformations(inputPath, outputPath, operations);
 
-        newImageUrl = `/_images/${tableName}/${outputFilename}`;
+        newImageUrl = `/_images/${tableName}/${id}/${outputFilename}`;
       }
 
       // Update database with new image URL
