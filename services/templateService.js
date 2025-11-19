@@ -99,6 +99,7 @@ class TemplateService {
   <script src="/js/components/dialogs/RelationSelectorDialog.js"></script>
   <script src="/js/components/dialogs/NotifyModal.js"></script>
   <script src="/js/components/dialogs/ImageEditorModal.js"></script>
+  <script src="/js/components/dialogs/ImageFieldEditorModal.js"></script>
 
   <!-- 7. Table Components -->
   <script src="/js/components/table/TableHeader.js"></script>
