@@ -165,7 +165,7 @@ router.post('/:tableName', async (req, res) => {
     }
 
     // Convert datetime fields from ISO format to MySQL format WITHOUT timezone conversion
-    // Also handle empty strings for integer fields
+    // Also handle empty strings for integer, enum, date, datetime, and image fields
     const tableSchema = schema.tables[table];
     if (tableSchema && tableSchema.fields) {
       for (const [key, value] of Object.entries(data)) {
@@ -199,6 +199,12 @@ router.post('/:tableName', async (req, res) => {
                   data[key] = `${year}-${month}-${day}`;
                 }
               }
+            }
+          }
+          // Handle image fields (varchar with renderer="image"): convert empty strings to null
+          else if (field.renderer === 'image') {
+            if (value === '' || (typeof value === 'string' && value.trim() === '')) {
+              data[key] = null;
             }
           }
         }
@@ -328,6 +334,14 @@ router.put('/:tableName/:id', async (req, res) => {
               } else {
                 validFields[key] = value;
               }
+            } else {
+              validFields[key] = value;
+            }
+          }
+          // Handle image fields (varchar with renderer="image"): convert empty strings to null
+          else if (field.renderer === 'image') {
+            if (value === '' || (typeof value === 'string' && value.trim() === '')) {
+              validFields[key] = null;
             } else {
               validFields[key] = value;
             }
