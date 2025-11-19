@@ -294,6 +294,7 @@ module.exports = {
         id: { type: "integer", isPrimary: true, autoIncrement: true },
         name: { type: "varchar" },
         description: { type: "text", renderer: "markdown" },
+        url: { type: "varchar", renderer: "url"},
         // ... commonFields
       }
     },
