@@ -97,11 +97,39 @@ class ImageFieldEditorModal extends React.Component {
   }
 
   generatePreview = () => {
-    const { imageUrl } = this.props;
+    const { tableName, rowId, fieldName } = this.props;
+    const {
+      resize,
+      rotate,
+      flip,
+      grayscale,
+      blur,
+      sharpen,
+      brightness,
+      contrast,
+      saturation,
+      format,
+      quality
+    } = this.state;
 
-    // For now, just use the current image URL with a timestamp
-    // In a full implementation, we would generate a server-side preview
-    const previewUrl = `${imageUrl}?t=${Date.now()}`;
+    // Build query params
+    const params = new URLSearchParams();
+
+    if (resize.width) params.append('width', resize.width);
+    if (resize.height) params.append('height', resize.height);
+    if (resize.fit) params.append('fit', resize.fit);
+    if (rotate !== 0) params.append('rotate', rotate);
+    if (flip !== 'none') params.append('flip', flip);
+    if (grayscale) params.append('grayscale', 'true');
+    if (blur > 0) params.append('blur', blur);
+    if (sharpen > 0) params.append('sharpen', sharpen);
+    if (brightness !== 1) params.append('brightness', brightness);
+    if (contrast !== 1) params.append('contrast', contrast);
+    if (saturation !== 1) params.append('saturation', saturation);
+    if (format) params.append('format', format);
+    params.append('quality', quality);
+
+    const previewUrl = `/_api/${tableName}/${rowId}/image/${fieldName}/preview?${params.toString()}&t=${Date.now()}`;
 
     this.setState({ previewUrl, previewLoading: true });
   }

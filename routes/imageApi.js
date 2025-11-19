@@ -198,6 +198,197 @@ router.post('/:table/:id/image/:field/edit', async (req, res) => {
 });
 
 /**
+ * GET /_api/:table/:id/image/:field/preview
+ * Generate a preview with transformations (without saving)
+ * Query params: width, height, fit, rotate, flip, grayscale, blur, sharpen, brightness, contrast, saturation, format, quality
+ */
+router.get('/:table/:id/image/:field/preview', async (req, res) => {
+  try {
+    const { table: tableParam, id, field } = req.params;
+    const user = req.user;
+
+    // Normalize table name
+    const table = SchemaService.getTableName(tableParam);
+    if (!table) {
+      return res.status(404).json({
+        success: false,
+        error: 'Table not found'
+      });
+    }
+
+    // Parse operations from query params
+    const operations = {};
+
+    if (req.query.width || req.query.height) {
+      operations.resize = {
+        width: req.query.width ? parseInt(req.query.width) : null,
+        height: req.query.height ? parseInt(req.query.height) : null,
+        fit: req.query.fit || 'inside'
+      };
+    }
+
+    if (req.query.rotate) {
+      operations.rotate = parseInt(req.query.rotate);
+    }
+
+    if (req.query.flip) {
+      operations.flip = req.query.flip;
+    }
+
+    if (req.query.grayscale === 'true') {
+      operations.grayscale = true;
+    }
+
+    if (req.query.blur) {
+      operations.blur = parseFloat(req.query.blur);
+    }
+
+    if (req.query.sharpen) {
+      operations.sharpen = parseFloat(req.query.sharpen);
+    }
+
+    if (req.query.brightness) {
+      operations.brightness = parseFloat(req.query.brightness);
+    }
+
+    if (req.query.contrast) {
+      operations.contrast = parseFloat(req.query.contrast);
+    }
+
+    if (req.query.saturation) {
+      operations.saturation = parseFloat(req.query.saturation);
+    }
+
+    if (req.query.format) {
+      operations.format = req.query.format;
+    }
+
+    if (req.query.quality) {
+      operations.quality = parseInt(req.query.quality);
+    }
+
+    // Check field definition
+    const fieldDef = SchemaService.getFieldConfig(table, field);
+    if (!fieldDef) {
+      return res.status(404).json({
+        success: false,
+        error: `Field ${field} not found in table ${table}`
+      });
+    }
+
+    if (fieldDef.renderer !== 'image') {
+      return res.status(400).json({
+        success: false,
+        error: `Field ${field} is not an image field`
+      });
+    }
+
+    // Check permissions
+    const PermissionService = require('../services/permissionService');
+    if (!PermissionService.hasPermission(user, table, 'read')) {
+      return res.status(403).json({
+        success: false,
+        error: 'Permission denied'
+      });
+    }
+
+    // Get image URL from database
+    const pool = require('../config/database');
+    const [rows] = await pool.query(
+      `SELECT ${field} FROM ${table} WHERE id = ?`,
+      [id]
+    );
+
+    if (!rows || rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Row not found'
+      });
+    }
+
+    const imageUrl = rows[0][field];
+    if (!imageUrl) {
+      return res.status(404).json({
+        success: false,
+        error: 'No image in this field'
+      });
+    }
+
+    // Get file path
+    const inputPath = ImageService.getImagePath(imageUrl);
+    const sharp = require('sharp');
+
+    // Apply transformations and send as buffer
+    let pipeline = sharp(inputPath);
+
+    if (operations.rotate) {
+      pipeline = pipeline.rotate(operations.rotate);
+    }
+
+    if (operations.flip) {
+      if (operations.flip === 'horizontal') pipeline = pipeline.flop();
+      if (operations.flip === 'vertical') pipeline = pipeline.flip();
+      if (operations.flip === 'both') pipeline = pipeline.flip().flop();
+    }
+
+    if (operations.resize) {
+      pipeline = pipeline.resize(operations.resize);
+    }
+
+    if (operations.grayscale) {
+      pipeline = pipeline.grayscale();
+    }
+
+    if (operations.blur) {
+      pipeline = pipeline.blur(operations.blur);
+    }
+
+    if (operations.sharpen) {
+      pipeline = pipeline.sharpen(operations.sharpen);
+    }
+
+    if (operations.brightness !== undefined || operations.saturation !== undefined) {
+      pipeline = pipeline.modulate({
+        brightness: operations.brightness !== undefined ? operations.brightness : 1,
+        saturation: operations.saturation !== undefined ? operations.saturation : 1,
+        hue: 0
+      });
+    }
+
+    if (operations.contrast && operations.contrast !== 1) {
+      const a = operations.contrast;
+      const b = -(128 * (a - 1)) / 255;
+      pipeline = pipeline.linear(a, b);
+    }
+
+    const format = operations.format || 'jpeg';
+    const quality = operations.quality || 90;
+
+    switch (format) {
+      case 'png':
+        pipeline = pipeline.png({ quality });
+        break;
+      case 'webp':
+        pipeline = pipeline.webp({ quality });
+        break;
+      default:
+        pipeline = pipeline.jpeg({ quality });
+    }
+
+    const buffer = await pipeline.toBuffer();
+
+    res.set('Content-Type', `image/${format}`);
+    res.send(buffer);
+  } catch (error) {
+    console.error('Error generating preview:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Preview generation failed'
+    });
+  }
+});
+
+/**
  * GET /_api/:table/:id/image/:field/download
  * Download image from field
  */
