@@ -171,6 +171,7 @@ module.exports = {
         familyName: { type: "varchar" },
         fullName: { type: "varchar", as: "CONCAT(COALESCE(givenName, ''), ' ', COALESCE(familyName, ''))" }, // Champ calculé SQL
         description: { type: "text" },
+        image: { type: "varchar", renderer: "image" }, // Photo de profil
         email: { type: "varchar", renderer: "email" },
         telephone: { type: "varchar", renderer: "telephone" },
         password: { type: "varchar", grant: { "dev": ["read", "create", "update"], "admin": ["read", "create", "update"] } }, // Mot de passe en clair (phase de développement)
@@ -191,6 +192,7 @@ module.exports = {
         id: { type: "integer", isPrimary: true, autoIncrement: true },
         name: { type: "varchar" },
         description: { type: "text" },
+        image: { type: "varchar", renderer: "image" }, // Logo de l'organisation
         memberCount: {
           type: "integer",
           calculate: async function(row, context) {
@@ -263,6 +265,7 @@ module.exports = {
         id: { type: "integer", isPrimary: true, autoIncrement: true },
         name: { type: "varchar" },
         description: { type: "text" },
+        image: { type: "varchar", renderer: "image" }, // Image du projet
           // + commonFields
       }
     },
@@ -332,6 +335,7 @@ module.exports = {
         id: { type: "integer", isPrimary: true, autoIncrement: true },
         name: { type: "varchar" }, // schemaorgProperty: name
         description: { type: "text" }, // schemaorgProperty: description
+        image: { type: "varchar", renderer: "image" }, // schemaorgProperty: image - Artwork de l'enregistrement
         duration: { type: "varchar" }, // schemaorgProperty: duration (format ISO 8601: PT3M29S)
         byArtist: { type: "integer", relation: "Organization", foreignKey: "id", arrayName: "Enregistrements", relationshipStrength: "Weak" }, // schemaorgProperty: byArtist
         // ... commonFields
@@ -462,6 +466,7 @@ module.exports = {
         endDate: { type: "datetime", renderer: "datetime" }, // Date de fin
         name: { type: "varchar" }, // Nom de la tâche
         description: { type: "text" }, // Description de la tâche
+        image: { type: "varchar", renderer: "image" }, // Image associée à la tâche
         // + commonFields
       }
     },
@@ -528,6 +533,7 @@ module.exports = {
         id: { type: "integer", isPrimary: true, autoIncrement: true },
         name: { type: "varchar" }, // Nom de la tâche
         description: { type: "text" }, // Description de la tâche,
+        image: { type: "varchar", renderer: "image" }, // Image du lieu
         "streetAddress": { type: "text", wrapper:{name: "address", type: "PostalAddress"} },
         "postalCode": { type: "varchar(10)", wrapper:{name: "address", type: "PostalAddress"} },
         "addressLocality": { type: "varchar", wrapper:{name: "address", type: "PostalAddress"} },

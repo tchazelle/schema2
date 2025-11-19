@@ -412,6 +412,35 @@ class EditForm extends React.Component {
       );
     }
 
+    // Special handling for image fields
+    if (field.renderer === 'image') {
+      const { tableName, row } = this.props;
+      return e('div', { key: fieldName, className: 'edit-field field-image' },
+        e('label', { className: 'edit-field-label' }, label),
+        e(ImageFieldUploader, {
+          tableName: tableName,
+          rowId: row.id,
+          fieldName: fieldName,
+          value: value,
+          onChange: (imageUrl) => {
+            // Update formData immediately to show the new image
+            this.setState(prev => ({
+              formData: {
+                ...prev.formData,
+                [fieldName]: imageUrl
+              }
+            }));
+
+            // Notify parent to refresh
+            if (this.props.onUpdate) {
+              this.props.onUpdate();
+            }
+          },
+          disabled: !permissions.canUpdate
+        })
+      );
+    }
+
     // Check if field is markdown to apply full-width class
     const isMarkdown = field && (field.renderer === 'markdown' || field.type === 'markdown');
     const fieldClasses = isMarkdown ? 'edit-field field-markdown' : 'edit-field';

@@ -93,6 +93,80 @@ class FieldRenderer extends React.Component {
           value
         );
 
+      case 'image':
+        // Display image with thumbnail in list, full in detail
+        if (context === 'list') {
+          // Thumbnail in list view
+          return e('div', {
+            className: 'field-value image-thumbnail',
+            style: {
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px'
+            }
+          },
+            e('img', {
+              src: value,
+              alt: 'Image',
+              style: {
+                maxWidth: '50px',
+                maxHeight: '50px',
+                objectFit: 'cover',
+                borderRadius: '4px',
+                border: '1px solid #ddd'
+              },
+              onClick: (ev) => {
+                ev.stopPropagation();
+                // Open in new tab
+                window.open(value, '_blank');
+              }
+            }),
+            e('span', {
+              className: 'image-icon',
+              title: 'Ouvrir l\'image'
+            }, '🖼️')
+          );
+        } else {
+          // Full image in detail view
+          return e('div', {
+            className: 'field-value image-full',
+            style: {
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '8px'
+            }
+          },
+            e('img', {
+              src: value,
+              alt: 'Image',
+              style: {
+                maxWidth: '100%',
+                maxHeight: '400px',
+                objectFit: 'contain',
+                borderRadius: '8px',
+                border: '1px solid #ddd',
+                cursor: 'pointer'
+              },
+              onClick: (ev) => {
+                ev.stopPropagation();
+                // Open in new tab
+                window.open(value, '_blank');
+              }
+            }),
+            e('a', {
+              href: value,
+              target: '_blank',
+              rel: 'noopener noreferrer',
+              className: 'image-link',
+              style: {
+                fontSize: '12px',
+                color: '#007bff',
+                textDecoration: 'none'
+              }
+            }, '🔗 Ouvrir dans un nouvel onglet')
+          );
+        }
+
       case 'rowLink':
         // Format: "TableName/id" - render as link to that row
         if (value && value.includes('/')) {
