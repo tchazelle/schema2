@@ -141,145 +141,90 @@ class NewsletterService {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{{newsletter.subject}}</title>
-  <style>
-    body {
-      margin: 0;
-      padding: 0;
-      font-family: Arial, Helvetica, sans-serif;
-      background-color: #f4f4f4;
-      color: #333;
-      line-height: 1.6;
-    }
-    .container {
-      max-width: 600px;
-      margin: 20px auto;
-      background: #ffffff;
-      border-radius: 8px;
-      overflow: hidden;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    .header {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      padding: 30px 20px;
-      text-align: center;
-    }
-    .header h1 {
-      margin: 0;
-      font-size: 28px;
-      font-weight: bold;
-    }
-    .greeting {
-      padding: 20px;
-      font-size: 16px;
-      color: #555;
-    }
-    .greeting strong {
-      color: #333;
-    }
-    .content {
-      padding: 0 20px 20px 20px;
-    }
-    .news-item {
-      margin-bottom: 30px;
-      border-bottom: 1px solid #eee;
-      padding-bottom: 20px;
-    }
-    .news-item:last-child {
-      border-bottom: none;
-    }
-    .news-item h2 {
-      color: #667eea;
-      font-size: 22px;
-      margin: 0 0 10px 0;
-    }
-    .news-item img {
-      max-width: 100%;
-      height: auto;
-      border-radius: 4px;
-      margin-bottom: 15px;
-    }
-    .news-item p {
-      margin: 10px 0;
-      color: #555;
-      line-height: 1.8;
-    }
-    .news-item a {
-      display: inline-block;
-      margin-top: 10px;
-      padding: 10px 20px;
-      background: #667eea;
-      color: white;
-      text-decoration: none;
-      border-radius: 4px;
-      font-weight: bold;
-    }
-    .news-item a:hover {
-      background: #5568d3;
-    }
-    .footer {
-      background: #f9f9f9;
-      padding: 20px;
-      text-align: center;
-      font-size: 12px;
-      color: #777;
-      border-top: 1px solid #eee;
-    }
-    .footer a {
-      color: #667eea;
-      text-decoration: none;
-    }
-    .footer p {
-      margin: 5px 0;
-    }
-  </style>
 </head>
-<body>
-  <div class="container">
-    <!-- Header -->
-    <div class="header">
-      <h1>{{newsletter.title}}</h1>
-    </div>
+<body style="margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; background-color: #f4f4f4;">
+  <!-- Main Container Table -->
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color: #f4f4f4;">
+    <tr>
+      <td style="padding: 20px 0;">
+        <!-- Content Table (max-width 600px) -->
+        <table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" align="center" style="background-color: #ffffff; max-width: 600px; margin: 0 auto;">
 
-    <!-- Greeting -->
-    <div class="greeting">
-      Bonjour <strong>{{givenName}}</strong>,
-    </div>
+          <!-- Header -->
+          <tr>
+            <td style="background-color: #667eea; color: #ffffff; padding: 30px 20px; text-align: center;">
+              <h1 style="margin: 0; font-size: 28px; font-weight: bold; color: #ffffff;">{{newsletter.title}}</h1>
+            </td>
+          </tr>
 
-    <!-- Content -->
-    <div class="content">
-      {{#news}}
-      <div class="news-item">
-        <h2>{{title}}</h2>
-        {{#hasImage}}
-        <img src="{{image}}" alt="{{title}}" />
-        {{/hasImage}}
-        <p>{{content}}</p>
-        {{#hasUrl}}
-        <a href="{{url}}" target="_blank">En savoir plus →</a>
-        {{/hasUrl}}
-      </div>
-      {{/news}}
+          <!-- Greeting -->
+          <tr>
+            <td style="padding: 20px; font-size: 16px; color: #555555; line-height: 1.6;">
+              Bonjour <strong style="color: #333333;">{{givenName}}</strong>,
+            </td>
+          </tr>
 
-      {{^news}}
-      <p style="color: #999; text-align: center; padding: 40px 20px;">
-        Aucune actualité pour le moment.
-      </p>
-      {{/news}}
-    </div>
+          <!-- Content -->
+          <tr>
+            <td style="padding: 0 20px 20px 20px;">
+              <!-- News Items -->
+              {{#news}}
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 30px; border-bottom: 1px solid #eeeeee; padding-bottom: 20px;">
+                <tr>
+                  <td>
+                    <!-- News Title -->
+                    <h2 style="color: #667eea; font-size: 22px; margin: 0 0 10px 0; font-weight: bold;">{{title}}</h2>
 
-    <!-- Footer -->
-    <div class="footer">
-      <p>&copy; {{currentYear}} - Tous droits réservés</p>
-      <p>
-        Vous recevez cet email car vous êtes abonné à notre newsletter.<br>
-        <a href="#">Se désabonner</a>
-      </p>
-      <p style="margin-top: 15px; color: #999;">
-        Envoyé à : {{email}}
-      </p>
-    </div>
-  </div>
+                    <!-- News Image (if exists) -->
+                    {{#hasImage}}
+                    <img src="{{image}}" alt="{{title}}" style="max-width: 100%; height: auto; display: block; margin-bottom: 15px;" />
+                    {{/hasImage}}
+
+                    <!-- News Content -->
+                    <p style="margin: 10px 0; color: #555555; line-height: 1.8; font-size: 16px;">{{content}}</p>
+
+                    <!-- News Link (if exists) -->
+                    {{#hasUrl}}
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin-top: 10px;">
+                      <tr>
+                        <td style="background-color: #667eea; padding: 10px 20px;">
+                          <a href="{{url}}" target="_blank" style="color: #ffffff; text-decoration: none; font-weight: bold; display: inline-block;">En savoir plus →</a>
+                        </td>
+                      </tr>
+                    </table>
+                    {{/hasUrl}}
+                  </td>
+                </tr>
+              </table>
+              {{/news}}
+
+              <!-- No News Message -->
+              {{^news}}
+              <p style="color: #999999; text-align: center; padding: 40px 20px; font-size: 16px;">
+                Aucune actualité pour le moment.
+              </p>
+              {{/news}}
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background-color: #f9f9f9; padding: 20px; text-align: center; border-top: 1px solid #eeeeee;">
+              <p style="margin: 5px 0; font-size: 12px; color: #777777;">&copy; {{currentYear}} - Tous droits réservés</p>
+              <p style="margin: 5px 0; font-size: 12px; color: #777777;">
+                Vous recevez cet email car vous êtes abonné à notre newsletter.<br>
+                <a href="#" style="color: #667eea; text-decoration: none;">Se désabonner</a>
+              </p>
+              <p style="margin: 15px 0 5px 0; font-size: 12px; color: #999999;">
+                Envoyé à : {{email}}
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
 </body>
 </html>`;
   }
