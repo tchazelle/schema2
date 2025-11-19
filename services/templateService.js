@@ -70,6 +70,7 @@ class TemplateService {
     return `
   <!-- 1. Utilities (no dependencies) -->
   <script src="/js/utils/crudListUtils.js"></script>
+  <script src="/js/autoExpandTextarea.js"></script>
 
   <!-- Global React.createElement shorthand -->
   <script>
