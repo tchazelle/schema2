@@ -387,6 +387,10 @@ module.exports = {
       // ... defaultConfigTable
 
       hasAttachmentsTab: false, // Les attachments eux-mêmes n'ont pas besoin d'attachments
+      granted: {
+        "member": ["read", "create", "update", "delete"],
+        "admin": ["read", "create", "update", "delete", "publish"]
+      },
       fields: {
         id: { type: "integer", isPrimary: true, autoIncrement: true },
         rowLink: { type: "varchar", renderer: "rowLink", readonly: true }, // Lien vers l'enregistrement parent (ex: "Person/1") - DEPRECATED: utiliser les relations ci-dessous

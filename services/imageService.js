@@ -651,11 +651,25 @@ class ImageService {
         const uploadDir = path.dirname(inputPath);
         const ext = path.extname(baseFilename);
         const nameWithoutExt = ext ? baseFilename.substring(0, baseFilename.length - ext.length) : baseFilename;
-        const originalFilename = `${nameWithoutExt}_edited.${outputFormat}`;
 
-        // Get versioned filename (e.g., image_edited_v2.jpg)
-        outputFilename = await ImageService.getVersionedFilename(uploadDir, originalFilename);
-        outputPath = path.join(uploadDir, outputFilename);
+        // Always start with version number for edited images
+        // Find the next available version number
+        let version = 1;
+        let outputFilename = `${nameWithoutExt}_edited_v${version}.${outputFormat}`;
+        let outputPath = path.join(uploadDir, outputFilename);
+
+        // Keep incrementing until we find an available version
+        while (true) {
+          try {
+            await fs.access(outputPath);
+            version++;
+            outputFilename = `${nameWithoutExt}_edited_v${version}.${outputFormat}`;
+            outputPath = path.join(uploadDir, outputFilename);
+          } catch {
+            // This version doesn't exist, use it
+            break;
+          }
+        }
 
         // Apply transformations
         await ImageService.applyTransformations(inputPath, outputPath, operations);
