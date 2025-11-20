@@ -93,7 +93,7 @@
 }
 
 .sidebar-section li {
-  margin-bottom: var(--space-sm);
+  margin-bottom: var(--space-xs);
 }
 
 .sidebar-section a {

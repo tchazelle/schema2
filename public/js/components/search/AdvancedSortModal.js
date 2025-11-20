@@ -324,7 +324,7 @@ class AdvancedSortModal extends React.Component {
               }, `${index + 1}.`),
               e('select', {
                 className: 'edit-field-select',
-                style: { flex: 1 },
+                style: { flex: 2, minWidth: '200px' },
                 value: criterion.field,
                 onChange: (e) => this.handleCriterionChange(index, 'field', e.target.value)
               },
@@ -337,7 +337,7 @@ class AdvancedSortModal extends React.Component {
               ),
               e('select', {
                 className: 'edit-field-select',
-                style: { width: '120px' },
+                style: { width: '110px', flexShrink: 0 },
                 value: criterion.order,
                 onChange: (e) => this.handleCriterionChange(index, 'order', e.target.value)
               },

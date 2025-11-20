@@ -578,51 +578,28 @@ class CrudList extends React.Component {
   getSearchRepresentation = () => {
     const { advancedSearchCriteria, data } = this.state;
 
-    if (!advancedSearchCriteria) {
+    if (!advancedSearchCriteria || !Array.isArray(advancedSearchCriteria) || advancedSearchCriteria.length === 0) {
       return null;
     }
 
-    // Build a representation of the search criteria
-    const parts = [];
-
-    if (advancedSearchCriteria.field && advancedSearchCriteria.operator && advancedSearchCriteria.value) {
-      let fieldLabel = advancedSearchCriteria.field;
-      if (data && data.structure) {
-        // Handle relation fields (format: Table.field)
-        if (advancedSearchCriteria.field.includes('.')) {
-          const [tableName, fieldName] = advancedSearchCriteria.field.split('.');
-          fieldLabel = `${tableName}.${fieldName}`;
-        } else {
-          const field = data.structure.fields[advancedSearchCriteria.field];
-          fieldLabel = field?.label || advancedSearchCriteria.field;
-        }
-      }
-
-      const operatorLabels = {
-        'equals': '=',
-        'notEquals': '≠',
-        'contains': '⊃',
-        'notContains': '⊅',
-        'startsWith': 'commence par',
-        'endsWith': 'finit par',
-        'greaterThan': '>',
-        'lessThan': '<',
-        'greaterOrEqual': '≥',
-        'lessOrEqual': '≤',
-        'isNull': 'est vide',
-        'isNotNull': 'n\'est pas vide'
-      };
-
-      const operatorLabel = operatorLabels[advancedSearchCriteria.operator] || advancedSearchCriteria.operator;
-
-      if (advancedSearchCriteria.operator === 'isNull' || advancedSearchCriteria.operator === 'isNotNull') {
-        parts.push(`${fieldLabel} ${operatorLabel}`);
-      } else {
-        parts.push(`${fieldLabel} ${operatorLabel} "${advancedSearchCriteria.value}"`);
+    // Count total conditions
+    let totalConditions = 0;
+    for (const group of advancedSearchCriteria) {
+      if (group.conditions && Array.isArray(group.conditions)) {
+        // Only count conditions that have a field selected
+        totalConditions += group.conditions.filter(c => c.field).length;
       }
     }
 
-    return parts.length > 0 ? parts.join(', ') : null;
+    if (totalConditions === 0) {
+      return null;
+    }
+
+    // Return a simple representation
+    const conditionText = totalConditions === 1 ? 'critère' : 'critères';
+    const groupText = advancedSearchCriteria.length === 1 ? 'groupe' : 'groupes';
+
+    return `${totalConditions} ${conditionText} (${advancedSearchCriteria.length} ${groupText})`;
   }
 
   handleCancelSearch = () => {
@@ -891,6 +868,7 @@ class CrudList extends React.Component {
       // Advanced search modal
       showAdvancedSearch && data && e(AdvancedSearchModal, {
         structure: data.structure,
+        currentSearchCriteria: advancedSearchCriteria,
         onApply: this.handleApplyAdvancedSearch,
         onClose: this.handleCloseAdvancedSearch
       }),

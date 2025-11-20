@@ -404,23 +404,23 @@ class FieldSelectorUI {
     style.textContent = `
       .field-selector-ui {
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        background: white;
+        background: var(--color-bg-white);
         border-radius: 8px;
         box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         overflow: hidden;
       }
 
       .field-selector-header {
-        background: #f8f9fa;
+        background: var(--color-bg-section);
         padding: 15px;
-        border-bottom: 1px solid #dee2e6;
+        border-bottom: 1px solid var(--color-border);
       }
 
       .field-selector-title {
         margin: 0 0 10px 0;
         font-size: 16px;
         font-weight: 600;
-        color: #333;
+        color: var(--color-text-primary);
       }
 
       .field-selector-controls {
@@ -434,7 +434,7 @@ class FieldSelectorUI {
         align-items: center;
         gap: 8px;
         font-size: 14px;
-        color: #666;
+        color: var(--color-text-secondary);
         cursor: pointer;
         user-select: none;
       }
@@ -445,31 +445,31 @@ class FieldSelectorUI {
 
       .field-selector-breadcrumb {
         padding: 12px 15px;
-        background: #fff;
-        border-bottom: 1px solid #e9ecef;
+        background: var(--color-bg-white);
+        border-bottom: 1px solid var(--color-border);
         font-size: 14px;
         overflow-x: auto;
         white-space: nowrap;
       }
 
       .breadcrumb-item {
-        color: #007bff;
+        color: var(--color-primary);
         text-decoration: none;
         transition: color 0.2s;
       }
 
       .breadcrumb-item:hover {
-        color: #0056b3;
+        color: var(--color-primary-hover);
         text-decoration: underline;
       }
 
       .breadcrumb-item.active {
-        color: #6c757d;
+        color: var(--color-text-secondary);
         font-weight: 500;
       }
 
       .breadcrumb-separator {
-        color: #adb5bd;
+        color: var(--color-text-muted);
         margin: 0 8px;
       }
 
@@ -493,11 +493,11 @@ class FieldSelectorUI {
       .field-group-title {
         font-size: 12px;
         font-weight: 600;
-        color: #6c757d;
+        color: var(--color-text-secondary);
         text-transform: uppercase;
         letter-spacing: 0.5px;
         padding: 8px 10px;
-        background: #f8f9fa;
+        background: var(--color-bg-section);
         border-radius: 4px;
         margin-bottom: 5px;
       }
@@ -517,7 +517,7 @@ class FieldSelectorUI {
       }
 
       .field-item.selectable:hover {
-        background: #e7f3ff;
+        background: var(--color-bg-hover);
       }
 
       .field-item.navigable {
@@ -525,7 +525,7 @@ class FieldSelectorUI {
       }
 
       .field-item.navigable:hover {
-        background: #fff3cd;
+        background: var(--color-bg-hover);
       }
 
       .field-icon {
@@ -536,32 +536,32 @@ class FieldSelectorUI {
       .field-name {
         flex: 1;
         font-weight: 500;
-        color: #333;
+        color: var(--color-text-primary);
         font-size: 14px;
       }
 
       .field-type {
         font-size: 12px;
-        color: #6c757d;
-        background: #f8f9fa;
+        color: var(--color-text-secondary);
+        background: var(--color-bg-section);
         padding: 2px 8px;
         border-radius: 3px;
       }
 
       .field-arrow {
-        color: #adb5bd;
+        color: var(--color-text-muted);
         font-size: 18px;
         flex-shrink: 0;
       }
 
       .field-selector-selected {
         padding: 15px;
-        background: #f8f9fa;
-        border-top: 1px solid #dee2e6;
+        background: var(--color-bg-section);
+        border-top: 1px solid var(--color-border);
       }
 
       .no-selection {
-        color: #adb5bd;
+        color: var(--color-text-muted);
         font-size: 14px;
         text-align: center;
       }
@@ -571,19 +571,19 @@ class FieldSelectorUI {
       }
 
       .selected-label {
-        color: #6c757d;
+        color: var(--color-text-secondary);
         font-size: 12px;
         margin-bottom: 5px;
       }
 
       .selected-path {
-        color: #007bff;
+        color: var(--color-primary);
         font-weight: 500;
         margin-bottom: 5px;
       }
 
       .selected-type {
-        color: #6c757d;
+        color: var(--color-text-secondary);
         font-size: 13px;
       }
 

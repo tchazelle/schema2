@@ -339,3 +339,43 @@
   background-color: var(--color-bg-subtle);
   border-radius: var(--border-radius-circle);
 }
+
+/* Dark mode support for FullCalendar */
+[data-theme="dark"] .fc-col-header-cell {
+  background-color: var(--color-bg-section) !important;
+}
+
+[data-theme="dark"] .fc-scrollgrid {
+  border-color: var(--color-border) !important;
+}
+
+[data-theme="dark"] .fc-theme-standard td,
+[data-theme="dark"] .fc-theme-standard th {
+  border-color: var(--color-border) !important;
+}
+
+[data-theme="dark"] .fc-daygrid-day {
+  background-color: var(--color-bg-white) !important;
+}
+
+[data-theme="dark"] .fc-col-header-cell-cushion {
+  color: var(--color-text-primary) !important;
+}
+
+[data-theme="dark"] .fc-daygrid-day-number {
+  color: var(--color-text-primary) !important;
+}
+
+[data-theme="dark"] .fc .fc-button-primary {
+  background-color: var(--color-primary) !important;
+  border-color: var(--color-primary) !important;
+}
+
+[data-theme="dark"] .fc .fc-button-primary:hover {
+  background-color: var(--color-primary-hover) !important;
+  border-color: var(--color-primary-hover) !important;
+}
+
+[data-theme="dark"] .fc .fc-toolbar-title {
+  color: var(--color-text-primary) !important;
+}
