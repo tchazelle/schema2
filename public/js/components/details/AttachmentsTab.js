@@ -737,7 +737,180 @@ class AttachmentsTab extends React.Component {
               },
               onClick: () => this.handleOpenFullscreen(att, idx)
             },
-              this.renderPreview(att)
+              this.renderPreview(att),
+
+              // Three-dot menu button (top right of preview)
+              e('button', {
+                type: 'button',
+                className: 'btn-attachment-menu',
+                style: {
+                  position: 'absolute',
+                  top: '8px',
+                  right: '8px',
+                  width: '32px',
+                  height: '32px',
+                  backgroundColor: 'rgba(0, 0, 0, 0.6)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '18px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  zIndex: 10
+                },
+                onClick: (ev) => {
+                  ev.stopPropagation();
+                  this.toggleMenu(att.id);
+                }
+              }, '⋮'),
+
+              // Dropdown menu
+              this.state.showMenuId === att.id && e('div', {
+                ref: (el) => { this.menuRefs[att.id] = el; },
+                className: 'attachment-menu-dropdown',
+                style: {
+                  position: 'absolute',
+                  top: '48px',
+                  right: '8px',
+                  backgroundColor: 'white',
+                  border: '1px solid #ddd',
+                  borderRadius: '4px',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                  zIndex: 20,
+                  minWidth: '200px'
+                }
+              },
+                e('div', { style: { padding: '4px 0' } },
+                  // Edit image (only for images)
+                  att.previewType === 'image' && canUpload && e('button', {
+                    type: 'button',
+                    style: {
+                      width: '100%',
+                      padding: '10px 16px',
+                      backgroundColor: 'transparent',
+                      border: 'none',
+                      textAlign: 'left',
+                      cursor: 'pointer',
+                      fontSize: '14px',
+                      transition: 'background-color 0.2s'
+                    },
+                    onMouseEnter: (e) => e.target.style.backgroundColor = '#f5f5f5',
+                    onMouseLeave: (e) => e.target.style.backgroundColor = 'transparent',
+                    onClick: (ev) => {
+                      ev.stopPropagation();
+                      this.setState({ showMenuId: null });
+                      this.handleOpenImageEditor(att.id);
+                    }
+                  }, '✏️ Éditer l\'image'),
+
+                  // Download
+                  e('a', {
+                    href: att.downloadUrl,
+                    download: att.fileName,
+                    style: {
+                      display: 'block',
+                      width: '100%',
+                      padding: '10px 16px',
+                      backgroundColor: 'transparent',
+                      border: 'none',
+                      textAlign: 'left',
+                      cursor: 'pointer',
+                      fontSize: '14px',
+                      textDecoration: 'none',
+                      color: 'inherit',
+                      transition: 'background-color 0.2s'
+                    },
+                    onMouseEnter: (e) => e.target.style.backgroundColor = '#f5f5f5',
+                    onMouseLeave: (e) => e.target.style.backgroundColor = 'transparent',
+                    onClick: (ev) => {
+                      ev.stopPropagation();
+                      this.setState({ showMenuId: null });
+                    }
+                  }, '📥 Télécharger'),
+
+                  // Use as main image (only for images with image fields)
+                  (() => {
+                    const imageFields = this.getImageFields();
+                    if (att.previewType !== 'image' || imageFields.length === 0 || !canUpload) {
+                      return null;
+                    }
+
+                    return imageFields.map(field =>
+                      e('button', {
+                        key: field.name,
+                        type: 'button',
+                        style: {
+                          width: '100%',
+                          padding: '10px 16px',
+                          backgroundColor: 'transparent',
+                          border: 'none',
+                          textAlign: 'left',
+                          cursor: 'pointer',
+                          fontSize: '14px',
+                          transition: 'background-color 0.2s'
+                        },
+                        onMouseEnter: (e) => e.target.style.backgroundColor = '#f5f5f5',
+                        onMouseLeave: (e) => e.target.style.backgroundColor = 'transparent',
+                        onClick: (ev) => {
+                          ev.stopPropagation();
+                          this.handleUseAsMainImage(att.id, field.name);
+                        }
+                      }, `🖼️ Utiliser comme "${field.label}"`)
+                    );
+                  })(),
+
+                  // Edit metadata
+                  e('a', {
+                    href: `/_crud/Attachment/${att.id}?parent=${this.props.tableName}&parentId=${this.props.rowId}`,
+                    style: {
+                      display: 'block',
+                      width: '100%',
+                      padding: '10px 16px',
+                      backgroundColor: 'transparent',
+                      border: 'none',
+                      borderTop: '1px solid #eee',
+                      textAlign: 'left',
+                      cursor: 'pointer',
+                      fontSize: '14px',
+                      textDecoration: 'none',
+                      color: 'inherit',
+                      transition: 'background-color 0.2s'
+                    },
+                    onMouseEnter: (e) => e.target.style.backgroundColor = '#f5f5f5',
+                    onMouseLeave: (e) => e.target.style.backgroundColor = 'transparent',
+                    onClick: (ev) => {
+                      ev.stopPropagation();
+                      this.setState({ showMenuId: null });
+                    }
+                  }, '⚙️ Modifier les métadonnées'),
+
+                  // Delete
+                  canUpload && e('button', {
+                    type: 'button',
+                    style: {
+                      width: '100%',
+                      padding: '10px 16px',
+                      backgroundColor: 'transparent',
+                      border: 'none',
+                      borderTop: '1px solid #eee',
+                      textAlign: 'left',
+                      cursor: 'pointer',
+                      fontSize: '14px',
+                      color: '#dc3545',
+                      transition: 'background-color 0.2s'
+                    },
+                    onMouseEnter: (e) => e.target.style.backgroundColor = '#fee',
+                    onMouseLeave: (e) => e.target.style.backgroundColor = 'transparent',
+                    onClick: (ev) => {
+                      ev.stopPropagation();
+                      this.setState({ showMenuId: null });
+                      this.handleDelete(att.id, att.fileName);
+                    }
+                  }, '🗑️ Supprimer')
+                )
+              )
             ),
             // Info section (bottom)
             e('div', {
@@ -818,183 +991,7 @@ class AttachmentsTab extends React.Component {
                     }, `➕ Ajouter à "${field.label}"`)
                   )
                 );
-              })(),
-              // Three-dot menu button and dropdown
-              e('div', {
-                style: {
-                  position: 'relative',
-                  marginTop: '8px'
-                }
-              },
-                // Three-dot menu button
-                e('button', {
-                  type: 'button',
-                  className: 'btn-attachment-menu',
-                  style: {
-                    width: '100%',
-                    padding: '8px',
-                    backgroundColor: '#f8f9fa',
-                    border: '1px solid #dee2e6',
-                    borderRadius: '4px',
-                    cursor: 'pointer',
-                    fontSize: '16px',
-                    fontWeight: 'bold',
-                    transition: 'background-color 0.2s'
-                  },
-                  onMouseEnter: (e) => e.target.style.backgroundColor = '#e9ecef',
-                  onMouseLeave: (e) => e.target.style.backgroundColor = '#f8f9fa',
-                  onClick: (ev) => {
-                    ev.stopPropagation();
-                    this.toggleMenu(att.id);
-                  }
-                }, '⋮'),
-                // Dropdown menu
-                this.state.showMenuId === att.id && e('div', {
-                  ref: (el) => { this.menuRefs[att.id] = el; },
-                  className: 'attachment-menu-dropdown',
-                  style: {
-                    position: 'absolute',
-                    top: '100%',
-                    left: 0,
-                    right: 0,
-                    backgroundColor: 'white',
-                    border: '1px solid #ddd',
-                    borderRadius: '4px',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-                    zIndex: 100,
-                    marginTop: '4px'
-                  }
-                },
-                  e('div', { style: { padding: '4px 0' } },
-                    // Edit image (only for images)
-                    att.previewType === 'image' && canUpload && e('button', {
-                      type: 'button',
-                      style: {
-                        width: '100%',
-                        padding: '10px 16px',
-                        backgroundColor: 'transparent',
-                        border: 'none',
-                        textAlign: 'left',
-                        cursor: 'pointer',
-                        fontSize: '14px',
-                        transition: 'background-color 0.2s'
-                      },
-                      onMouseEnter: (e) => e.target.style.backgroundColor = '#f5f5f5',
-                      onMouseLeave: (e) => e.target.style.backgroundColor = 'transparent',
-                      onClick: (ev) => {
-                        ev.stopPropagation();
-                        this.setState({ showMenuId: null });
-                        this.handleOpenImageEditor(att.id);
-                      }
-                    }, '✏️ Éditer l\'image'),
-
-                    // Download
-                    e('a', {
-                      href: att.downloadUrl,
-                      download: att.fileName,
-                      style: {
-                        display: 'block',
-                        width: '100%',
-                        padding: '10px 16px',
-                        backgroundColor: 'transparent',
-                        border: 'none',
-                        textAlign: 'left',
-                        cursor: 'pointer',
-                        fontSize: '14px',
-                        textDecoration: 'none',
-                        color: 'inherit',
-                        transition: 'background-color 0.2s'
-                      },
-                      onMouseEnter: (e) => e.target.style.backgroundColor = '#f5f5f5',
-                      onMouseLeave: (e) => e.target.style.backgroundColor = 'transparent',
-                      onClick: (ev) => {
-                        ev.stopPropagation();
-                        this.setState({ showMenuId: null });
-                      }
-                    }, '📥 Télécharger'),
-
-                    // Use as main image (only for images with image fields)
-                    (() => {
-                      const imageFields = this.getImageFields();
-                      if (att.previewType !== 'image' || imageFields.length === 0 || !canUpload) {
-                        return null;
-                      }
-
-                      return imageFields.map(field =>
-                        e('button', {
-                          key: field.name,
-                          type: 'button',
-                          style: {
-                            width: '100%',
-                            padding: '10px 16px',
-                            backgroundColor: 'transparent',
-                            border: 'none',
-                            textAlign: 'left',
-                            cursor: 'pointer',
-                            fontSize: '14px',
-                            transition: 'background-color 0.2s'
-                          },
-                          onMouseEnter: (e) => e.target.style.backgroundColor = '#f5f5f5',
-                          onMouseLeave: (e) => e.target.style.backgroundColor = 'transparent',
-                          onClick: (ev) => {
-                            ev.stopPropagation();
-                            this.handleUseAsMainImage(att.id, field.name);
-                          }
-                        }, `🖼️ Utiliser comme "${field.label}"`)
-                      );
-                    })(),
-
-                    // Edit metadata
-                    e('a', {
-                      href: `/_crud/Attachment/${att.id}?parent=${this.props.tableName}&parentId=${this.props.rowId}`,
-                      style: {
-                        display: 'block',
-                        width: '100%',
-                        padding: '10px 16px',
-                        backgroundColor: 'transparent',
-                        border: 'none',
-                        borderTop: '1px solid #eee',
-                        textAlign: 'left',
-                        cursor: 'pointer',
-                        fontSize: '14px',
-                        textDecoration: 'none',
-                        color: 'inherit',
-                        transition: 'background-color 0.2s'
-                      },
-                      onMouseEnter: (e) => e.target.style.backgroundColor = '#f5f5f5',
-                      onMouseLeave: (e) => e.target.style.backgroundColor = 'transparent',
-                      onClick: (ev) => {
-                        ev.stopPropagation();
-                        this.setState({ showMenuId: null });
-                      }
-                    }, '⚙️ Modifier les métadonnées'),
-
-                    // Delete
-                    canUpload && e('button', {
-                      type: 'button',
-                      style: {
-                        width: '100%',
-                        padding: '10px 16px',
-                        backgroundColor: 'transparent',
-                        border: 'none',
-                        borderTop: '1px solid #eee',
-                        textAlign: 'left',
-                        cursor: 'pointer',
-                        fontSize: '14px',
-                        color: '#dc3545',
-                        transition: 'background-color 0.2s'
-                      },
-                      onMouseEnter: (e) => e.target.style.backgroundColor = '#fee',
-                      onMouseLeave: (e) => e.target.style.backgroundColor = 'transparent',
-                      onClick: (ev) => {
-                        ev.stopPropagation();
-                        this.setState({ showMenuId: null });
-                        this.handleDelete(att.id, att.fileName);
-                      }
-                    }, '🗑️ Supprimer')
-                  )
-                )
-              )
+              })()
             )
           ))
       )
