@@ -262,10 +262,27 @@ class ImageEditorService {
           }
         };
       } else {
-        // Create new attachment
-        const timestamp = Date.now();
-        outputFilename = `${baseFilename}_edited_${timestamp}.${outputFormat}`;
-        outputPath = path.join(path.dirname(inputPath), outputFilename);
+        // Create new attachment with version number
+        const uploadDir = path.dirname(inputPath);
+
+        // Always start with version number for edited attachments
+        // Find the next available version number
+        let version = 1;
+        outputFilename = `${baseFilename}_edited_v${version}.${outputFormat}`;
+        outputPath = path.join(uploadDir, outputFilename);
+
+        // Keep incrementing until we find an available version
+        while (true) {
+          try {
+            await fs.access(outputPath);
+            version++;
+            outputFilename = `${baseFilename}_edited_v${version}.${outputFormat}`;
+            outputPath = path.join(uploadDir, outputFilename);
+          } catch {
+            // This version doesn't exist, use it
+            break;
+          }
+        }
 
         // Apply transformations
         await this.applyTransformations(inputPath, outputPath, operations);

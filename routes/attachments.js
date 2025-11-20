@@ -376,4 +376,113 @@ router.delete('/attachments/:id', async (req, res) => {
   }
 });
 
+/**
+ * POST /_api/attachments/:id/copy-to-image-field
+ * Copy an attachment image to an image field of the parent row
+ * Body: { fieldName: "image" }
+ */
+router.post('/attachments/:id/copy-to-image-field', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { fieldName } = req.body;
+    const user = req.user;
+
+    if (!fieldName) {
+      return res.status(400).json({
+        success: false,
+        error: 'Le nom du champ image est requis (fieldName)'
+      });
+    }
+
+    // Get attachment
+    const attachment = await AttachmentService.getAttachmentById(id);
+    if (!attachment) {
+      return res.status(404).json({
+        success: false,
+        error: 'Attachment not found'
+      });
+    }
+
+    // Check if attachment is an image
+    if (!attachment.fileType.startsWith('image/')) {
+      return res.status(400).json({
+        success: false,
+        error: 'L\'attachment n\'est pas une image'
+      });
+    }
+
+    // Parse rowLink to get table and row ID
+    const [tableName, rowId] = attachment.rowLink.split('/');
+    if (!tableName || !rowId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Format rowLink invalide'
+      });
+    }
+
+    // Check if user has permission to update the parent row
+    if (!PermissionService.hasPermission(user, tableName, 'update')) {
+      return res.status(403).json(UIService.jsonError(UIService.messages.ACCESS_DENIED));
+    }
+
+    // Check if field exists and is an image field
+    const fieldDef = SchemaService.getFieldConfig(tableName, fieldName);
+    if (!fieldDef) {
+      return res.status(404).json({
+        success: false,
+        error: `Le champ ${fieldName} n'existe pas dans la table ${tableName}`
+      });
+    }
+
+    if (fieldDef.renderer !== 'image') {
+      return res.status(400).json({
+        success: false,
+        error: `Le champ ${fieldName} n'est pas un champ image`
+      });
+    }
+
+    // Copy file from storage/uploads to storage/images
+    const sourceFilePath = path.join(process.cwd(), 'storage', 'uploads', attachment.filePath);
+    const destinationDir = path.join(process.cwd(), 'storage', 'images', tableName, rowId);
+
+    // Create destination directory if it doesn't exist
+    await fs.mkdir(destinationDir, { recursive: true });
+
+    // Get filename and extension
+    const filename = path.basename(sourceFilePath);
+    const ext = path.extname(filename);
+    const baseName = path.basename(filename, ext);
+
+    // Create destination filename (use original filename or sanitize)
+    const destinationFilename = filename;
+    const destinationFilePath = path.join(destinationDir, destinationFilename);
+
+    // Copy file
+    await fs.copyFile(sourceFilePath, destinationFilePath);
+
+    // Build image URL for database
+    const imageUrl = `/_images/${tableName}/${rowId}/${destinationFilename}`;
+
+    // Update database field
+    const pool = require('../config/database');
+    await pool.query(
+      `UPDATE \`${tableName}\` SET ${fieldName} = ?, updatedAt = NOW() WHERE id = ?`,
+      [imageUrl, rowId]
+    );
+
+    res.json({
+      success: true,
+      message: 'Image copiée avec succès vers le champ image',
+      imageUrl: imageUrl
+    });
+
+  } catch (error) {
+    console.error('Error copying attachment to image field:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Erreur lors de la copie de l\'image'
+    });
+  }
+});
+
 module.exports = router;

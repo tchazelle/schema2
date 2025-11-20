@@ -28,13 +28,31 @@ class AttachmentsTab extends React.Component {
       dragOver: false,
       fullscreenAttachment: null,
       fullscreenIndex: -1,
-      editingImageId: null
+      editingImageId: null,
+      showMenuId: null // ID of attachment with open menu
     };
     this.fileInputRef = React.createRef();
+    this.menuRefs = {}; // Store refs for each attachment menu
   }
 
   async componentDidMount() {
     await this.loadAttachments();
+    // Add click listener to close menus when clicking outside
+    document.addEventListener('mousedown', this.handleClickOutside);
+  }
+
+  componentWillUnmount() {
+    document.removeEventListener('mousedown', this.handleClickOutside);
+  }
+
+  handleClickOutside = (event) => {
+    const { showMenuId } = this.state;
+    if (showMenuId && this.menuRefs[showMenuId]) {
+      const menuElement = this.menuRefs[showMenuId];
+      if (menuElement && !menuElement.contains(event.target)) {
+        this.setState({ showMenuId: null });
+      }
+    }
   }
 
   loadAttachments = async () => {
@@ -287,6 +305,66 @@ class AttachmentsTab extends React.Component {
         name: fieldName,
         label: field.label || fieldName
       }));
+  }
+
+  /**
+   * Get image fields from table structure
+   */
+  getImageFields = () => {
+    const { structure } = this.props;
+    if (!structure || !structure.fields) return [];
+
+    return Object.entries(structure.fields)
+      .filter(([fieldName, field]) =>
+        field && field.renderer === 'image'
+      )
+      .map(([fieldName, field]) => ({
+        name: fieldName,
+        label: field.label || fieldName
+      }));
+  }
+
+  /**
+   * Handle using attachment as main image
+   */
+  handleUseAsMainImage = async (attachmentId, fieldName) => {
+    const { tableName, rowId, onImageFieldUpdate } = this.props;
+
+    if (!confirm(`Utiliser cette image comme image principale pour le champ "${fieldName}" ?`)) {
+      return;
+    }
+
+    this.setState({ showMenuId: null });
+
+    try {
+      const response = await fetch(`/_api/attachments/${attachmentId}/copy-to-image-field`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fieldName })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        alert('✓ Image définie comme image principale');
+
+        // Notify parent component if callback provided
+        if (onImageFieldUpdate) {
+          onImageFieldUpdate(fieldName, data.imageUrl);
+        }
+      } else {
+        alert(`Erreur: ${data.error}`);
+      }
+    } catch (error) {
+      console.error('Error using as main image:', error);
+      alert('Erreur lors de la définition de l\'image principale');
+    }
+  }
+
+  toggleMenu = (attachmentId) => {
+    this.setState(prevState => ({
+      showMenuId: prevState.showMenuId === attachmentId ? null : attachmentId
+    }));
   }
 
   renderPreview(attachment) {
@@ -741,97 +819,180 @@ class AttachmentsTab extends React.Component {
                   )
                 );
               })(),
-              // Action buttons
+              // Three-dot menu button and dropdown
               e('div', {
                 style: {
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '8px',
+                  position: 'relative',
                   marginTop: '8px'
                 }
               },
-                // First row: Edit Image button (only for images)
-                att.previewType === 'image' && canUpload && e('button', {
-                  onClick: (ev) => {
-                    ev.stopPropagation();
-                    this.handleOpenImageEditor(att.id);
-                  },
-                  className: 'btn-edit-image',
+                // Three-dot menu button
+                e('button', {
+                  type: 'button',
+                  className: 'btn-attachment-menu',
                   style: {
-                    padding: '6px 12px',
-                    backgroundColor: '#17a2b8',
-                    color: 'white',
-                    border: 'none',
+                    width: '100%',
+                    padding: '8px',
+                    backgroundColor: '#f8f9fa',
+                    border: '1px solid #dee2e6',
                     borderRadius: '4px',
                     cursor: 'pointer',
-                    fontSize: '12px',
-                    fontWeight: '500',
-                    textAlign: 'center'
+                    fontSize: '16px',
+                    fontWeight: 'bold',
+                    transition: 'background-color 0.2s'
+                  },
+                  onMouseEnter: (e) => e.target.style.backgroundColor = '#e9ecef',
+                  onMouseLeave: (e) => e.target.style.backgroundColor = '#f8f9fa',
+                  onClick: (ev) => {
+                    ev.stopPropagation();
+                    this.toggleMenu(att.id);
                   }
-                }, '🖼️ Éditer l\'image'),
-                // Second row: Other buttons
-                e('div', {
+                }, '⋮'),
+                // Dropdown menu
+                this.state.showMenuId === att.id && e('div', {
+                  ref: (el) => { this.menuRefs[att.id] = el; },
+                  className: 'attachment-menu-dropdown',
                   style: {
-                    display: 'flex',
-                    gap: '8px'
+                    position: 'absolute',
+                    top: '100%',
+                    left: 0,
+                    right: 0,
+                    backgroundColor: 'white',
+                    border: '1px solid #ddd',
+                    borderRadius: '4px',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                    zIndex: 100,
+                    marginTop: '4px'
                   }
                 },
-                  // Edit metadata button
-                  e('a', {
-                    href: `/_crud/Attachment/${att.id}?parent=${this.props.tableName}&parentId=${this.props.rowId}`,
-                    className: 'btn-edit-card',
-                    style: {
-                      flex: 1,
-                      padding: '6px 12px',
-                      backgroundColor: '#6c757d',
-                      color: 'white',
-                      textDecoration: 'none',
-                      border: 'none',
-                      borderRadius: '4px',
-                      cursor: 'pointer',
-                      fontSize: '12px',
-                      textAlign: 'center',
-                      fontWeight: '500',
-                      display: 'inline-block'
-                    },
-                    onClick: (ev) => ev.stopPropagation()
-                  }, '✏️ Modifier'),
-                  // Download button
-                  e('a', {
-                    href: att.downloadUrl,
-                    download: att.fileName,
-                    className: 'btn-download-card',
-                    style: {
-                      flex: 1,
-                      padding: '6px 12px',
-                      backgroundColor: '#007bff',
-                      color: 'white',
-                      textDecoration: 'none',
-                      borderRadius: '4px',
-                      fontSize: '12px',
-                      textAlign: 'center',
-                      fontWeight: '500'
-                    },
-                    onClick: (ev) => ev.stopPropagation()
-                  }, '⬇️ Télécharger'),
-                  // Delete button
-                  canUpload && e('button', {
-                    onClick: (ev) => {
-                      ev.stopPropagation();
-                      this.handleDelete(att.id, att.fileName);
-                    },
-                    className: 'btn-delete-card',
-                    style: {
-                      padding: '6px 12px',
-                      backgroundColor: '#dc3545',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '4px',
-                      cursor: 'pointer',
-                      fontSize: '12px',
-                      fontWeight: '500'
-                    }
-                  }, '🗑️')
+                  e('div', { style: { padding: '4px 0' } },
+                    // Edit image (only for images)
+                    att.previewType === 'image' && canUpload && e('button', {
+                      type: 'button',
+                      style: {
+                        width: '100%',
+                        padding: '10px 16px',
+                        backgroundColor: 'transparent',
+                        border: 'none',
+                        textAlign: 'left',
+                        cursor: 'pointer',
+                        fontSize: '14px',
+                        transition: 'background-color 0.2s'
+                      },
+                      onMouseEnter: (e) => e.target.style.backgroundColor = '#f5f5f5',
+                      onMouseLeave: (e) => e.target.style.backgroundColor = 'transparent',
+                      onClick: (ev) => {
+                        ev.stopPropagation();
+                        this.setState({ showMenuId: null });
+                        this.handleOpenImageEditor(att.id);
+                      }
+                    }, '✏️ Éditer l\'image'),
+
+                    // Download
+                    e('a', {
+                      href: att.downloadUrl,
+                      download: att.fileName,
+                      style: {
+                        display: 'block',
+                        width: '100%',
+                        padding: '10px 16px',
+                        backgroundColor: 'transparent',
+                        border: 'none',
+                        textAlign: 'left',
+                        cursor: 'pointer',
+                        fontSize: '14px',
+                        textDecoration: 'none',
+                        color: 'inherit',
+                        transition: 'background-color 0.2s'
+                      },
+                      onMouseEnter: (e) => e.target.style.backgroundColor = '#f5f5f5',
+                      onMouseLeave: (e) => e.target.style.backgroundColor = 'transparent',
+                      onClick: (ev) => {
+                        ev.stopPropagation();
+                        this.setState({ showMenuId: null });
+                      }
+                    }, '📥 Télécharger'),
+
+                    // Use as main image (only for images with image fields)
+                    (() => {
+                      const imageFields = this.getImageFields();
+                      if (att.previewType !== 'image' || imageFields.length === 0 || !canUpload) {
+                        return null;
+                      }
+
+                      return imageFields.map(field =>
+                        e('button', {
+                          key: field.name,
+                          type: 'button',
+                          style: {
+                            width: '100%',
+                            padding: '10px 16px',
+                            backgroundColor: 'transparent',
+                            border: 'none',
+                            textAlign: 'left',
+                            cursor: 'pointer',
+                            fontSize: '14px',
+                            transition: 'background-color 0.2s'
+                          },
+                          onMouseEnter: (e) => e.target.style.backgroundColor = '#f5f5f5',
+                          onMouseLeave: (e) => e.target.style.backgroundColor = 'transparent',
+                          onClick: (ev) => {
+                            ev.stopPropagation();
+                            this.handleUseAsMainImage(att.id, field.name);
+                          }
+                        }, `🖼️ Utiliser comme "${field.label}"`)
+                      );
+                    })(),
+
+                    // Edit metadata
+                    e('a', {
+                      href: `/_crud/Attachment/${att.id}?parent=${this.props.tableName}&parentId=${this.props.rowId}`,
+                      style: {
+                        display: 'block',
+                        width: '100%',
+                        padding: '10px 16px',
+                        backgroundColor: 'transparent',
+                        border: 'none',
+                        borderTop: '1px solid #eee',
+                        textAlign: 'left',
+                        cursor: 'pointer',
+                        fontSize: '14px',
+                        textDecoration: 'none',
+                        color: 'inherit',
+                        transition: 'background-color 0.2s'
+                      },
+                      onMouseEnter: (e) => e.target.style.backgroundColor = '#f5f5f5',
+                      onMouseLeave: (e) => e.target.style.backgroundColor = 'transparent',
+                      onClick: (ev) => {
+                        ev.stopPropagation();
+                        this.setState({ showMenuId: null });
+                      }
+                    }, '⚙️ Modifier les métadonnées'),
+
+                    // Delete
+                    canUpload && e('button', {
+                      type: 'button',
+                      style: {
+                        width: '100%',
+                        padding: '10px 16px',
+                        backgroundColor: 'transparent',
+                        border: 'none',
+                        borderTop: '1px solid #eee',
+                        textAlign: 'left',
+                        cursor: 'pointer',
+                        fontSize: '14px',
+                        color: '#dc3545',
+                        transition: 'background-color 0.2s'
+                      },
+                      onMouseEnter: (e) => e.target.style.backgroundColor = '#fee',
+                      onMouseLeave: (e) => e.target.style.backgroundColor = 'transparent',
+                      onClick: (ev) => {
+                        ev.stopPropagation();
+                        this.setState({ showMenuId: null });
+                        this.handleDelete(att.id, att.fileName);
+                      }
+                    }, '🗑️ Supprimer')
+                  )
                 )
               )
             )
