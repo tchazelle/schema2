@@ -177,6 +177,18 @@ class TemplateService {
       ${this.htmlMenu(pages, accessibleTables, hasCalendarAccess)}
     </nav>`
   }
+
+  static htmlThemeToggle(user) {
+    return `<div class="theme-toggle-header">
+      <div class="theme-toggle-switch">
+        <input type="checkbox" id="themeToggle" onchange="toggleTheme()" ${user.theme === 'dark' ? 'checked' : ''}>
+        <span class="theme-toggle-slider">
+          <span class="theme-icon sun">☀️</span>
+          <span class="theme-icon moon">🌙</span>
+        </span>
+      </div>
+    </div>`
+  }
   static htmlUserMenu(user) {
   return `<div class="user-menu">
 
@@ -190,19 +202,6 @@ class TemplateService {
         <div class="user-info">
           ${user.email}<br>
           <strong>Rôles:</strong> ${user.allRoles.join(', ')}
-        </div>
-        <div class="divider"></div>
-        <div class="theme-toggle-container">
-          <label class="theme-toggle-label">
-            <span class="theme-label-text">Mode sombre</span>
-            <div class="theme-toggle-switch">
-              <input type="checkbox" id="themeToggle" onchange="toggleTheme()" ${user.theme === 'dark' ? 'checked' : ''}>
-              <span class="theme-toggle-slider">
-                <span class="theme-icon sun">☀️</span>
-                <span class="theme-icon moon">🌙</span>
-              </span>
-            </div>
-          </label>
         </div>
         <div class="divider"></div>
         <a href="/_debug/user">Mon profil</a>
@@ -252,6 +251,9 @@ class TemplateService {
       // Apply theme immediately
       document.documentElement.setAttribute('data-theme', newTheme);
 
+      // Save to localStorage for persistence across pages
+      localStorage.setItem('theme', newTheme);
+
       // Save to server
       try {
         const response = await fetch('/_user/theme', {
@@ -272,8 +274,18 @@ class TemplateService {
 
     // Initialize theme on page load
     (function initTheme() {
-      const theme = ${user.isAuthenticated && user.theme ? `'${user.theme}'` : "'light'"};
+      // Priority: localStorage > user preference > default
+      const savedTheme = localStorage.getItem('theme');
+      const userTheme = ${user.isAuthenticated && user.theme ? `'${user.theme}'` : "null"};
+      const theme = savedTheme || userTheme || 'light';
+
       document.documentElement.setAttribute('data-theme', theme);
+
+      // Update checkbox state to match theme
+      const checkbox = document.getElementById('themeToggle');
+      if (checkbox) {
+        checkbox.checked = (theme === 'dark');
+      }
     })();
     </script>`
   }
@@ -293,6 +305,7 @@ class TemplateService {
       ${this.htmlSidebar(pages, accessibleTables, hasCalendarAccess)}
       <div class="overlay" id="overlay" onclick="closeMenu()"></div>
       <div class="header-right">
+        ${this.htmlThemeToggle(user)}
         ${this.htmlUserMenu(user)}
         </div>
 
