@@ -177,6 +177,7 @@ module.exports = {
         telephone: { type: "varchar", renderer: "telephone" },
         password: { type: "varchar", grant: { "dev": ["read", "create", "update"], "admin": ["read", "create", "update"] } }, // Mot de passe en clair (phase de développement)
         roles: { type: "varchar" }, // Liste des rôles séparés par des espaces (ex: "@admin @dev")
+        theme: { type: "varchar", default: "light" }, // Préférence de thème: "light" ou "dark"
         isActive: { type: "integer", default: 1 }, // 0 ou 1 pour actif/inactif
         isSubscribed: { type: "integer", default: 0 }, // 0 ou 1 pour newsletter
         isSubscribedAt: { type: "datetime" }, // Date d'inscription à la newsletter

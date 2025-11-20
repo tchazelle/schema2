@@ -179,7 +179,7 @@ class TemplateService {
   }
   static htmlUserMenu(user) {
   return `<div class="user-menu">
-  
+
     <button class="user-button" onclick="toggleUserMenu()">
       <span class="user-icon">${user.abbreviation}</span>
       <span>${user.fullName}</span>
@@ -191,6 +191,20 @@ class TemplateService {
           ${user.email}<br>
           <strong>Rôles:</strong> ${user.allRoles.join(', ')}
         </div>
+        <div class="divider"></div>
+        <div class="theme-toggle-container">
+          <label class="theme-toggle-label">
+            <span class="theme-label-text">Mode sombre</span>
+            <div class="theme-toggle-switch">
+              <input type="checkbox" id="themeToggle" onchange="toggleTheme()" ${user.theme === 'dark' ? 'checked' : ''}>
+              <span class="theme-toggle-slider">
+                <span class="theme-icon sun">☀️</span>
+                <span class="theme-icon moon">🌙</span>
+              </span>
+            </div>
+          </label>
+        </div>
+        <div class="divider"></div>
         <a href="/_debug/user">Mon profil</a>
         <a href="/_debug/user/grant">Mes autorisations</a>
         <div class="divider"></div>
@@ -229,6 +243,38 @@ class TemplateService {
         dropdown.classList.remove('open');
       }
     });
+
+    // Dark mode toggle
+    async function toggleTheme() {
+      const checkbox = document.getElementById('themeToggle');
+      const newTheme = checkbox.checked ? 'dark' : 'light';
+
+      // Apply theme immediately
+      document.documentElement.setAttribute('data-theme', newTheme);
+
+      // Save to server
+      try {
+        const response = await fetch('/_user/theme', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ theme: newTheme })
+        });
+
+        if (!response.ok) {
+          console.error('Failed to save theme preference');
+        }
+      } catch (error) {
+        console.error('Error saving theme:', error);
+      }
+    }
+
+    // Initialize theme on page load
+    (function initTheme() {
+      const theme = ${user.isAuthenticated && user.theme ? `'${user.theme}'` : "'light'"};
+      document.documentElement.setAttribute('data-theme', theme);
+    })();
     </script>`
   }
 

@@ -79,4 +79,35 @@ router.get('/me', (req, res) => {
   res.json(UIService.jsonSuccess({ user: req.user }));
 });
 
+/**
+ * PUT /auth/theme
+ * Met à jour la préférence de thème de l'utilisateur
+ */
+router.put('/theme', async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json(UIService.jsonError('Non authentifié'));
+    }
+
+    const { theme } = req.body;
+
+    // Valider le thème
+    if (!theme || !['light', 'dark'].includes(theme)) {
+      return res.status(400).json(UIService.jsonError('Thème invalide. Utilisez "light" ou "dark"'));
+    }
+
+    // Mettre à jour la préférence dans la base de données
+    await pool.query(
+      'UPDATE Person SET theme = ? WHERE id = ?',
+      [theme, req.user.id]
+    );
+
+    res.json(UIService.jsonSuccess({ theme }, 'Préférence de thème mise à jour'));
+
+  } catch (error) {
+    console.error('Erreur lors de la mise à jour du thème:', error);
+    res.status(500).json(UIService.jsonError('Erreur serveur lors de la mise à jour du thème'));
+  }
+});
+
 module.exports = router;
