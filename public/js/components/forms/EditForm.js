@@ -799,6 +799,20 @@ class EditForm extends React.Component {
             const currentValue = this.state.formData[fieldName] || '';
             const newValue = currentValue + (currentValue ? '\n\n' : '') + markdownLink;
             this.handleFieldChange(fieldName, newValue);
+          },
+          onImageFieldUpdate: (fieldName, imageUrl) => {
+            // Update formData immediately to show the new image
+            this.setState(prev => ({
+              formData: {
+                ...prev.formData,
+                [fieldName]: imageUrl
+              }
+            }));
+
+            // Notify parent to refresh
+            if (this.props.onUpdate) {
+              this.props.onUpdate();
+            }
           }
         })
       )
