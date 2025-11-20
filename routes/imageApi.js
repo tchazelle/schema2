@@ -389,6 +389,84 @@ router.get('/:table/:id/image/:field/preview', async (req, res) => {
 });
 
 /**
+ * GET /_api/:table/:id/image/:field/versions
+ * List all versions of an image
+ */
+router.get('/:table/:id/image/:field/versions', async (req, res) => {
+  try {
+    const { table: tableParam, id, field } = req.params;
+    const user = req.user;
+
+    // Normalize table name
+    const table = SchemaService.getTableName(tableParam);
+    if (!table) {
+      return res.status(404).json({
+        success: false,
+        error: 'Table not found'
+      });
+    }
+
+    // Get versions
+    const versions = await ImageService.listImageVersions(table, id, field, user);
+
+    res.json({
+      success: true,
+      versions: versions
+    });
+  } catch (error) {
+    console.error('Error listing image versions:', error);
+    res.status(error.message === 'Permission denied' ? 403 : 500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
+ * POST /_api/:table/:id/image/:field/version
+ * Switch to a specific version of an image
+ * Body: { filename: "image_v2.jpg" }
+ */
+router.post('/:table/:id/image/:field/version', async (req, res) => {
+  try {
+    const { table: tableParam, id, field } = req.params;
+    const { filename } = req.body;
+    const user = req.user;
+
+    // Normalize table name
+    const table = SchemaService.getTableName(tableParam);
+    if (!table) {
+      return res.status(404).json({
+        success: false,
+        error: 'Table not found'
+      });
+    }
+
+    if (!filename) {
+      return res.status(400).json({
+        success: false,
+        error: 'Filename is required'
+      });
+    }
+
+    // Switch to version
+    const imageUrl = await ImageService.switchToVersion(table, id, field, filename, user);
+
+    res.json({
+      success: true,
+      message: 'Version switched successfully',
+      imageUrl: imageUrl
+    });
+  } catch (error) {
+    console.error('Error switching version:', error);
+    res.status(error.message === 'Permission denied' ? 403 : 500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
  * GET /_api/:table/:id/image/:field/download
  * Download image from field
  */

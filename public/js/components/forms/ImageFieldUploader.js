@@ -4,8 +4,11 @@
  * Handles image upload for image fields in forms.
  * Features:
  * - Display current image with preview
- * - Upload new image
- * - Delete image
+ * - Upload new image with versioning
+ * - Three-dot menu for actions
+ * - Edit image with Sharp transformations
+ * - Download image
+ * - Switch between versions
  * - Drag and drop support
  *
  * Dependencies: React
@@ -18,15 +21,57 @@ class ImageFieldUploader extends React.Component {
       uploading: false,
       dragOver: false,
       previewUrl: props.value || null,
-      showEditor: false
+      showEditor: false,
+      showMenu: false,
+      showVersions: false,
+      versions: []
     };
     this.fileInputRef = React.createRef();
+    this.menuRef = React.createRef();
+  }
+
+  componentDidMount() {
+    // Add click listener to close menu when clicking outside
+    document.addEventListener('mousedown', this.handleClickOutside);
+
+    // Load versions if there's an image
+    if (this.state.previewUrl) {
+      this.loadVersions();
+    }
+  }
+
+  componentWillUnmount() {
+    document.removeEventListener('mousedown', this.handleClickOutside);
   }
 
   componentDidUpdate(prevProps) {
     // Update preview if value changes externally
     if (prevProps.value !== this.props.value) {
       this.setState({ previewUrl: this.props.value });
+      if (this.props.value) {
+        this.loadVersions();
+      }
+    }
+  }
+
+  handleClickOutside = (event) => {
+    if (this.menuRef.current && !this.menuRef.current.contains(event.target)) {
+      this.setState({ showMenu: false, showVersions: false });
+    }
+  }
+
+  loadVersions = async () => {
+    const { tableName, rowId, fieldName } = this.props;
+
+    try {
+      const response = await fetch(`/_api/${tableName}/${rowId}/image/${fieldName}/versions`);
+      const data = await response.json();
+
+      if (data.success) {
+        this.setState({ versions: data.versions });
+      }
+    } catch (error) {
+      console.error('Error loading versions:', error);
     }
   }
 
@@ -48,7 +93,7 @@ class ImageFieldUploader extends React.Component {
 
     const { tableName, rowId, fieldName, onChange } = this.props;
 
-    this.setState({ uploading: true });
+    this.setState({ uploading: true, showMenu: false });
 
     try {
       // Create form data
@@ -72,6 +117,9 @@ class ImageFieldUploader extends React.Component {
           onChange(data.imageUrl);
         }
 
+        // Reload versions
+        await this.loadVersions();
+
         // Show success feedback
         alert('✓ Image uploadée avec succès');
       } else {
@@ -93,6 +141,8 @@ class ImageFieldUploader extends React.Component {
 
     const { tableName, rowId, fieldName, onChange } = this.props;
 
+    this.setState({ showMenu: false });
+
     try {
       const response = await fetch(`/_api/${tableName}/${rowId}/image/${fieldName}`, {
         method: 'DELETE'
@@ -102,7 +152,7 @@ class ImageFieldUploader extends React.Component {
 
       if (data.success) {
         // Clear preview
-        this.setState({ previewUrl: null });
+        this.setState({ previewUrl: null, versions: [] });
 
         // Notify parent
         if (onChange) {
@@ -147,13 +197,14 @@ class ImageFieldUploader extends React.Component {
     const { tableName, rowId, fieldName } = this.props;
     const downloadUrl = `/_api/${tableName}/${rowId}/image/${fieldName}/download`;
     window.open(downloadUrl, '_blank');
+    this.setState({ showMenu: false });
   }
 
   handleEdit = () => {
-    this.setState({ showEditor: true });
+    this.setState({ showEditor: true, showMenu: false });
   }
 
-  handleEditorSave = (result) => {
+  handleEditorSave = async (result) => {
     const { onChange } = this.props;
 
     // Update preview with new image URL
@@ -168,6 +219,9 @@ class ImageFieldUploader extends React.Component {
         onChange(result.imageUrl);
       }
 
+      // Reload versions
+      await this.loadVersions();
+
       // Show success feedback
       alert('✓ Image modifiée avec succès');
     }
@@ -177,8 +231,60 @@ class ImageFieldUploader extends React.Component {
     this.setState({ showEditor: false });
   }
 
+  handleSwitchVersion = async (filename) => {
+    if (!confirm(`Utiliser la version "${filename}" ?`)) return;
+
+    const { tableName, rowId, fieldName, onChange } = this.props;
+
+    this.setState({ showMenu: false, showVersions: false });
+
+    try {
+      const response = await fetch(`/_api/${tableName}/${rowId}/image/${fieldName}/version`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ filename })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Update preview
+        this.setState({ previewUrl: data.imageUrl });
+
+        // Notify parent
+        if (onChange) {
+          onChange(data.imageUrl);
+        }
+
+        // Reload versions
+        await this.loadVersions();
+
+        // Show success feedback
+        alert('✓ Version changée avec succès');
+      } else {
+        alert(`Erreur: ${data.error}`);
+      }
+    } catch (error) {
+      console.error('Error switching version:', error);
+      alert('Erreur lors du changement de version');
+    }
+  }
+
+  toggleMenu = () => {
+    this.setState(prevState => ({
+      showMenu: !prevState.showMenu,
+      showVersions: false
+    }));
+  }
+
+  toggleVersions = () => {
+    this.setState(prevState => ({ showVersions: !prevState.showVersions }));
+  }
+
   render() {
-    const { previewUrl, uploading, dragOver, showEditor } = this.state;
+    const { previewUrl, uploading, dragOver, showEditor, showMenu, showVersions, versions } = this.state;
     const { disabled, tableName, rowId, fieldName } = this.props;
 
     return e('div', {
@@ -191,7 +297,8 @@ class ImageFieldUploader extends React.Component {
         border: '2px dashed ' + (dragOver ? '#007bff' : '#ddd'),
         borderRadius: '8px',
         backgroundColor: dragOver ? '#f0f8ff' : '#fafafa',
-        transition: 'all 0.3s'
+        transition: 'all 0.3s',
+        position: 'relative'
       },
       onDragOver: this.handleDragOver,
       onDragLeave: this.handleDragLeave,
@@ -208,7 +315,8 @@ class ImageFieldUploader extends React.Component {
           maxHeight: '400px',
           backgroundColor: '#fff',
           borderRadius: '4px',
-          overflow: 'hidden'
+          overflow: 'hidden',
+          position: 'relative'
         }
       },
         e('img', {
@@ -221,114 +329,235 @@ class ImageFieldUploader extends React.Component {
             cursor: 'pointer'
           },
           onClick: () => window.open(previewUrl, '_blank')
-        })
-      ),
-
-      // Upload/Delete buttons
-      e('div', {
-        className: 'image-field-controls',
-        style: {
-          display: 'flex',
-          gap: '8px',
-          flexWrap: 'wrap'
-        }
-      },
-        // Upload button
-        e('button', {
-          type: 'button',
-          className: 'btn-upload-image',
-          style: {
-            flex: 1,
-            padding: '8px 16px',
-            backgroundColor: '#007bff',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: disabled || uploading ? 'not-allowed' : 'pointer',
-            fontSize: '14px',
-            fontWeight: '500',
-            opacity: disabled || uploading ? 0.6 : 1
-          },
-          onClick: () => !disabled && !uploading && this.fileInputRef.current && this.fileInputRef.current.click(),
-          disabled: disabled || uploading
-        },
-          uploading ? '⏳ Upload en cours...' : (previewUrl ? '🖼️ Changer l\'image' : '📎 Ajouter une image')
-        ),
-
-        // Hidden file input
-        e('input', {
-          ref: this.fileInputRef,
-          type: 'file',
-          accept: 'image/jpeg,image/jpg,image/png,image/gif,image/webp,image/svg+xml',
-          style: { display: 'none' },
-          onChange: (e) => {
-            const file = e.target.files[0];
-            if (file) {
-              this.handleFileSelect(file);
-            }
-          }
         }),
 
-        // Edit button (only show if there's an image)
-        previewUrl && e('button', {
+        // Three-dot menu button (top right of image)
+        e('button', {
           type: 'button',
-          className: 'btn-edit-image',
+          className: 'btn-image-menu',
           style: {
-            padding: '8px 16px',
-            backgroundColor: '#17a2b8',
+            position: 'absolute',
+            top: '8px',
+            right: '8px',
+            width: '32px',
+            height: '32px',
+            backgroundColor: 'rgba(0, 0, 0, 0.6)',
             color: 'white',
             border: 'none',
             borderRadius: '4px',
-            cursor: disabled ? 'not-allowed' : 'pointer',
-            fontSize: '14px',
-            fontWeight: '500',
-            opacity: disabled ? 0.6 : 1
+            cursor: 'pointer',
+            fontSize: '18px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 10
           },
-          onClick: this.handleEdit,
+          onClick: (e) => {
+            e.stopPropagation();
+            this.toggleMenu();
+          },
           disabled: disabled
-        }, '🖼️ Éditer'),
+        }, '⋮'),
 
-        // Download button (only show if there's an image)
-        previewUrl && e('button', {
-          type: 'button',
-          className: 'btn-download-image',
+        // Dropdown menu
+        showMenu && e('div', {
+          ref: this.menuRef,
+          className: 'image-menu-dropdown',
           style: {
-            padding: '8px 16px',
-            backgroundColor: '#28a745',
-            color: 'white',
-            border: 'none',
+            position: 'absolute',
+            top: '48px',
+            right: '8px',
+            backgroundColor: 'white',
+            border: '1px solid #ddd',
             borderRadius: '4px',
-            cursor: disabled ? 'not-allowed' : 'pointer',
-            fontSize: '14px',
-            fontWeight: '500',
-            opacity: disabled ? 0.6 : 1
-          },
-          onClick: this.handleDownload,
-          disabled: disabled
-        }, '📥 Télécharger'),
+            boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+            zIndex: 20,
+            minWidth: '200px'
+          }
+        },
+          e('div', { style: { padding: '4px 0' } },
+            // Replace image
+            e('button', {
+              type: 'button',
+              style: {
+                width: '100%',
+                padding: '10px 16px',
+                backgroundColor: 'transparent',
+                border: 'none',
+                textAlign: 'left',
+                cursor: 'pointer',
+                fontSize: '14px',
+                transition: 'background-color 0.2s'
+              },
+              onMouseEnter: (e) => e.target.style.backgroundColor = '#f5f5f5',
+              onMouseLeave: (e) => e.target.style.backgroundColor = 'transparent',
+              onClick: () => {
+                this.setState({ showMenu: false });
+                this.fileInputRef.current && this.fileInputRef.current.click();
+              }
+            }, '🔄 Remplacer l\'image'),
 
-        // Delete button (only show if there's an image)
-        previewUrl && e('button', {
-          type: 'button',
-          className: 'btn-delete-image',
-          style: {
-            padding: '8px 16px',
-            backgroundColor: '#dc3545',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: disabled ? 'not-allowed' : 'pointer',
-            fontSize: '14px',
-            fontWeight: '500',
-            opacity: disabled ? 0.6 : 1
-          },
-          onClick: this.handleDelete,
-          disabled: disabled
-        }, '🗑️ Supprimer')
+            // Edit image
+            e('button', {
+              type: 'button',
+              style: {
+                width: '100%',
+                padding: '10px 16px',
+                backgroundColor: 'transparent',
+                border: 'none',
+                textAlign: 'left',
+                cursor: 'pointer',
+                fontSize: '14px',
+                transition: 'background-color 0.2s'
+              },
+              onMouseEnter: (e) => e.target.style.backgroundColor = '#f5f5f5',
+              onMouseLeave: (e) => e.target.style.backgroundColor = 'transparent',
+              onClick: this.handleEdit
+            }, '✏️ Éditer l\'image'),
+
+            // Download image
+            e('button', {
+              type: 'button',
+              style: {
+                width: '100%',
+                padding: '10px 16px',
+                backgroundColor: 'transparent',
+                border: 'none',
+                textAlign: 'left',
+                cursor: 'pointer',
+                fontSize: '14px',
+                transition: 'background-color 0.2s'
+              },
+              onMouseEnter: (e) => e.target.style.backgroundColor = '#f5f5f5',
+              onMouseLeave: (e) => e.target.style.backgroundColor = 'transparent',
+              onClick: this.handleDownload
+            }, '📥 Télécharger l\'image'),
+
+            // Use another version (only if multiple versions exist)
+            versions.length > 1 && e('button', {
+              type: 'button',
+              style: {
+                width: '100%',
+                padding: '10px 16px',
+                backgroundColor: 'transparent',
+                border: 'none',
+                textAlign: 'left',
+                cursor: 'pointer',
+                fontSize: '14px',
+                transition: 'background-color 0.2s',
+                borderTop: '1px solid #eee'
+              },
+              onMouseEnter: (e) => e.target.style.backgroundColor = '#f5f5f5',
+              onMouseLeave: (e) => e.target.style.backgroundColor = 'transparent',
+              onClick: this.toggleVersions
+            }, `📋 Récupérer une autre version ${showVersions ? '▲' : '▼'}`),
+
+            // Version list (if expanded)
+            showVersions && versions.length > 1 && e('div', {
+              style: {
+                maxHeight: '200px',
+                overflowY: 'auto',
+                backgroundColor: '#f9f9f9',
+                borderTop: '1px solid #eee'
+              }
+            },
+              versions.map((version, index) =>
+                e('button', {
+                  key: index,
+                  type: 'button',
+                  style: {
+                    width: '100%',
+                    padding: '8px 24px',
+                    backgroundColor: version.isCurrent ? '#e3f2fd' : 'transparent',
+                    border: 'none',
+                    textAlign: 'left',
+                    cursor: version.isCurrent ? 'default' : 'pointer',
+                    fontSize: '13px',
+                    transition: 'background-color 0.2s',
+                    fontWeight: version.isCurrent ? 'bold' : 'normal'
+                  },
+                  onMouseEnter: (e) => {
+                    if (!version.isCurrent) e.target.style.backgroundColor = '#e0e0e0';
+                  },
+                  onMouseLeave: (e) => {
+                    if (!version.isCurrent) e.target.style.backgroundColor = 'transparent';
+                  },
+                  onClick: () => !version.isCurrent && this.handleSwitchVersion(version.filename),
+                  disabled: version.isCurrent
+                },
+                  e('div', { style: { marginBottom: '2px' } },
+                    version.isCurrent ? '✓ ' : '',
+                    version.filename
+                  ),
+                  e('div', { style: { fontSize: '11px', color: '#666' } },
+                    version.sizeFormatted,
+                    ' • ',
+                    new Date(version.modifiedAt).toLocaleString('fr-FR')
+                  )
+                )
+              )
+            ),
+
+            // Delete image (at bottom with separator)
+            e('button', {
+              type: 'button',
+              style: {
+                width: '100%',
+                padding: '10px 16px',
+                backgroundColor: 'transparent',
+                border: 'none',
+                borderTop: '1px solid #eee',
+                textAlign: 'left',
+                cursor: 'pointer',
+                fontSize: '14px',
+                color: '#dc3545',
+                transition: 'background-color 0.2s'
+              },
+              onMouseEnter: (e) => e.target.style.backgroundColor = '#fee',
+              onMouseLeave: (e) => e.target.style.backgroundColor = 'transparent',
+              onClick: this.handleDelete
+            }, '🗑️ Supprimer l\'image')
+          )
+        )
       ),
 
-      // Help text
-      e('div', {
+      // Upload button (only show if no image)
+      !previewUrl && e('button', {
+        type: 'button',
+        className: 'btn-upload-image',
+        style: {
+          padding: '12px 16px',
+          backgroundColor: '#007bff',
+          color: 'white',
+          border: 'none',
+          borderRadius: '4px',
+          cursor: disabled || uploading ? 'not-allowed' : 'pointer',
+          fontSize: '14px',
+          fontWeight: '500',
+          opacity: disabled || uploading ? 0.6 : 1
+        },
+        onClick: () => !disabled && !uploading && this.fileInputRef.current && this.fileInputRef.current.click(),
+        disabled: disabled || uploading
+      },
+        uploading ? '⏳ Upload en cours...' : '📎 Ajouter une image'
+      ),
+
+      // Hidden file input
+      e('input', {
+        ref: this.fileInputRef,
+        type: 'file',
+        accept: 'image/jpeg,image/jpg,image/png,image/gif,image/webp,image/svg+xml',
+        style: { display: 'none' },
+        onChange: (e) => {
+          const file = e.target.files[0];
+          if (file) {
+            this.handleFileSelect(file);
+          }
+        }
+      }),
+
+      // Help text (only show when no image)
+      !previewUrl && e('div', {
         className: 'image-field-help',
         style: {
           fontSize: '12px',
