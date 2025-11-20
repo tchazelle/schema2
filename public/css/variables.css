@@ -19,8 +19,8 @@
   --color-primary-light: #80bdff;
 
   /* Legacy aliases */
-  --color-primary-active: #004085;
-  --color-primary-bg: #e7f5ff;
+  --color-primary-active: var(--color-primary-hover);
+  --color-primary-bg: var(--color-primary-light);
 
 
   /* ========================================
@@ -38,9 +38,9 @@
   --color-info: #0066cc;
 
   /* Legacy aliases */
-  --color-success-hover: #218838;
-  --color-success-border: #c3e6cb;
-  --color-error-border: #f5c6cb;
+  --color-success-hover: var(--color-success);
+  --color-success-border: var(--color-success-bg);
+  --color-error-border: var(--color-error-bg);
 
 
   /* ========================================
@@ -52,10 +52,10 @@
   --color-text-muted: #adb5bd;
 
   /* Legacy aliases */
-  --color-text-heading: #333;
-  --color-text-label: #8b8a9e;
+  --color-text-heading: var(--color-text-primary);
+  --color-text-label: var(--color-text-secondary);
   --color-text-placeholder: var(--color-text-muted);
-  --color-text-empty: #999;
+  --color-text-empty: var(--color-text-muted);
 
 
   /* ========================================
@@ -66,9 +66,9 @@
   --color-border-input: #ced4da;
 
   /* Legacy aliases */
-  --color-border-light: #e0e0e0;
-  --color-border-hover: #adb5bd;
-  --color-border-card: #ddd;
+  --color-border-light: var(--color-border);
+  --color-border-hover: var(--color-text-muted);
+  --color-border-card: var(--color-border);
 
 
   /* ========================================
@@ -81,8 +81,8 @@
   --color-bg-white: #ffffff;
 
   /* Legacy aliases */
-  --color-bg-subtle: #f0f0f0;
-  --color-bg-card: #fafafa;
+  --color-bg-subtle: var(--color-bg-page);
+  --color-bg-card: var(--color-bg-section);
 
 
   /* ========================================

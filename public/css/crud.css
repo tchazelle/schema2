@@ -1652,7 +1652,12 @@ a.modal-subtitle:hover {
 }
 
 .fullscreen-editor-preview.markdown iframe {
+  display: block;
+  margin: 0 auto 1em;
   max-width: 100%;
+  aspect-ratio: 16 / 9;
+  width: 100%;
+  height: auto;
 }
 
 /* Fullscreen button in textarea fields */
