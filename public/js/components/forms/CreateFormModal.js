@@ -229,7 +229,7 @@ class CreateFormModal extends React.Component {
   }
 
   autoSaveField = async (fieldName, value) => {
-    const { tableName } = this.props;
+    const { tableName, onSuccess } = this.props;
     const { createdRecordId } = this.state;
 
     this.setState({ saveStatus: 'saving' });
@@ -245,6 +245,11 @@ class CreateFormModal extends React.Component {
 
       if (data.success) {
         this.setState({ saveStatus: 'saved', errors: {} });
+
+        // Call onSuccess to refresh parent list
+        if (onSuccess) {
+          onSuccess(createdRecordId);
+        }
 
         // Hide success indicator after 2 seconds
         setTimeout(() => {
@@ -372,7 +377,7 @@ class CreateFormModal extends React.Component {
   }
 
   autoSaveDateRange = async (startFieldName, endFieldName, startValue, endValue) => {
-    const { tableName } = this.props;
+    const { tableName, onSuccess } = this.props;
     const { createdRecordId } = this.state;
 
     this.setState({ saveStatus: 'saving' });
@@ -391,6 +396,11 @@ class CreateFormModal extends React.Component {
 
       if (data.success) {
         this.setState({ saveStatus: 'saved', errors: {} });
+
+        // Call onSuccess to refresh parent list
+        if (onSuccess) {
+          onSuccess(createdRecordId);
+        }
 
         // Hide success indicator after 2 seconds
         setTimeout(() => {
