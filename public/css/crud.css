@@ -1409,3 +1409,224 @@ a.modal-subtitle:hover {
   max-width: 100%;
   height: auto;
 }
+
+/* ========================================
+   FULLSCREEN TEXT EDITOR
+   ======================================== */
+
+/* Fullscreen overlay */
+.fullscreen-editor-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.95);
+  z-index: 10000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: var(--space-lg);
+}
+
+/* Main container */
+.fullscreen-editor-container {
+  width: 100%;
+  max-width: 1400px;
+  height: 90vh;
+  background: var(--color-bg-white);
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--shadow-xl);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Header */
+.fullscreen-editor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-lg) var(--space-xl);
+  border-bottom: var(--border-width-medium) solid var(--color-border);
+  background: var(--color-bg-section);
+  flex-shrink: 0;
+}
+
+.fullscreen-editor-title-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.fullscreen-editor-title {
+  margin: 0;
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.fullscreen-editor-stats {
+  font-size: var(--font-size-13);
+  color: var(--color-text-muted);
+}
+
+.fullscreen-editor-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.btn-preview {
+  padding: var(--space-sm) var(--space-lg);
+  background: var(--color-bg-white);
+  border: var(--border-width-thin) solid var(--color-border);
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-base);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-preview:hover {
+  background: var(--color-bg-hover);
+  border-color: var(--color-primary-light);
+}
+
+.btn-preview.active {
+  background: var(--color-primary);
+  color: var(--color-bg-white);
+  border-color: var(--color-primary);
+}
+
+.fullscreen-editor-close {
+  background: none;
+  border: none;
+  font-size: var(--font-size-xl);
+  cursor: pointer;
+  color: var(--color-text-muted);
+  padding: var(--space-sm);
+  transition: color 0.2s;
+}
+
+.fullscreen-editor-close:hover {
+  color: var(--color-error);
+}
+
+/* Content area */
+.fullscreen-editor-content {
+  flex: 1;
+  padding: var(--space-xl);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.fullscreen-editor-textarea {
+  width: 100%;
+  height: 100%;
+  border: var(--border-width-thin) solid var(--color-border-input);
+  border-radius: var(--border-radius-sm);
+  padding: var(--space-lg);
+  font-size: var(--font-size-lg);
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  line-height: 1.6;
+  resize: none;
+  outline: none;
+}
+
+.fullscreen-editor-textarea:focus {
+  border-color: var(--color-primary-light);
+  box-shadow: var(--shadow-focus);
+}
+
+/* Preview area */
+.fullscreen-editor-preview {
+  width: 100%;
+  height: 100%;
+  border: var(--border-width-thin) solid var(--color-border-input);
+  border-radius: var(--border-radius-sm);
+  padding: var(--space-xl);
+  font-size: var(--font-size-base);
+  line-height: 1.6;
+  overflow-y: auto;
+  background: var(--color-bg-white);
+}
+
+.fullscreen-editor-preview h1 {
+  font-size: var(--font-size-2xl);
+  margin-bottom: var(--space-md);
+  font-weight: var(--font-weight-bold);
+}
+
+.fullscreen-editor-preview h2 {
+  font-size: var(--font-size-xl);
+  margin-bottom: var(--space-md);
+  font-weight: var(--font-weight-semibold);
+}
+
+.fullscreen-editor-preview h3 {
+  font-size: var(--font-size-lg);
+  margin-bottom: var(--space-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+.fullscreen-editor-preview code {
+  background-color: var(--color-bg-section);
+  padding: 0.2em 0.4em;
+  border-radius: 3px;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 0.9em;
+}
+
+/* Footer */
+.fullscreen-editor-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-lg) var(--space-xl);
+  border-top: var(--border-width-medium) solid var(--color-border);
+  background: var(--color-bg-section);
+  flex-shrink: 0;
+}
+
+.fullscreen-editor-footer-left {
+  flex: 1;
+}
+
+.fullscreen-editor-hint {
+  font-size: var(--font-size-13);
+  color: var(--color-text-muted);
+}
+
+.fullscreen-editor-footer-right {
+  display: flex;
+  gap: var(--space-md);
+}
+
+/* Fullscreen button in textarea fields */
+.textarea-with-fullscreen {
+  position: relative;
+}
+
+.btn-fullscreen-edit {
+  position: absolute;
+  top: var(--space-sm);
+  right: var(--space-sm);
+  background: var(--color-bg-white);
+  border: var(--border-width-thin) solid var(--color-border);
+  border-radius: var(--border-radius-sm);
+  padding: var(--space-xs) var(--space-sm);
+  font-size: var(--font-size-13);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  transition: all 0.2s;
+  opacity: 0.7;
+}
+
+.btn-fullscreen-edit:hover {
+  opacity: 1;
+  background: var(--color-bg-hover);
+  border-color: var(--color-primary-light);
+}

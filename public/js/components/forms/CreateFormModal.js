@@ -90,7 +90,8 @@ class CreateFormModal extends React.Component {
       saveStatus: 'idle', // idle, saving, saved, error
       errors: {},
       newRecordId: null, // Will be set after first auto-creation
-      createdRecordId: null // Track if record has been created
+      createdRecordId: null, // Track if record has been created
+      fullscreenField: null // Track which field is being edited in fullscreen (null = no fullscreen)
     };
 
     this.fieldRefs = {};
@@ -512,12 +513,20 @@ class CreateFormModal extends React.Component {
       case 'text':
         return e('div', { key: fieldName, className: 'edit-field' },
           e('label', { className: 'edit-field-label' }, label),
-          e('textarea', {
-            className: 'edit-field-textarea',
-            value: value || '',
-            onChange: (e) => this.handleFieldChange(fieldName, e.target.value),
-            ref: (el) => { if (el) this.fieldRefs[fieldName] = el; }
-          }),
+          e('div', { className: 'textarea-with-fullscreen' },
+            e('textarea', {
+              className: 'edit-field-textarea',
+              value: value || '',
+              onChange: (e) => this.handleFieldChange(fieldName, e.target.value),
+              ref: (el) => { if (el) this.fieldRefs[fieldName] = el; }
+            }),
+            e('button', {
+              className: 'btn-fullscreen-edit',
+              onClick: () => this.setState({ fullscreenField: fieldName }),
+              type: 'button',
+              title: 'Ouvrir en plein écran'
+            }, '⛶')
+          ),
           errors[fieldName] && e('span', { className: 'edit-field-error' }, errors[fieldName])
         );
 
@@ -587,7 +596,7 @@ class CreateFormModal extends React.Component {
 
   render() {
     const { tableName, structure, tableConfig, permissions, onClose, parentTable } = this.props;
-    const { saveStatus, errors, createdRecordId } = this.state;
+    const { saveStatus, errors, createdRecordId, fullscreenField, formData } = this.state;
 
     // Get editable fields (exclude system fields, granted, and parent field in sub-lists)
     const editableFields = Object.keys(structure.fields).filter(f => {
@@ -605,6 +614,18 @@ class CreateFormModal extends React.Component {
       className: 'modal-overlay-detail',
       onClick: this.handleOverlayClick
     },
+      // Fullscreen text editor modal
+      fullscreenField && e(FullscreenTextEditor, {
+        fieldName: fullscreenField,
+        value: formData[fullscreenField],
+        label: structure.fields[fullscreenField]?.label || fullscreenField,
+        isMarkdown: structure.fields[fullscreenField]?.renderer === 'markdown',
+        onSave: (newValue) => {
+          this.handleFieldChange(fullscreenField, newValue);
+        },
+        onClose: () => this.setState({ fullscreenField: null })
+      }),
+
       e('div', { className: 'modal-content-detail' },
         // Fixed header with granted selector
         e('div', { className: 'modal-header-detail' },

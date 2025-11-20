@@ -35,7 +35,7 @@ class AutoExpandTextarea {
   static config = {
     selector: 'textarea', // CSS selector for textareas
     minHeight: 80,        // Minimum height in pixels
-    maxHeight: null,      // Maximum height in pixels (null = unlimited)
+    maxHeight: 400,       // Maximum height in pixels (null = unlimited) - Limited to 400px to prevent page scrolling issues
     extraPadding: 4       // Extra padding to prevent scrollbar flicker
   };
 
