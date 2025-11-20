@@ -1537,11 +1537,15 @@ a.modal-subtitle:hover {
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  position: relative;
 }
 
 .fullscreen-editor-textarea {
-  width: 100%;
-  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   border: none;
   border-radius: 0;
   padding: var(--space-xl);
@@ -1559,8 +1563,11 @@ a.modal-subtitle:hover {
 
 /* Preview area */
 .fullscreen-editor-preview {
-  width: 100%;
-  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   border: none;
   border-radius: 0;
   padding: var(--space-xl);
