@@ -262,8 +262,11 @@ class ImageService {
       }
 
       // Handle versioning
+      // Only version if there's an existing image in the database and createVersion is true
       const uploadDir = path.join(process.cwd(), 'storage', 'images', tableName, id.toString());
-      const finalFilename = createVersion
+      const hasExistingImage = existingRow[field] && existingRow[field].trim() !== '';
+
+      const finalFilename = (hasExistingImage && createVersion)
         ? await ImageService.getVersionedFilename(uploadDir, file.filename)
         : file.filename;
 
