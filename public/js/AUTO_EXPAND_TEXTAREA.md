@@ -53,7 +53,7 @@ AutoExpandTextarea.init();
 AutoExpandTextarea.init({
   selector: 'textarea',        // Sélecteur CSS
   minHeight: 80,               // Hauteur minimum (px)
-  maxHeight: 400,              // Hauteur maximum (px, null = illimité)
+  maxHeight: 400,              // Hauteur maximum (px, null = illimité) - Par défaut 400px
   extraPadding: 4              // Padding supplémentaire
 });
 ```
@@ -238,6 +238,11 @@ Met à jour la configuration globale.
 - `options` (Object) : Nouvelles options
 
 ## Changelog
+
+### Version 1.1.0 (2025-11-20)
+
+- 🐛 Fix: Limite la hauteur maximale à 400px par défaut pour éviter le scroll de page (#202)
+- ✅ Amélioration UX: Scrollbar interne au lieu du scroll de page entière
 
 ### Version 1.0.0 (2025-11-19)
 
