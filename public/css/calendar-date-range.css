@@ -215,3 +215,24 @@
 .calendar-date-range-tool > * {
   animation: fadeInSlide var(--transition-slow);
 }
+
+/* ========================================
+   CONTEXT OVERRIDES
+   ======================================== */
+
+/* Dans les modaux et contextes fullscreen, permettre aux champs de prendre toute la largeur disponible */
+.modal-content-detail .calendar-date-range-tool .edit-field-input,
+.modal-content-detail .calendar-date-range-tool .edit-field-select,
+.modal-content .calendar-date-range-tool .edit-field-input,
+.modal-content .calendar-date-range-tool .edit-field-select,
+.fullscreen-editor-container .calendar-date-range-tool .edit-field-input,
+.fullscreen-editor-container .calendar-date-range-tool .edit-field-select {
+  max-width: 100%;
+}
+
+/* Dans les modaux et fullscreen, le mode-select peut aussi prendre plus de place */
+.modal-content-detail .date-range-mode-selector .mode-select,
+.modal-content .date-range-mode-selector .mode-select,
+.fullscreen-editor-container .date-range-mode-selector .mode-select {
+  max-width: 100%;
+}

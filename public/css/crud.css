@@ -1686,3 +1686,18 @@ a.modal-subtitle:hover {
   background: var(--color-bg-hover);
   border-color: var(--color-primary-light);
 }
+
+/* ========================================
+   MODAL & FULLSCREEN CONTEXT OVERRIDES
+   ======================================== */
+
+/* Dans les modaux et fullscreen, permettre aux inputs et selects de prendre toute la largeur disponible
+   (override des max-width définies ailleurs, notamment dans calendar-date-range.css) */
+.modal-content-detail .edit-field-input,
+.modal-content-detail .edit-field-select,
+.modal-content .edit-field-input,
+.modal-content .edit-field-select,
+.fullscreen-editor-container .edit-field-input,
+.fullscreen-editor-container .edit-field-select {
+  max-width: 100%;
+}
