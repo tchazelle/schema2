@@ -75,6 +75,11 @@ class AutoExpandTextarea {
       return;
     }
 
+    // Skip fullscreen editor textareas (they have their own sizing logic)
+    if (textarea.classList.contains('fullscreen-editor-textarea')) {
+      return;
+    }
+
     // Mark as initialized
     textarea.dataset.autoExpand = 'true';
 
