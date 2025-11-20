@@ -10,17 +10,21 @@
  * - Escape key to close
  * - Auto-focus on textarea
  * - Markdown preview (optional)
+ * - Auto-save on change (debounced)
  *
  * Dependencies:
  * - React (global)
+ * - marked (global - for markdown rendering)
  *
  * Props:
  * - fieldName: Name of the field being edited
  * - value: Current value of the field
  * - label: Label to display in header
- * - onSave: Callback when user clicks "Appliquer" (receives new value)
+ * - onSave: Callback when value changes (receives new value) - called with debounce
  * - onClose: Callback when modal is closed
  * - isMarkdown: Boolean to show markdown preview (optional)
+ * - row: Current row data (optional - for displaying record title)
+ * - tableConfig: Table configuration (optional - for displayFields)
  */
 
 class FullscreenTextEditor extends React.Component {
@@ -31,6 +35,8 @@ class FullscreenTextEditor extends React.Component {
       showPreview: false // Toggle between edit and preview mode
     };
     this.textareaRef = React.createRef();
+    this.saveTimeout = null;
+    this.autosaveDelay = 300; // 300ms debounce
   }
 
   componentDidMount() {
@@ -55,27 +61,42 @@ class FullscreenTextEditor extends React.Component {
 
     // Remove event listener
     document.removeEventListener('keydown', this.handleKeyDown);
+
+    // Clear pending save timeout
+    if (this.saveTimeout) {
+      clearTimeout(this.saveTimeout);
+    }
   }
 
   handleKeyDown = (e) => {
     if (e.key === 'Escape') {
+      // Save before closing if there are unsaved changes
+      if (this.saveTimeout) {
+        clearTimeout(this.saveTimeout);
+        this.props.onSave(this.state.value);
+      }
       this.props.onClose();
     }
   }
 
   handleChange = (e) => {
-    this.setState({ value: e.target.value });
-  }
+    const newValue = e.target.value;
+    this.setState({ value: newValue });
 
-  handleSave = () => {
-    this.props.onSave(this.state.value);
-    this.props.onClose();
+    // Auto-save with debounce
+    if (this.saveTimeout) {
+      clearTimeout(this.saveTimeout);
+    }
+
+    this.saveTimeout = setTimeout(() => {
+      this.props.onSave(newValue);
+      this.saveTimeout = null;
+    }, this.autosaveDelay);
   }
 
   handleOverlayClick = (e) => {
-    if (e.target === e.currentTarget) {
-      this.props.onClose();
-    }
+    // Don't close on overlay click to prevent accidental loss
+    // Only close via Escape key or close button
   }
 
   togglePreview = () => {
@@ -85,9 +106,30 @@ class FullscreenTextEditor extends React.Component {
   renderMarkdownPreview = () => {
     const { value } = this.state;
 
+    let html;
+
+    // Use marked.js if available for proper markdown rendering
+    if (typeof marked !== 'undefined') {
+      try {
+        html = marked.parse(value || '');
+      } catch (error) {
+        console.error('Marked.js error:', error);
+        html = this.renderBasicMarkdown(value);
+      }
+    } else {
+      // Fallback to basic markdown rendering
+      html = this.renderBasicMarkdown(value);
+    }
+
+    return e('div', {
+      className: 'fullscreen-editor-preview markdown',
+      dangerouslySetInnerHTML: { __html: html }
+    });
+  }
+
+  renderBasicMarkdown = (value) => {
     // Simple markdown rendering (basic support)
-    // For production, consider using a library like marked.js
-    let html = value
+    return value
       .replace(/\n/g, '<br>')
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
       .replace(/\*(.*?)\*/g, '<em>$1</em>')
@@ -95,11 +137,20 @@ class FullscreenTextEditor extends React.Component {
       .replace(/^### (.*?)$/gm, '<h3>$1</h3>')
       .replace(/^## (.*?)$/gm, '<h2>$1</h2>')
       .replace(/^# (.*?)$/gm, '<h1>$1</h1>');
+  }
 
-    return e('div', {
-      className: 'fullscreen-editor-preview',
-      dangerouslySetInnerHTML: { __html: html }
-    });
+  getRecordTitle = () => {
+    const { row, tableConfig } = this.props;
+
+    if (!row || !tableConfig || !tableConfig.displayFields) {
+      return null;
+    }
+
+    // Get display fields and build title
+    const displayFields = tableConfig.displayFields;
+    const titleParts = displayFields.map(fieldName => row[fieldName]).filter(Boolean);
+
+    return titleParts.join(' ');
   }
 
   render() {
@@ -108,18 +159,25 @@ class FullscreenTextEditor extends React.Component {
 
     const charCount = value.length;
     const lineCount = value.split('\n').length;
+    const recordTitle = this.getRecordTitle();
 
     return e('div', {
       className: 'fullscreen-editor-overlay',
       onClick: this.handleOverlayClick
     },
       e('div', { className: 'fullscreen-editor-container' },
-        // Header
+        // Header - Single line with record title, field name, stats, and actions
         e('div', { className: 'fullscreen-editor-header' },
           e('div', { className: 'fullscreen-editor-title-section' },
-            e('h2', { className: 'fullscreen-editor-title' }, label || fieldName),
-            e('div', { className: 'fullscreen-editor-stats' },
-              `${charCount} caractères · ${lineCount} lignes`
+            // Record title (if available)
+            recordTitle && e('span', {
+              className: 'fullscreen-editor-record-title'
+            }, recordTitle, ' - '),
+            // Field name
+            e('span', { className: 'fullscreen-editor-field-name' }, label || fieldName),
+            // Stats
+            e('span', { className: 'fullscreen-editor-stats' },
+              ` - ${charCount} caractères · ${lineCount} lignes`
             )
           ),
           e('div', { className: 'fullscreen-editor-actions' },
@@ -128,7 +186,7 @@ class FullscreenTextEditor extends React.Component {
               className: showPreview ? 'btn-preview active' : 'btn-preview',
               onClick: this.togglePreview,
               type: 'button'
-            }, showPreview ? '✏️ Éditer' : '👁️ Aperçu'),
+            }, showPreview ? '✏️ Éditer' : 'Aperçu'),
 
             // Close button
             e('button', {
@@ -140,7 +198,7 @@ class FullscreenTextEditor extends React.Component {
           )
         ),
 
-        // Content area
+        // Content area - Full height, no padding
         e('div', { className: 'fullscreen-editor-content' },
           showPreview && isMarkdown ? (
             this.renderMarkdownPreview()
@@ -152,27 +210,6 @@ class FullscreenTextEditor extends React.Component {
               onChange: this.handleChange,
               placeholder: 'Saisissez votre texte ici...'
             })
-          )
-        ),
-
-        // Footer with actions
-        e('div', { className: 'fullscreen-editor-footer' },
-          e('div', { className: 'fullscreen-editor-footer-left' },
-            e('span', { className: 'fullscreen-editor-hint' },
-              '💡 Astuce : Appuyez sur Échap pour annuler'
-            )
-          ),
-          e('div', { className: 'fullscreen-editor-footer-right' },
-            e('button', {
-              className: 'btn-cancel',
-              onClick: onClose,
-              type: 'button'
-            }, 'Annuler'),
-            e('button', {
-              className: 'btn-apply',
-              onClick: this.handleSave,
-              type: 'button'
-            }, 'Appliquer')
           )
         )
       )
