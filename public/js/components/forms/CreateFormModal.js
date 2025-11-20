@@ -87,12 +87,15 @@ class CreateFormModal extends React.Component {
 
     this.state = {
       formData,
-      saveStatus: 'idle', // idle, saving, error
+      saveStatus: 'idle', // idle, saving, saved, error
       errors: {},
-      newRecordId: null
+      newRecordId: null, // Will be set after first auto-creation
+      createdRecordId: null // Track if record has been created
     };
 
     this.fieldRefs = {};
+    this.saveTimeout = null;
+    this.autosaveDelay = SCHEMA_CONFIG?.autosave || 500;
   }
 
   componentDidMount() {
@@ -122,6 +125,11 @@ class CreateFormModal extends React.Component {
   componentWillUnmount() {
     // Restore body scroll
     document.body.style.overflow = '';
+
+    // Clear any pending saves
+    if (this.saveTimeout) {
+      clearTimeout(this.saveTimeout);
+    }
   }
 
   isParentField(fieldName) {
@@ -155,8 +163,100 @@ class CreateFormModal extends React.Component {
       formData: {
         ...prev.formData,
         [fieldName]: value
-      }
+      },
+      saveStatus: 'idle'
     }));
+
+    // Auto-create or auto-save with debounce
+    if (this.saveTimeout) {
+      clearTimeout(this.saveTimeout);
+    }
+
+    this.saveTimeout = setTimeout(() => {
+      if (this.state.createdRecordId) {
+        // Record already exists, do autosave
+        this.autoSaveField(fieldName, value);
+      } else {
+        // First input, create the record
+        this.autoCreateRecord();
+      }
+    }, this.autosaveDelay);
+  }
+
+  autoCreateRecord = async () => {
+    const { tableName, onSuccess } = this.props;
+    const { formData } = this.state;
+
+    this.setState({ saveStatus: 'saving' });
+
+    try {
+      const response = await fetch(`/_api/${tableName}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Mark that this is the first creation (not a subsequent save)
+        this.isFirstCreation = true;
+
+        this.setState({
+          saveStatus: 'saved',
+          createdRecordId: data.id,
+          newRecordId: data.id,
+          errors: {}
+        });
+
+        // Call onSuccess to refresh parent list
+        if (onSuccess) {
+          onSuccess(data.id);
+        }
+
+        // Hide success indicator after 2 seconds
+        setTimeout(() => {
+          this.setState({ saveStatus: 'idle' });
+          this.isFirstCreation = false; // Reset flag after showing message
+        }, 2000);
+      } else {
+        this.setState({ saveStatus: 'error', errors: { _general: data.error } });
+      }
+    } catch (error) {
+      console.error('Auto-create error:', error);
+      this.setState({ saveStatus: 'error', errors: { _general: error.message } });
+    }
+  }
+
+  autoSaveField = async (fieldName, value) => {
+    const { tableName } = this.props;
+    const { createdRecordId } = this.state;
+
+    this.setState({ saveStatus: 'saving' });
+
+    try {
+      const response = await fetch(`/_api/${tableName}/${createdRecordId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ [fieldName]: value })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        this.setState({ saveStatus: 'saved', errors: {} });
+
+        // Hide success indicator after 2 seconds
+        setTimeout(() => {
+          this.setState({ saveStatus: 'idle' });
+        }, 2000);
+      } else {
+        this.setState({ saveStatus: 'error', errors: { [fieldName]: data.error } });
+      }
+    } catch (error) {
+      console.error('Auto-save error:', error);
+      this.setState({ saveStatus: 'error', errors: { [fieldName]: error.message } });
+    }
   }
 
   handleSubmit = async (e) => {
@@ -251,8 +351,58 @@ class CreateFormModal extends React.Component {
         ...prev.formData,
         [startFieldName]: startValue,
         [endFieldName]: endValue
-      }
+      },
+      saveStatus: 'idle'
     }));
+
+    // Auto-create or auto-save with debounce
+    if (this.saveTimeout) {
+      clearTimeout(this.saveTimeout);
+    }
+
+    this.saveTimeout = setTimeout(() => {
+      if (this.state.createdRecordId) {
+        // Record already exists, save both fields
+        this.autoSaveDateRange(startFieldName, endFieldName, startValue, endValue);
+      } else {
+        // First input, create the record
+        this.autoCreateRecord();
+      }
+    }, this.autosaveDelay);
+  }
+
+  autoSaveDateRange = async (startFieldName, endFieldName, startValue, endValue) => {
+    const { tableName } = this.props;
+    const { createdRecordId } = this.state;
+
+    this.setState({ saveStatus: 'saving' });
+
+    try {
+      const response = await fetch(`/_api/${tableName}/${createdRecordId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          [startFieldName]: startValue,
+          [endFieldName]: endValue
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        this.setState({ saveStatus: 'saved', errors: {} });
+
+        // Hide success indicator after 2 seconds
+        setTimeout(() => {
+          this.setState({ saveStatus: 'idle' });
+        }, 2000);
+      } else {
+        this.setState({ saveStatus: 'error', errors: { _general: data.error } });
+      }
+    } catch (error) {
+      console.error('Auto-save date range error:', error);
+      this.setState({ saveStatus: 'error', errors: { _general: error.message } });
+    }
   }
 
   renderField = (fieldName, field) => {
@@ -427,7 +577,7 @@ class CreateFormModal extends React.Component {
 
   render() {
     const { tableName, structure, tableConfig, permissions, onClose, parentTable } = this.props;
-    const { saveStatus, errors } = this.state;
+    const { saveStatus, errors, createdRecordId } = this.state;
 
     // Get editable fields (exclude system fields, granted, and parent field in sub-lists)
     const editableFields = Object.keys(structure.fields).filter(f => {
@@ -485,13 +635,29 @@ class CreateFormModal extends React.Component {
             // General error
             errors._general && e('div', { className: 'error' }, errors._general),
 
-            // Save indicator
-            saveStatus === 'saving' && e('div', {
-              style: { padding: '8px 12px', marginBottom: '12px', textAlign: 'center', background: '#d1ecf1', borderRadius: '4px' }
-            }, '💾 Création en cours...'),
-            saveStatus === 'success' && e('div', {
-              style: { padding: '8px 12px', marginBottom: '12px', textAlign: 'center', background: '#d4edda', borderRadius: '4px', color: '#155724' }
-            }, '✅ Fiche créée avec succès ! Le formulaire a été réinitialisé.'),
+            // Save indicator (fixed in top-right corner, like EditForm)
+            saveStatus !== 'idle' && e('div', {
+              style: {
+                position: 'fixed',
+                top: '80px',
+                right: '20px',
+                padding: '10px 16px',
+                background: saveStatus === 'saved' ? '#d4edda' : (saveStatus === 'error' ? '#f8d7da' : '#d1ecf1'),
+                color: saveStatus === 'saved' ? '#155724' : (saveStatus === 'error' ? '#721c24' : '#0c5460'),
+                borderRadius: '6px',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                fontSize: '14px',
+                fontWeight: '500',
+                zIndex: 9999,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }
+            },
+              saveStatus === 'saving' && e('span', null, '💾 Enregistrement...'),
+              saveStatus === 'saved' && e('span', null, this.isFirstCreation ? '✅ Fiche créée !' : '✅ Enregistré'),
+              saveStatus === 'error' && e('span', null, '❌ Erreur')
+            ),
 
             // Form fields grid
             e('div', { className: 'edit-form-grid' },
@@ -501,18 +667,21 @@ class CreateFormModal extends React.Component {
               })
             ),
 
-            // Submit button
+            // Submit button (only show before record is created, for backwards compatibility)
             e('div', { style: { marginTop: '20px', display: 'flex', gap: '8px', justifyContent: 'flex-end' } },
+              // Only show "Annuler" if record hasn't been created yet, otherwise show "Fermer"
               e('button', {
                 type: 'button',
                 className: 'btn-cancel',
                 onClick: onClose
-              }, 'Annuler'),
-              e('button', {
+              }, createdRecordId ? 'Fermer' : 'Annuler'),
+              // Hide the "Créer" button after record is auto-created
+              !createdRecordId && e('button', {
                 type: 'submit',
                 className: 'btn-apply',
-                disabled: saveStatus === 'saving'
-              }, saveStatus === 'saving' ? 'Création...' : 'Créer')
+                disabled: saveStatus === 'saving',
+                style: { opacity: 0.5 }
+              }, 'Créer (ou tapez pour auto-créer)')
             )
           )
         )
