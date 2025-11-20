@@ -1359,10 +1359,6 @@ a.modal-subtitle:hover {
   border: 1px solid var(--color-border);
 }
 
-.field-value.markdown table tr:nth-child(even) {
-  background-color: var(--color-bg-hover);
-}
-
 .field-value.markdown code {
   background-color: var(--color-bg-section);
   padding: 0.2em 0.4em;
@@ -1411,6 +1407,16 @@ a.modal-subtitle:hover {
   height: auto;
 }
 
+/* Responsive iframe wrapper for 16:9 ratio (YouTube, etc.) */
+.field-value.markdown iframe {
+  display: block;
+  margin: 0 auto 1em;
+  max-width: 100%;
+  aspect-ratio: 16 / 9;
+  width: 100%;
+  height: auto;
+}
+
 /* ========================================
    FULLSCREEN TEXT EDITOR
    ======================================== */
@@ -1448,28 +1454,39 @@ a.modal-subtitle:hover {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: var(--space-lg) var(--space-xl);
-  border-bottom: var(--border-width-medium) solid var(--color-border);
-  background: var(--color-bg-section);
+  padding: var(--space-md) var(--space-xl);
+  background: var(--color-bg-white);
   flex-shrink: 0;
 }
 
 .fullscreen-editor-title-section {
   display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
+  align-items: baseline;
+  gap: 0;
+  flex: 1;
+  min-width: 0;
 }
 
-.fullscreen-editor-title {
-  margin: 0;
-  __font-size: var(--font-size-xl);
+.fullscreen-editor-record-title {
+  font-size: var(--font-size-base);
   font-weight: var(--font-weight-semibold);
   color: var(--color-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fullscreen-editor-field-name {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  white-space: nowrap;
 }
 
 .fullscreen-editor-stats {
-  __font-size: var(--font-size-13);
+  font-size: var(--font-size-sm);
   color: var(--color-text-muted);
+  white-space: nowrap;
 }
 
 .fullscreen-editor-actions {
@@ -1516,7 +1533,7 @@ a.modal-subtitle:hover {
 /* Content area */
 .fullscreen-editor-content {
   flex: 1;
-  padding: var(--space-xl);
+  padding: 0;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -1525,53 +1542,59 @@ a.modal-subtitle:hover {
 .fullscreen-editor-textarea {
   width: 100%;
   height: 100%;
-  border: var(--border-width-thin) solid var(--color-border-input);
-  border-radius: var(--border-radius-sm);
-  padding: var(--space-lg);
-  font-size: var(--font-size-lg);
+  border: none;
+  border-radius: 0;
+  padding: var(--space-xl);
+  font-size: var(--font-size-base);
   font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
   line-height: 1.6;
   resize: none;
   outline: none;
+  box-sizing: border-box;
 }
 
 .fullscreen-editor-textarea:focus {
-  border-color: var(--color-primary-light);
-  box-shadow: var(--shadow-focus);
+  outline: none;
 }
 
 /* Preview area */
 .fullscreen-editor-preview {
   width: 100%;
   height: 100%;
-  border: var(--border-width-thin) solid var(--color-border-input);
-  border-radius: var(--border-radius-sm);
+  border: none;
+  border-radius: 0;
   padding: var(--space-xl);
   font-size: var(--font-size-base);
   line-height: 1.6;
   overflow-y: auto;
   background: var(--color-bg-white);
+  box-sizing: border-box;
 }
 
-.fullscreen-editor-preview h1 {
+/* Apply markdown styles to preview */
+.fullscreen-editor-preview.markdown h1 {
   font-size: var(--font-size-2xl);
   margin-bottom: var(--space-md);
   font-weight: var(--font-weight-bold);
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 0.3em;
 }
 
-.fullscreen-editor-preview h2 {
+.fullscreen-editor-preview.markdown h2 {
   font-size: var(--font-size-xl);
   margin-bottom: var(--space-md);
   font-weight: var(--font-weight-semibold);
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 0.3em;
 }
 
-.fullscreen-editor-preview h3 {
+.fullscreen-editor-preview.markdown h3 {
   font-size: var(--font-size-lg);
   margin-bottom: var(--space-sm);
   font-weight: var(--font-weight-semibold);
 }
 
-.fullscreen-editor-preview code {
+.fullscreen-editor-preview.markdown code {
   background-color: var(--color-bg-section);
   padding: 0.2em 0.4em;
   border-radius: 3px;
@@ -1579,29 +1602,45 @@ a.modal-subtitle:hover {
   font-size: 0.9em;
 }
 
-/* Footer */
-.fullscreen-editor-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: var(--space-lg) var(--space-xl);
-  border-top: var(--border-width-medium) solid var(--color-border);
-  background: var(--color-bg-section);
-  flex-shrink: 0;
+.fullscreen-editor-preview.markdown pre {
+  background-color: var(--color-bg-section);
+  padding: 1em;
+  border-radius: 6px;
+  overflow-x: auto;
+  margin-bottom: 1em;
 }
 
-.fullscreen-editor-footer-left {
-  flex: 1;
+.fullscreen-editor-preview.markdown pre code {
+  background-color: transparent;
+  padding: 0;
 }
 
-.fullscreen-editor-hint {
-  font-size: var(--font-size-13);
-  color: var(--color-text-muted);
+.fullscreen-editor-preview.markdown table {
+  border-collapse: collapse;
+  width: 100%;
+  margin-bottom: 1em;
 }
 
-.fullscreen-editor-footer-right {
-  display: flex;
-  gap: var(--space-md);
+.fullscreen-editor-preview.markdown table th {
+  font-weight: 600;
+  text-align: left;
+  padding: 8px 12px;
+  border: 1px solid var(--color-border);
+  background-color: var(--color-bg-section);
+}
+
+.fullscreen-editor-preview.markdown table td {
+  padding: 8px 12px;
+  border: 1px solid var(--color-border);
+}
+
+.fullscreen-editor-preview.markdown img {
+  max-width: 100%;
+  height: auto;
+}
+
+.fullscreen-editor-preview.markdown iframe {
+  max-width: 100%;
 }
 
 /* Fullscreen button in textarea fields */

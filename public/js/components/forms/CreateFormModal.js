@@ -620,6 +620,7 @@ class CreateFormModal extends React.Component {
         value: formData[fullscreenField],
         label: structure.fields[fullscreenField]?.label || fullscreenField,
         isMarkdown: structure.fields[fullscreenField]?.renderer === 'markdown',
+        tableConfig: tableConfig,
         onSave: (newValue) => {
           this.handleFieldChange(fullscreenField, newValue);
         },

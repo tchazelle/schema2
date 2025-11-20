@@ -683,6 +683,8 @@ class EditForm extends React.Component {
         value: formData[fullscreenField],
         label: structure.fields[fullscreenField]?.label || fullscreenField,
         isMarkdown: structure.fields[fullscreenField]?.renderer === 'markdown',
+        row: row,
+        tableConfig: tableConfig,
         onSave: (newValue) => {
           this.handleFieldChange(fullscreenField, newValue);
         },
