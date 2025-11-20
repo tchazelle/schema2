@@ -16,6 +16,7 @@
   border-radius: var(--border-radius-pill);
   cursor: pointer;
   font-size: var(--font-size-base);
+  color: var(--color-text-primary);
   display: flex;
   align-items: center;
   gap: var(--space-sm);

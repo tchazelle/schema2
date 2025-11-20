@@ -624,12 +624,48 @@ class TemplateService {
       background: var(--color-bg-alt);
       border-radius: 4px 4px 0 0;
       border-bottom: 2px solid var(--color-primary);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .table-results-header:hover {
+      background: var(--color-bg-hover);
+    }
+
+    .table-results-header-left {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
     }
 
     .table-results-header h3 {
       margin: 0;
       font-size: 1.25rem;
       color: var(--color-text);
+    }
+
+    .table-results-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 2rem;
+      height: 1.5rem;
+      padding: 0 0.5rem;
+      background: var(--color-primary);
+      color: white;
+      font-size: 0.875rem;
+      font-weight: 600;
+      border-radius: 12px;
+    }
+
+    .table-results-toggle {
+      font-size: 0.875rem;
+      color: var(--color-text-secondary);
+      transition: transform 0.2s;
+    }
+
+    .table-results-toggle.collapsed {
+      transform: rotate(-90deg);
     }
 
     .table-results-count {
@@ -812,15 +848,19 @@ class TemplateService {
       // Render results by table
       for (const [tableName, tableResults] of Object.entries(data.results)) {
         html += \`
-          <div class="table-results">
-            <div class="table-results-header">
-              <h3>\${tableName}</h3>
+          <div class="table-results" data-table="\${tableName}">
+            <div class="table-results-header" onclick="toggleTableResults('\${tableName}')">
+              <div class="table-results-header-left">
+                <span class="table-results-toggle" id="toggle-\${tableName}">▼</span>
+                <h3>\${tableName}</h3>
+                <span class="table-results-badge">\${tableResults.count}</span>
+              </div>
               <span class="table-results-count">
                 \${tableResults.count} résultat\${tableResults.count > 1 ? 's' : ''}
                 \${tableResults.hasMore ? \` (sur \${tableResults.total})\` : ''}
               </span>
             </div>
-            <div class="results-list">
+            <div class="results-list" id="results-\${tableName}">
         \`;
 
         for (const row of tableResults.rows) {
@@ -888,6 +928,21 @@ class TemplateService {
 
       const regex = new RegExp(\`(\${escapeRegex(searchTerm)})\`, 'gi');
       return text.replace(regex, '<mark style="background: yellow; padding: 0 2px;">$1</mark>');
+    }
+
+    function toggleTableResults(tableName) {
+      const resultsDiv = document.getElementById(\`results-\${tableName}\`);
+      const toggleIcon = document.getElementById(\`toggle-\${tableName}\`);
+
+      if (resultsDiv.style.display === 'none') {
+        resultsDiv.style.display = 'block';
+        toggleIcon.textContent = '▼';
+        toggleIcon.classList.remove('collapsed');
+      } else {
+        resultsDiv.style.display = 'none';
+        toggleIcon.textContent = '▶';
+        toggleIcon.classList.add('collapsed');
+      }
     }
 
     function escapeHtml(text) {

@@ -869,6 +869,7 @@ tr.detail-row td {
   border-radius: var(--border-radius-sm);
   font-size: var(--font-size-13);
   background: var(--color-bg-white);
+  color: var(--color-text-primary);
   cursor: pointer;
 }
 

@@ -41,14 +41,19 @@
 class AdvancedSearchModal extends React.Component {
   constructor(props) {
     super(props);
+    // Initialize with existing search criteria if provided, otherwise default
+    const initialSearchGroups = props.currentSearchCriteria && props.currentSearchCriteria.length > 0
+      ? props.currentSearchCriteria
+      : [
+          {
+            conditions: [
+              { field: '', operator: 'contains', value: '' }
+            ]
+          }
+        ];
+
     this.state = {
-      searchGroups: [
-        {
-          conditions: [
-            { field: '', operator: 'contains', value: '' }
-          ]
-        }
-      ],
+      searchGroups: initialSearchGroups,
       relatedStructures: {} // Cache for related table structures
     };
   }
