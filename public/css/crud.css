@@ -563,7 +563,7 @@ tr.detail-row td {
 }
 
 .edit-field-input,
-.edit-field-textarea,
+.edit-field-resolvedRelations,
 .edit-field-select {
   padding: var(--space-sm) var(--space-4);
   border: var(--border-width-thin) solid var(--color-border-input);
@@ -583,7 +583,8 @@ tr.detail-row td {
 
 .edit-field-textarea {
   min-height: 80px;
-  resize: vertical;
+  min-width:100%;
+  _resize: vertical;
 }
 
 .edit-field-input.error,
@@ -1461,13 +1462,13 @@ a.modal-subtitle:hover {
 
 .fullscreen-editor-title {
   margin: 0;
-  font-size: var(--font-size-xl);
+  __font-size: var(--font-size-xl);
   font-weight: var(--font-weight-semibold);
   color: var(--color-text-primary);
 }
 
 .fullscreen-editor-stats {
-  font-size: var(--font-size-13);
+  __font-size: var(--font-size-13);
   color: var(--color-text-muted);
 }
 
