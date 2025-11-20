@@ -48,9 +48,11 @@ header {
 
 .theme-toggle-header .theme-toggle-switch input {
   opacity: 0;
-  width: 0;
-  height: 0;
+  width: 100%;
+  height: 100%;
   position: absolute;
+  cursor: pointer;
+  z-index: 2;
 }
 
 .theme-toggle-header .theme-toggle-slider {
