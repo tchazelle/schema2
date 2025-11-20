@@ -144,19 +144,14 @@ class FieldRenderer extends React.Component {
                 maxHeight: '400px',
                 objectFit: 'contain',
                 borderRadius: '8px',
-                border: '1px solid #ddd',
-                cursor: 'pointer'
-              },
-              onClick: (ev) => {
-                ev.stopPropagation();
-                // Open in new tab
-                window.open(value, '_blank');
+                border: '1px solid #ddd'
               }
             }),
             e('a', {
               href: value,
               target: '_blank',
               rel: 'noopener noreferrer',
+              onClick: (ev) => ev.stopPropagation(),
               className: 'image-link',
               style: {
                 fontSize: '12px',

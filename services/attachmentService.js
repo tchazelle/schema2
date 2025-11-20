@@ -12,6 +12,16 @@ const PermissionService = require('./permissionService');
 
 class AttachmentService {
   /**
+   * Remove accents from a string
+   * Example: "protéine" => "proteine"
+   * @param {string} str - String with accents
+   * @returns {string} - String without accents
+   */
+  static removeAccents(str) {
+    return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  }
+
+  /**
    * Configure multer storage dynamically based on table and rowId
    * Creates directory structure: storage/uploads/TableName/id/
    */
@@ -47,8 +57,9 @@ class AttachmentService {
         const timestamp = Date.now();
         const ext = path.extname(file.originalname);
         const basename = path.basename(file.originalname, ext);
-        // Sanitize filename
-        const sanitized = basename.replace(/[^a-zA-Z0-9_-]/g, '_');
+        // Remove accents first, then sanitize filename
+        const withoutAccents = AttachmentService.removeAccents(basename);
+        const sanitized = withoutAccents.replace(/[^a-zA-Z0-9_-]/g, '_');
         cb(null, `${sanitized}_${timestamp}${ext}`);
       }
     });
