@@ -726,7 +726,7 @@ class AttachmentsTab extends React.Component {
               style: {
                 minHeight: '150px',
                 maxHeight: '200px',
-                overflow: 'hidden',
+                overflow: 'visible', // Changed from 'hidden' to allow menu dropdown to show
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -737,7 +737,17 @@ class AttachmentsTab extends React.Component {
               },
               onClick: () => this.handleOpenFullscreen(att, idx)
             },
-              this.renderPreview(att),
+              // Preview content wrapper with overflow hidden
+              e('div', {
+                style: {
+                  width: '100%',
+                  height: '100%',
+                  overflow: 'hidden',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }
+              }, this.renderPreview(att)),
 
               // Three-dot menu button (top right of preview)
               e('button', {
@@ -778,7 +788,7 @@ class AttachmentsTab extends React.Component {
                   border: '1px solid #ddd',
                   borderRadius: '4px',
                   boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-                  zIndex: 20,
+                  zIndex: 100, // Increased from 20 to ensure menu appears above other cards
                   minWidth: '200px'
                 }
               },
