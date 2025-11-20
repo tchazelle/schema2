@@ -230,7 +230,8 @@
 .fullscreen-editor-container .calendar-date-range-tool .edit-field-input,
 .fullscreen-editor-container .calendar-date-range-tool .edit-field-select,
 .fullscreen-editor-container .calendar-date-range-tool .edit-field-textarea {
-  max-width: 100%;
+  width: 100% !important;
+  max-width: none !important;
 }
 
 /* Dans les modaux et fullscreen, le mode-select peut aussi prendre plus de place */

@@ -1549,6 +1549,8 @@ a.modal-subtitle:hover {
   left: 0;
   right: 0;
   bottom: 0;
+  width: 100% !important;
+  max-width: none !important;
   border: none;
   border-radius: 0;
   padding: var(--space-xl);
@@ -1705,5 +1707,6 @@ a.modal-subtitle:hover {
 .fullscreen-editor-container .edit-field-input,
 .fullscreen-editor-container .edit-field-select,
 .fullscreen-editor-container .edit-field-textarea {
-  max-width: 100%;
+  width: 100% !important;
+  max-width: none !important;
 }
