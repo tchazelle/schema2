@@ -62,7 +62,15 @@ class NewsletterService {
       // 1. Récupérer la newsletter avec ses news
       const { newsletter } = await this.getNewsletterWithNews(newsletterId);
 
-      // 2. Préparer les données pour Mustache
+      // 2. Import marked for markdown rendering
+      const { marked } = await import('marked');
+      marked.setOptions({
+        gfm: true,
+        breaks: true,
+        tables: true
+      });
+
+      // 3. Préparer les données pour Mustache
       const templateData = {
         // Données du destinataire
         recipient: recipientData,
@@ -77,11 +85,14 @@ class NewsletterService {
           subject: newsletter.subject
         },
 
-        // News
+        // Render newsletter content as markdown if it exists
+        description: newsletter.content ? marked.parse(newsletter.content) : '',
+
+        // News (with markdown rendering for content)
         news: newsletter.news.map(item => ({
           id: item.id,
           title: item.title,
-          content: item.content,
+          content: item.content ? marked.parse(item.content) : '',
           image: item.image,
           url: item.url,
           publishedAt: item.publishedAt,
@@ -94,13 +105,13 @@ class NewsletterService {
         currentDate: new Date().toLocaleDateString('fr-FR')
       };
 
-      // 3. Si pas de template, utiliser le template par défaut
+      // 4. Si pas de template, utiliser le template par défaut
       let template = newsletter.bodyTemplate;
       if (!template || template.trim() === '') {
         template = this.getDefaultTemplate();
       }
 
-      // 4. Rendre avec Mustache
+      // 5. Rendre avec Mustache
       const html = mustache.render(template, templateData);
 
       return html;

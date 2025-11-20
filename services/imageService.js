@@ -13,6 +13,16 @@ const PermissionService = require('./permissionService');
 
 class ImageService {
   /**
+   * Remove accents from a string
+   * Example: "protéine" => "proteine"
+   * @param {string} str - String with accents
+   * @returns {string} - String without accents
+   */
+  static removeAccents(str) {
+    return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  }
+
+  /**
    * Configure multer storage for image fields
    * Creates directory structure: storage/images/TableName/id/
    */
@@ -48,9 +58,10 @@ class ImageService {
         }
       },
       filename: (req, file, cb) => {
-        // Keep original filename (sanitized)
+        // Keep original filename (sanitized, without accents)
         const originalName = path.basename(file.originalname);
-        cb(null, originalName);
+        const withoutAccents = ImageService.removeAccents(originalName);
+        cb(null, withoutAccents);
       }
     });
   }
