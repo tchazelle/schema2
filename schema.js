@@ -6,8 +6,8 @@ module.exports = {
   languages: "fr", // pourra devenir un tableau
   seo: "schema.org microdata",
   maxRows: 1000,
-  maxColWidth:"20em",
-  maxColHeight:"3em",
+  maxColWidth: "20em",
+  maxColHeight: "2em",
   naming: ["camelCase","PascalCase"],
 
   // Configuration email marketing
