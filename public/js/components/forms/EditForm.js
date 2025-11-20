@@ -63,7 +63,8 @@ class EditForm extends React.Component {
       openRelations: new Set(), // Track which 1:n relations are expanded
       dirtyFields: new Set(), // Track which fields have been modified
       showAttachments: true, // Track if attachments section is expanded (open by default)
-      attachmentCount: 0 // Track number of attachments
+      attachmentCount: 0, // Track number of attachments
+      fullscreenField: null // Track which field is being edited in fullscreen (null = no fullscreen)
     };
 
     this.saveTimeout = null;
@@ -450,12 +451,20 @@ class EditForm extends React.Component {
       case 'text':
         return e('div', { key: fieldName, className: fieldClasses },
           e('label', { className: 'edit-field-label' }, label),
-          e('textarea', {
-            className: 'edit-field-textarea',
-            value: value || '',
-            onChange: (e) => this.handleFieldChange(fieldName, e.target.value),
-            ref: (el) => { if (el) this.fieldRefs[fieldName] = el; }
-          }),
+          e('div', { className: 'textarea-with-fullscreen' },
+            e('textarea', {
+              className: 'edit-field-textarea',
+              value: value || '',
+              onChange: (e) => this.handleFieldChange(fieldName, e.target.value),
+              ref: (el) => { if (el) this.fieldRefs[fieldName] = el; }
+            }),
+            e('button', {
+              className: 'btn-fullscreen-edit',
+              onClick: () => this.setState({ fullscreenField: fieldName }),
+              type: 'button',
+              title: 'Ouvrir en plein écran'
+            }, '⛶')
+          ),
           errors[fieldName] && e('span', { className: 'edit-field-error' }, errors[fieldName])
         );
 
@@ -592,7 +601,7 @@ class EditForm extends React.Component {
 
   render() {
     const { structure, onClose, row, tableName, tableConfig, permissions, hideRelations1N = false, parentTable } = this.props;
-    const { saveStatus, errors, formData, openRelations, showAttachments, attachmentCount } = this.state;
+    const { saveStatus, errors, formData, openRelations, showAttachments, attachmentCount, fullscreenField } = this.state;
 
     // Get calendar config from structure if available
     const hasCalendar = structure.calendar;
@@ -678,6 +687,18 @@ class EditForm extends React.Component {
     }
 
     return e('div', { className: 'edit-form' },
+      // Fullscreen text editor modal
+      fullscreenField && e(FullscreenTextEditor, {
+        fieldName: fullscreenField,
+        value: formData[fullscreenField],
+        label: structure.fields[fullscreenField]?.label || fullscreenField,
+        isMarkdown: structure.fields[fullscreenField]?.renderer === 'markdown',
+        onSave: (newValue) => {
+          this.handleFieldChange(fullscreenField, newValue);
+        },
+        onClose: () => this.setState({ fullscreenField: null })
+      }),
+
       // General error
       errors._general && e('div', { className: 'error' }, errors._general),
 
