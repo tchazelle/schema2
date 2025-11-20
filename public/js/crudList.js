@@ -475,8 +475,9 @@ class CrudList extends React.Component {
       window.location.href = '/_calendar';
     } else {
       // Reload data after successful creation
+      // NOTE: Do NOT close the form here - the form now auto-saves and should stay open
+      // User can close it manually with the close button
       this.loadData();
-      this.handleCloseCreateForm();
     }
   }
 
