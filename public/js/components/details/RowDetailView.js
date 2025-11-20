@@ -489,7 +489,14 @@ class RowDetailView extends React.Component {
           tableName: tableName,
           rowId: row.id,
           permissions: permissions,
-          onAttachmentChange: this.loadAttachmentCount
+          structure: structure, // Pass structure to detect image fields
+          onAttachmentChange: this.loadAttachmentCount,
+          onImageFieldUpdate: (fieldName, imageUrl) => {
+            // Notify parent to reload the row data to show updated image
+            if (this.props.onRefresh) {
+              this.props.onRefresh();
+            }
+          }
         })
       ),
 
