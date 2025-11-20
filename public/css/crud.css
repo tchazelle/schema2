@@ -1607,6 +1607,14 @@ a.modal-subtitle:hover {
 /* Fullscreen button in textarea fields */
 .textarea-with-fullscreen {
   position: relative;
+  width: 100%; /* Ensure wrapper takes full width of parent */
+}
+
+/* Add padding-right to textarea to avoid text overlap with button */
+.textarea-with-fullscreen .edit-field-textarea {
+  padding-right: 50px;
+  width: 100%; /* Ensure textarea takes full width */
+  box-sizing: border-box; /* Include padding in width calculation */
 }
 
 .btn-fullscreen-edit {
@@ -1624,6 +1632,7 @@ a.modal-subtitle:hover {
   gap: var(--space-2);
   transition: all 0.2s;
   opacity: 0.7;
+  z-index: 10; /* Ensure button is above textarea */
 }
 
 .btn-fullscreen-edit:hover {

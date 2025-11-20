@@ -424,18 +424,8 @@ class EditForm extends React.Component {
           fieldName: fieldName,
           value: value,
           onChange: (imageUrl) => {
-            // Update formData immediately to show the new image
-            this.setState(prev => ({
-              formData: {
-                ...prev.formData,
-                [fieldName]: imageUrl
-              }
-            }));
-
-            // Notify parent to refresh
-            if (this.props.onUpdate) {
-              this.props.onUpdate();
-            }
+            // Use handleFieldChange to trigger auto-save and update
+            this.handleFieldChange(fieldName, imageUrl);
           },
           disabled: !permissions.canUpdate
         })
@@ -822,18 +812,8 @@ class EditForm extends React.Component {
             this.handleFieldChange(fieldName, newValue);
           },
           onImageFieldUpdate: (fieldName, imageUrl) => {
-            // Update formData immediately to show the new image
-            this.setState(prev => ({
-              formData: {
-                ...prev.formData,
-                [fieldName]: imageUrl
-              }
-            }));
-
-            // Notify parent to refresh
-            if (this.props.onUpdate) {
-              this.props.onUpdate();
-            }
+            // Use handleFieldChange to trigger auto-save and update
+            this.handleFieldChange(fieldName, imageUrl);
           }
         })
       )
