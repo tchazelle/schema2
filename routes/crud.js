@@ -9,6 +9,7 @@ const CrudService = require('../services/crudService');
 const TemplateService = require('../services/templateService');
 const TableDataService = require('../services/tableDataService');
 const UIService = require('../services/uiService');
+const SearchService = require('../services/searchService');
 
 // getTableStructure() a été déplacée dans SchemaService.getTableStructure()
 
@@ -62,6 +63,80 @@ const UIService = require('../services/uiService');
  * =============================================================================
  */
 
+
+/**
+ * GET /_crud
+ * Multi-table search interface
+ */
+router.get('/', async (req, res) => {
+  try {
+    const user = req.user; // Already enriched by userEnrichMiddleware
+
+    // Get accessible tables for menu
+    const accessibleTables = user ? CrudService.getMenuTables(user) : [];
+
+    // Get pages for menu
+    let pages = [];
+    try {
+      const pagesFromTablePage = await TableDataService.getTableData(user, schema.menu.page, {});
+      pages = pagesFromTablePage.rows || [];
+    } catch (error) {
+      console.error('Error loading pages for menu:', error);
+    }
+
+    // Get search statistics
+    const searchStats = SearchService.getSearchStats(user);
+
+    // Serve the search interface
+    const html = TemplateService.htmlSearchPage({
+      user: user,
+      pages: pages,
+      accessibleTables: accessibleTables,
+      searchStats: searchStats
+    });
+
+    res.send(html);
+
+  } catch (error) {
+    console.error('Error rendering search page:', error);
+    res.status(500).send(UIService.error500Page(error));
+  }
+});
+
+/**
+ * GET /_crud/search
+ * API endpoint for multi-table search
+ */
+router.get('/search', async (req, res) => {
+  try {
+    const user = req.user;
+    const { q, limit = 10 } = req.query;
+
+    if (!q || q.trim() === '') {
+      return res.json({
+        success: true,
+        results: {},
+        totalResults: 0,
+        searchTerm: '',
+        message: 'Veuillez saisir un terme de recherche'
+      });
+    }
+
+    const result = await SearchService.searchAll(user, q, {
+      limit: parseInt(limit)
+    });
+
+    res.json(result);
+
+  } catch (error) {
+    console.error('Error executing search:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erreur lors de la recherche',
+      details: error.message
+    });
+  }
+});
 
 /**
  * GET /_crud/:table

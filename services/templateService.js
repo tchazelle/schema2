@@ -148,6 +148,7 @@ class TemplateService {
       ? `<div class="sidebar-section">
           <h3>Tables</h3>
           <ul>
+            <li><a href="/_crud">🔍 Recherche</a></li>
             ${accessibleTables.map(table => `<li><a href="/_crud/${table}">${table}</a></li>`).join('')}
           </ul>
         </div>`
@@ -491,6 +492,420 @@ class TemplateService {
     }
 
     root.render(React.createElement(CrudList, props));
+  </script>
+</body>
+</html>
+    `;
+  }
+
+  /**
+   * Génère une page de recherche multi-tables
+   * @param {Object} options - Options de génération
+   * @param {Object} options.user - L'utilisateur connecté
+   * @param {Array} options.pages - Liste des pages du menu
+   * @param {Array} options.accessibleTables - Tables accessibles à l'utilisateur
+   * @param {Object} options.searchStats - Statistiques de recherche
+   * @returns {string} - HTML complet de la page de recherche
+   */
+  static htmlSearchPage(options) {
+    const {
+      user,
+      pages,
+      accessibleTables,
+      searchStats,
+    } = options;
+
+    return `
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Recherche - ${schema.appName}</title>
+  ${this.htmlCssFiles()}
+  <link rel="stylesheet" href="/css/crud.css">
+  <style>
+    .search-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem 1rem;
+    }
+
+    .search-header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    .search-header h1 {
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+      color: var(--color-text);
+    }
+
+    .search-header p {
+      color: var(--color-text-secondary);
+      font-size: 1rem;
+    }
+
+    .search-box {
+      max-width: 600px;
+      margin: 0 auto 2rem;
+    }
+
+    .search-input-group {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .search-input {
+      flex: 1;
+      padding: 0.75rem 1rem;
+      border: 1px solid var(--color-border);
+      border-radius: 4px;
+      font-size: 1rem;
+      background: var(--color-bg);
+      color: var(--color-text);
+    }
+
+    .search-input:focus {
+      outline: none;
+      border-color: var(--color-primary);
+    }
+
+    .search-button {
+      padding: 0.75rem 2rem;
+      background: var(--color-primary);
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 1rem;
+      cursor: pointer;
+      font-weight: 500;
+    }
+
+    .search-button:hover {
+      background: var(--color-primary-dark, #357ae8);
+    }
+
+    .search-button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .search-stats {
+      text-align: center;
+      font-size: 0.875rem;
+      color: var(--color-text-secondary);
+    }
+
+    .search-results {
+      margin-top: 2rem;
+    }
+
+    .search-summary {
+      text-align: center;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      background: var(--color-bg-alt);
+      border-radius: 4px;
+      color: var(--color-text);
+    }
+
+    .table-results {
+      margin-bottom: 2rem;
+    }
+
+    .table-results-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem;
+      background: var(--color-bg-alt);
+      border-radius: 4px 4px 0 0;
+      border-bottom: 2px solid var(--color-primary);
+    }
+
+    .table-results-header h3 {
+      margin: 0;
+      font-size: 1.25rem;
+      color: var(--color-text);
+    }
+
+    .table-results-count {
+      color: var(--color-text-secondary);
+      font-size: 0.875rem;
+    }
+
+    .results-list {
+      border: 1px solid var(--color-border);
+      border-top: none;
+      border-radius: 0 0 4px 4px;
+    }
+
+    .result-item {
+      padding: 1rem;
+      border-bottom: 1px solid var(--color-border);
+      background: var(--color-bg);
+      transition: background 0.2s;
+    }
+
+    .result-item:last-child {
+      border-bottom: none;
+    }
+
+    .result-item:hover {
+      background: var(--color-bg-hover);
+    }
+
+    .result-item-link {
+      text-decoration: none;
+      color: inherit;
+      display: block;
+    }
+
+    .result-item-fields {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+    }
+
+    .result-field {
+      font-size: 0.875rem;
+    }
+
+    .result-field-label {
+      font-weight: 600;
+      color: var(--color-text-secondary);
+      margin-right: 0.25rem;
+    }
+
+    .result-field-value {
+      color: var(--color-text);
+    }
+
+    .loading {
+      text-align: center;
+      padding: 2rem;
+      color: var(--color-text-secondary);
+    }
+
+    .no-results {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: var(--color-text-secondary);
+    }
+
+    .error-message {
+      text-align: center;
+      padding: 2rem;
+      color: var(--color-error);
+      background: var(--color-error-bg, #fee);
+      border-radius: 4px;
+      margin-top: 1rem;
+    }
+  </style>
+</head>
+<body>
+
+  ${this.htmlHeader(user, pages, accessibleTables)}
+  ${this.htmlLogin()}
+
+  <div class="search-container">
+    <div class="search-header">
+      <h1>🔍 Recherche</h1>
+      <p>Recherchez dans toutes vos tables accessibles</p>
+    </div>
+
+    <div class="search-box">
+      <form id="searchForm" onsubmit="performSearch(event)">
+        <div class="search-input-group">
+          <input
+            type="text"
+            id="searchInput"
+            class="search-input"
+            placeholder="Rechercher..."
+            autofocus
+          />
+          <button type="submit" class="search-button" id="searchButton">
+            Rechercher
+          </button>
+        </div>
+      </form>
+      <div class="search-stats">
+        ${searchStats.tables} tables • ${searchStats.totalTextFields} champs texte • ${searchStats.totalDateFields} champs date
+      </div>
+    </div>
+
+    <div id="searchResults" class="search-results"></div>
+  </div>
+
+  <script>
+    let currentSearchTerm = '';
+
+    async function performSearch(event) {
+      if (event) {
+        event.preventDefault();
+      }
+
+      const searchInput = document.getElementById('searchInput');
+      const searchButton = document.getElementById('searchButton');
+      const resultsContainer = document.getElementById('searchResults');
+      const searchTerm = searchInput.value.trim();
+
+      if (!searchTerm) {
+        resultsContainer.innerHTML = '';
+        return;
+      }
+
+      // Disable search button during search
+      searchButton.disabled = true;
+      searchButton.textContent = 'Recherche...';
+
+      // Show loading
+      resultsContainer.innerHTML = '<div class="loading">⏳ Recherche en cours...</div>';
+
+      try {
+        const response = await fetch(\`/_crud/search?q=\${encodeURIComponent(searchTerm)}&limit=10\`);
+        const data = await response.json();
+
+        if (!data.success) {
+          resultsContainer.innerHTML = \`<div class="error-message">❌ \${data.error || 'Erreur lors de la recherche'}</div>\`;
+          return;
+        }
+
+        currentSearchTerm = searchTerm;
+        renderResults(data);
+
+      } catch (error) {
+        console.error('Search error:', error);
+        resultsContainer.innerHTML = '<div class="error-message">❌ Erreur lors de la recherche</div>';
+      } finally {
+        searchButton.disabled = false;
+        searchButton.textContent = 'Rechercher';
+      }
+    }
+
+    function renderResults(data) {
+      const resultsContainer = document.getElementById('searchResults');
+
+      if (data.totalResults === 0) {
+        resultsContainer.innerHTML = \`
+          <div class="no-results">
+            <p style="font-size: 3rem; margin: 0;">🔍</p>
+            <p style="font-size: 1.25rem; margin: 1rem 0 0.5rem;">Aucun résultat</p>
+            <p>Aucun résultat trouvé pour "<strong>\${escapeHtml(data.searchTerm)}</strong>"</p>
+          </div>
+        \`;
+        return;
+      }
+
+      let html = \`
+        <div class="search-summary">
+          <strong>\${data.totalResults}</strong> résultat\${data.totalResults > 1 ? 's' : ''} trouvé\${data.totalResults > 1 ? 's' : ''}
+          dans <strong>\${Object.keys(data.results).length}</strong> table\${Object.keys(data.results).length > 1 ? 's' : ''}
+          pour "<strong>\${escapeHtml(data.searchTerm)}</strong>"
+        </div>
+      \`;
+
+      // Render results by table
+      for (const [tableName, tableResults] of Object.entries(data.results)) {
+        html += \`
+          <div class="table-results">
+            <div class="table-results-header">
+              <h3>\${tableName}</h3>
+              <span class="table-results-count">
+                \${tableResults.count} résultat\${tableResults.count > 1 ? 's' : ''}
+                \${tableResults.hasMore ? \` (sur \${tableResults.total})\` : ''}
+              </span>
+            </div>
+            <div class="results-list">
+        \`;
+
+        for (const row of tableResults.rows) {
+          html += \`
+            <div class="result-item">
+              <a href="/_crud/\${tableName}?open=\${row.id}" class="result-item-link">
+                <div class="result-item-fields">
+        \`;
+
+          // Show important fields (limit to 6)
+          const fields = Object.entries(row).filter(([key]) =>
+            key !== 'id' && !key.startsWith('_') && key !== 'ownerId' && key !== 'granted'
+          ).slice(0, 6);
+
+          for (const [key, value] of fields) {
+            if (value !== null && value !== undefined && value !== '') {
+              const displayValue = formatValue(value);
+              html += \`
+                <div class="result-field">
+                  <span class="result-field-label">\${key}:</span>
+                  <span class="result-field-value">\${highlightMatch(displayValue, data.searchTerm)}</span>
+                </div>
+              \`;
+            }
+          }
+
+          html += \`
+                </div>
+              </a>
+            </div>
+          \`;
+        }
+
+        html += \`
+            </div>
+          </div>
+        \`;
+      }
+
+      resultsContainer.innerHTML = html;
+    }
+
+    function formatValue(value) {
+      if (typeof value === 'string') {
+        // Truncate long strings
+        if (value.length > 100) {
+          return escapeHtml(value.substring(0, 100)) + '...';
+        }
+        return escapeHtml(value);
+      }
+      if (value instanceof Date || (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}/.test(value))) {
+        // Format dates
+        try {
+          const date = new Date(value);
+          return date.toLocaleDateString('fr-FR');
+        } catch (e) {
+          return escapeHtml(String(value));
+        }
+      }
+      return escapeHtml(String(value));
+    }
+
+    function highlightMatch(text, searchTerm) {
+      if (!searchTerm || !text) return text;
+
+      const regex = new RegExp(\`(\${escapeRegex(searchTerm)})\`, 'gi');
+      return text.replace(regex, '<mark style="background: yellow; padding: 0 2px;">$1</mark>');
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    function escapeRegex(text) {
+      return text.replace(/[.*+?^\\$\\{\\}()|[\\\\]]/g, '\\\\\\\\$&');
+    }
+
+    // Enable search on Enter key
+    document.getElementById('searchInput').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        performSearch(e);
+      }
+    });
   </script>
 </body>
 </html>
