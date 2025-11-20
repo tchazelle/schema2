@@ -8,6 +8,7 @@ module.exports = {
   maxRows: 1000,
   maxColWidth:"20em",
   maxColHeight:"3em",
+  naming: ["camelCase","PascalCase"],
 
   // Configuration email marketing
   emailRateLimit: 120, // Limite d'envoi par heure (contrainte hébergeur)
@@ -557,6 +558,7 @@ module.exports = {
         id: { type: "integer", isPrimary: true, autoIncrement: true },
         title: { type: "varchar", length: 255 }, // Titre interne (ex: "Newsletter Février 2025")
         subject: { type: "varchar", length: 255 }, // Sujet de l'email
+        description: { type: "text" },
         bodyTemplate: { type: "text" }, // Template Mustache du corps de l'email
         scheduledAt: { type: "datetime" }, // Date programmée pour l'envoi
         status: {
@@ -583,10 +585,10 @@ module.exports = {
       },
       fields: {
         id: { type: "integer", isPrimary: true, autoIncrement: true },
+        image: { type: "varchar", renderer: "image" },
         title: { type: "varchar", length: 255 },
         content: { type: "text" },
         publishedAt: { type: "datetime" },
-        image: { type: "varchar", renderer: "image" },
         url: { type: "varchar", renderer: "url" },
         // ... commonFields
       }

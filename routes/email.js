@@ -152,6 +152,46 @@ router.get('/preview/:id', AuthService.authMiddleware, async (req, res) => {
   }
 });
 
+router.get('/template', AuthService.authMiddleware, async (req, res) => {
+  try {
+  
+    function escapeHTML(str) {
+    return str
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    const html = await NewsletterService.getDefaultTemplate();
+    // Retourner le HTML directement (pour affichage dans le navigateur)
+    res.setHeader('Content-Type', 'text/html');
+    res.send(`<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>getDefaultTemplate</title>
+</head><body>
+  <pre><code class="html">
+    ${escapeHTML(html)}
+  </code></pre>
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script>hljs.highlightAll();</script>
+</body></html>
+
+`);
+  } catch (error) {
+    console.error('Error template:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 // ========================================
 // TRACKING PIXEL
 // ========================================

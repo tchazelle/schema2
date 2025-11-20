@@ -134,61 +134,89 @@ class NewsletterService {
    * Retourne le template HTML par défaut pour les newsletters
    * @returns {string} Template Mustache
    */
-  static getDefaultTemplate() {
-    return `<!DOCTYPE html>
+  static getDefaultTemplate() { 
+    
+    const styles = {
+      body: "margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; background-color: #f4f4f4;",
+      mainTable: "background-color: #f4f4f4;",
+      wrapperCell: "padding: 20px 0;",
+      contentTable: "background-color: #ffffff; max-width: 600px; margin: 0 auto;",
+
+      header: "background-color: #667eea; color: #ffffff; padding: 30px 20px; text-align: center;",
+      headerTitle: "margin: 0; font-size: 28px; font-weight: bold; color: #ffffff;",
+
+      greeting: "padding: 20px; font-size: 16px; color: #555555; line-height: 1.6;",
+      greetingName: "color: #333333;",
+
+      noNews: "color: #999999; text-align: center; padding: 40px 20px; font-size: 16px;",
+
+      footer: "background-color: #f9f9f9; padding: 20px; text-align: center; border-top: 1px solid #eeeeee;",
+      footerText: "margin: 5px 0; font-size: 12px; color: #777777;",
+      footerEmail: "margin: 15px 0 5px 0; font-size: 12px; color: #999999;",
+      footerLink: "color: #667eea; text-decoration: none;",
+
+      news: {
+        container: "margin-bottom: 30px; border-bottom: 1px solid #eeeeee; padding-bottom: 20px;",
+        imageCell: "width: 200px; padding-right: 20px; vertical-align: top;",
+        image: "max-width: 100%; height: auto; display: block; margin-bottom: 15px;",
+        title: "color: #667eea; font-size: 22px; margin: 0 0 10px 0; font-weight: bold;",
+        content: "margin: 10px 0; color: #555555; line-height: 1.8; font-size: 16px;",
+
+        buttonTable: "margin-top: 10px;",
+        buttonCell: "background-color: #667eea; padding: 10px 20px;",
+        buttonLink: "color: #ffffff; text-decoration: none; font-weight: bold; display: inline-block;"
+      }
+    };
+
+
+return `
+<!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{{newsletter.subject}}</title>
 </head>
-<body style="margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; background-color: #f4f4f4;">
-  <!-- Main Container Table -->
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color: #f4f4f4;">
+<body style="${styles.body}">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="${styles.mainTable}">
     <tr>
-      <td style="padding: 20px 0;">
-        <!-- Content Table (max-width 600px) -->
-        <table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" align="center" style="background-color: #ffffff; max-width: 600px; margin: 0 auto;">
+      <td style="${styles.wrapperCell}">
+        <table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" align="center" style="${styles.contentTable}">
 
-          <!-- Header -->
           <tr>
-            <td style="background-color: #667eea; color: #ffffff; padding: 30px 20px; text-align: center;">
-              <h1 style="margin: 0; font-size: 28px; font-weight: bold; color: #ffffff;">{{newsletter.title}}</h1>
+            <td style="${styles.header}">
+              <h1 style="${styles.headerTitle}">{{newsletter.title}}</h1>
             </td>
           </tr>
 
-          <!-- Greeting -->
           <tr>
-            <td style="padding: 20px; font-size: 16px; color: #555555; line-height: 1.6;">
-              Bonjour <strong style="color: #333333;">{{givenName}}</strong>,
+            <td style="${styles.greeting}">
+              Bonjour <strong style="${styles.greetingName}">{{givenName}}</strong>,
+              {{description}}
             </td>
           </tr>
 
-          <!-- Content -->
           <tr>
             <td style="padding: 0 20px 20px 20px;">
-              <!-- News Items -->
               {{#news}}
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 30px; border-bottom: 1px solid #eeeeee; padding-bottom: 20px;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="${styles.news.container}">
                 <tr>
-                  <td>
-                    <!-- News Title -->
-                    <h2 style="color: #667eea; font-size: 22px; margin: 0 0 10px 0; font-weight: bold;">{{title}}</h2>
-
-                    <!-- News Image (if exists) -->
+                  <td style="${styles.news.imageCell}">
                     {{#hasImage}}
-                    <img src="{{image}}" alt="{{title}}" style="max-width: 100%; height: auto; display: block; margin-bottom: 15px;" />
+                    <img src="{{image}}" alt="{{title}}" style="${styles.news.image}" />
                     {{/hasImage}}
+                  </td>
 
-                    <!-- News Content -->
-                    <p style="margin: 10px 0; color: #555555; line-height: 1.8; font-size: 16px;">{{content}}</p>
+                  <td>
+                    <h2 style="${styles.news.title}">{{title}}</h2>
 
-                    <!-- News Link (if exists) -->
+                    <p style="${styles.news.content}">{{content}}</p>
+
                     {{#hasUrl}}
-                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin-top: 10px;">
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="${styles.news.buttonTable}">
                       <tr>
-                        <td style="background-color: #667eea; padding: 10px 20px;">
-                          <a href="{{url}}" target="_blank" style="color: #ffffff; text-decoration: none; font-weight: bold; display: inline-block;">En savoir plus →</a>
+                        <td style="${styles.news.buttonCell}">
+                          <a href="{{url}}" target="_blank" style="${styles.news.buttonLink}">En savoir plus →</a>
                         </td>
                       </tr>
                     </table>
@@ -198,24 +226,22 @@ class NewsletterService {
               </table>
               {{/news}}
 
-              <!-- No News Message -->
               {{^news}}
-              <p style="color: #999999; text-align: center; padding: 40px 20px; font-size: 16px;">
+              <p style="${styles.noNews}">
                 Aucune actualité pour le moment.
               </p>
               {{/news}}
             </td>
           </tr>
 
-          <!-- Footer -->
           <tr>
-            <td style="background-color: #f9f9f9; padding: 20px; text-align: center; border-top: 1px solid #eeeeee;">
-              <p style="margin: 5px 0; font-size: 12px; color: #777777;">&copy; {{currentYear}} - Tous droits réservés</p>
-              <p style="margin: 5px 0; font-size: 12px; color: #777777;">
+            <td style="${styles.footer}">
+              <p style="${styles.footerText}">&copy; {{currentYear}} - Tous droits réservés</p>
+              <p style="${styles.footerText}">
                 Vous recevez cet email car vous êtes abonné à notre newsletter.<br>
-                <a href="#" style="color: #667eea; text-decoration: none;">Se désabonner</a>
+                <a href="#" style="${styles.footerLink}">Se désabonner</a>
               </p>
-              <p style="margin: 15px 0 5px 0; font-size: 12px; color: #999999;">
+              <p style="${styles.footerEmail}">
                 Envoyé à : {{email}}
               </p>
             </td>
@@ -226,7 +252,8 @@ class NewsletterService {
     </tr>
   </table>
 </body>
-</html>`;
+</html>
+`;
   }
 
   /**
