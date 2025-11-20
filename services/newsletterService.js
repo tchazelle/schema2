@@ -82,7 +82,8 @@ class NewsletterService {
         // Données de la newsletter
         newsletter: {
           title: newsletter.title,
-          subject: newsletter.subject
+          subject: newsletter.subject,
+          content: newsletter.content ? marked.parse(newsletter.content) : '',
         },
 
         // Render newsletter content as markdown if it exists
@@ -112,8 +113,8 @@ class NewsletterService {
       }
 
       // 5. Rendre avec Mustache
-      const html = mustache.render(template, templateData);
-
+      const html1 = mustache.render(template, templateData);
+      const html = mustache.render(html1, templateData); // car les content peuvent contenir des Mustache aussi
       return html;
     } catch (error) {
       console.error('Error rendering email template:', error);
@@ -202,8 +203,7 @@ return `
 
           <tr>
             <td style="${styles.greeting}">
-              Bonjour <strong style="${styles.greetingName}">{{givenName}}</strong>,
-              {{description}}
+              {{{newsletter.content}}}
             </td>
           </tr>
 
@@ -221,7 +221,7 @@ return `
                   <td>
                     <h2 style="${styles.news.title}">{{title}}</h2>
 
-                    <p style="${styles.news.content}">{{content}}</p>
+                    <p style="${styles.news.content}">{{{content}}}</p>
 
                     {{#hasUrl}}
                     <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="${styles.news.buttonTable}">
@@ -265,7 +265,7 @@ return `
 </body>
 </html>
 `;
-  }
+  } //  END static getDefaultTemplate()
 
   /**
    * Crée une newsletter de test avec des News de démo

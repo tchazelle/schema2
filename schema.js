@@ -547,7 +547,7 @@ module.exports = {
     // ========================================
 
     Newsletter: {
-      displayFields: ["title"],
+      displayFields: ["name"],
       searchFields: ["title", "subject"],
       pageSize: 50,
       hasAttachmentsTab: false,
@@ -556,9 +556,9 @@ module.exports = {
       },
       fields: {
         id: { type: "integer", isPrimary: true, autoIncrement: true },
-        title: { type: "varchar", length: 255 }, // Titre interne (ex: "Newsletter Février 2025")
+        name: { type: "varchar", length: 255 }, // Titre interne (ex: "Newsletter Février 2025")
         subject: { type: "varchar", length: 255 }, // Sujet de l'email
-        description: { type: "text" },
+        content: { type: "text", renderer: "markdown" }, // Contenu principal en markdown
         bodyTemplate: { type: "text" }, // Template Mustache du corps de l'email
         scheduledAt: { type: "datetime" }, // Date programmée pour l'envoi
         status: {
@@ -587,7 +587,7 @@ module.exports = {
         id: { type: "integer", isPrimary: true, autoIncrement: true },
         image: { type: "varchar", renderer: "image" },
         title: { type: "varchar", length: 255 },
-        content: { type: "text" },
+        content: { type: "text", renderer: "markdown" },
         publishedAt: { type: "datetime" },
         url: { type: "varchar", renderer: "url" },
         // ... commonFields
