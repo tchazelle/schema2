@@ -563,6 +563,7 @@ tr.detail-row td {
 }
 
 .edit-field-input,
+.edit-field-textarea,
 .edit-field-resolvedRelations,
 .edit-field-select {
   padding: var(--space-sm) var(--space-4);
@@ -583,8 +584,10 @@ tr.detail-row td {
 
 .edit-field-textarea {
   min-height: 80px;
-  min-width:100%;
-  _resize: vertical;
+  min-width: 100%;
+  width: 100%;
+  resize: vertical;
+  box-sizing: border-box;
 }
 
 .edit-field-input.error,
@@ -1691,13 +1694,16 @@ a.modal-subtitle:hover {
    MODAL & FULLSCREEN CONTEXT OVERRIDES
    ======================================== */
 
-/* Dans les modaux et fullscreen, permettre aux inputs et selects de prendre toute la largeur disponible
+/* Dans les modaux et fullscreen, permettre aux inputs, selects et textareas de prendre toute la largeur disponible
    (override des max-width définies ailleurs, notamment dans calendar-date-range.css) */
 .modal-content-detail .edit-field-input,
 .modal-content-detail .edit-field-select,
+.modal-content-detail .edit-field-textarea,
 .modal-content .edit-field-input,
 .modal-content .edit-field-select,
+.modal-content .edit-field-textarea,
 .fullscreen-editor-container .edit-field-input,
-.fullscreen-editor-container .edit-field-select {
+.fullscreen-editor-container .edit-field-select,
+.fullscreen-editor-container .edit-field-textarea {
   max-width: 100%;
 }
