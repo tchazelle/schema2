@@ -320,8 +320,8 @@ class ImageFieldUploader extends React.Component {
           display: 'flex',
           justifyContent: 'center',
           alignItems: 'center',
-          minHeight: '200px',
-          maxHeight: '400px',
+          minHeight: '100px',
+          maxHeight: '200px',
           backgroundColor: '#fff',
           borderRadius: '4px',
           overflow: 'hidden',
@@ -333,12 +333,39 @@ class ImageFieldUploader extends React.Component {
           alt: 'Image preview',
           style: {
             maxWidth: '100%',
-            maxHeight: '400px',
-            objectFit: 'contain',
-            cursor: 'pointer'
-          },
-          onClick: () => window.open(previewUrl, '_blank')
+            maxHeight: '200px',
+            objectFit: 'contain'
+          }
         }),
+
+        // Zoom button (top left of image)
+        e('button', {
+          type: 'button',
+          className: 'btn-image-zoom',
+          style: {
+            position: 'absolute',
+            top: '8px',
+            left: '8px',
+            width: '32px',
+            height: '32px',
+            backgroundColor: 'rgba(0, 0, 0, 0.6)',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            fontSize: '18px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 10
+          },
+          onClick: (e) => {
+            e.stopPropagation();
+            window.open(previewUrl, '_blank');
+          },
+          title: 'Ouvrir dans un nouvel onglet',
+          disabled: disabled
+        }, '🔍'),
 
         // Three-dot menu button (top right of image)
         e('button', {

@@ -137,110 +137,80 @@ class NotifyModal extends React.Component {
 
     return e('div', {
       className: 'modal-overlay',
-      onClick: this.handleOverlayClick,
-      style: {
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 10000
-      }
+      onClick: this.handleOverlayClick
     },
       e('div', {
-        className: 'modal-content',
+        className: 'modal-content notify-modal-content',
         onClick: (e) => e.stopPropagation(),
         style: {
-          backgroundColor: 'white',
-          borderRadius: '8px',
-          padding: '24px',
-          maxWidth: '500px',
+          padding: '0',
+          maxWidth: '1000px',
           width: '90%',
-          maxHeight: '80vh',
-          overflow: 'auto',
-          boxShadow: '0 4px 20px rgba(0,0,0,0.2)'
+          maxHeight: '90vh',
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column'
         }
       },
         // Header
         e('div', {
+          className: 'modal-header notify-modal-header',
           style: {
-            borderBottom: '2px solid #007bff',
-            paddingBottom: '12px',
-            marginBottom: '20px'
+            padding: '20px 24px',
+            flexShrink: 0
           }
         },
           e('h2', {
             style: {
               margin: 0,
-              color: '#007bff',
               fontSize: '20px',
               fontWeight: 'bold'
             }
           }, '📧 Envoyer une notification')
         ),
 
-        // Email Preview (between the two blue lines)
-        !loading && !error && emailPreview && e('div', {
-          key: 'email-preview',
+        // Two-column layout container
+        e('div', {
+          className: 'notify-modal-body',
           style: {
-            borderTop: '2px solid #007bff',
-            borderBottom: '2px solid #007bff',
-            padding: '16px',
-            marginBottom: '20px',
-            maxHeight: '300px',
-            overflow: 'auto',
-            backgroundColor: '#f8f9fa'
+            flex: 1,
+            display: 'flex',
+            overflow: 'hidden',
+            minHeight: 0
           }
         },
-          e('h3', {
+
+          // Loading state
+          loading && e('div', {
             style: {
-              margin: '0 0 12px 0',
-              fontSize: '14px',
-              color: '#666',
-              fontWeight: 'bold'
+              flex: 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '40px'
             }
-          }, '📄 Aperçu du message'),
-          e('iframe', {
-            srcDoc: emailPreview,
+          }, '⏳ Chargement des destinataires...'),
+
+          // Error state
+          error && e('div', {
+            className: 'error',
             style: {
-              width: '100%',
-              minHeight: '200px',
-              border: '1px solid #dee2e6',
-              borderRadius: '4px',
-              backgroundColor: 'white'
-            },
-            sandbox: 'allow-same-origin',
-            scrolling: 'auto'
-          })
-        ),
+              flex: 1,
+              margin: '20px',
+              padding: '20px'
+            }
+          }, error),
 
-        // Loading state
-        loading && e('div', {
-          style: {
-            textAlign: 'center',
-            padding: '40px 20px',
-            color: '#666'
-          }
-        }, '⏳ Chargement des destinataires...'),
-
-        // Error state
-        error && e('div', {
-          style: {
-            backgroundColor: '#f8d7da',
-            border: '1px solid #f5c6cb',
-            borderRadius: '4px',
-            padding: '12px',
-            color: '#721c24',
-            marginBottom: '16px'
-          }
-        }, `❌ ${error}`),
-
-        // Content
-        !loading && !error && [
+          // Left column: Parameters
+          !loading && !error && e('div', {
+            className: 'notify-params-column',
+            style: {
+              flex: '0 0 400px',
+              padding: '20px 24px',
+              overflow: 'auto',
+              borderRight: '1px solid var(--color-border)'
+            }
+          },
           // Recipients list
           e('div', {
             key: 'recipients',
@@ -417,45 +387,64 @@ class NotifyModal extends React.Component {
             )
           ),
 
-          // Buttons
-          e('div', {
-            key: 'buttons',
+          // Right column: Preview
+          !loading && !error && e('div', {
+            className: 'notify-preview-column',
             style: {
+              flex: 1,
+              padding: '20px 24px',
+              overflow: 'auto',
               display: 'flex',
-              gap: '12px',
-              justifyContent: 'flex-end',
-              marginTop: '24px'
+              flexDirection: 'column'
             }
           },
-            e('button', {
-              onClick: onCancel,
+            e('h3', {
               style: {
-                padding: '8px 16px',
-                border: '1px solid #6c757d',
-                borderRadius: '4px',
-                backgroundColor: 'white',
-                color: '#6c757d',
-                cursor: 'pointer',
-                fontSize: '14px',
+                margin: '0 0 12px 0',
+                fontSize: '16px',
                 fontWeight: 'bold'
               }
-            }, 'Annuler'),
-            e('button', {
-              onClick: this.handleConfirm,
-              disabled: recipients.length === 0,
+            }, '📄 Aperçu du message'),
+            emailPreview && e('iframe', {
+              srcDoc: emailPreview,
               style: {
-                padding: '8px 16px',
-                border: 'none',
-                borderRadius: '4px',
-                backgroundColor: recipients.length === 0 ? '#ccc' : '#007bff',
-                color: 'white',
-                cursor: recipients.length === 0 ? 'not-allowed' : 'pointer',
-                fontSize: '14px',
-                fontWeight: 'bold'
-              }
-            }, `📧 Envoyer (${recipients.length})`)
+                flex: 1,
+                width: '100%',
+                minHeight: '400px',
+                border: '1px solid var(--color-border)',
+                borderRadius: '4px'
+              },
+              sandbox: 'allow-same-origin',
+              scrolling: 'auto'
+            })
           )
-        ]
+        ),
+
+        // Footer with buttons
+        !loading && !error && e('div', {
+          className: 'modal-footer',
+          style: {
+            display: 'flex',
+            gap: '12px',
+            justifyContent: 'flex-end',
+            padding: '16px 24px',
+            flexShrink: 0
+          }
+        },
+          e('button', {
+            onClick: onCancel,
+            className: 'btn-cancel'
+          }, 'Annuler'),
+          e('button', {
+            onClick: this.handleConfirm,
+            disabled: recipients.length === 0,
+            className: 'btn-primary',
+            style: {
+              opacity: recipients.length === 0 ? 0.5 : 1,
+              cursor: recipients.length === 0 ? 'not-allowed' : 'pointer'
+            }
+          }, `📧 Envoyer (${recipients.length})`)
+        )
       )
     );
   }

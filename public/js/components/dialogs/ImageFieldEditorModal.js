@@ -238,18 +238,6 @@ class ImageFieldEditorModal extends React.Component {
 
     return e('div', {
       className: 'modal-overlay',
-      style: {
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: 'rgba(0, 0, 0, 0.7)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 10000
-      },
       onClick: (e) => {
         if (e.target.className === 'modal-overlay') {
           onCancel();
@@ -259,8 +247,6 @@ class ImageFieldEditorModal extends React.Component {
       e('div', {
         className: 'modal-content',
         style: {
-          backgroundColor: '#fff',
-          borderRadius: '8px',
           padding: '24px',
           maxWidth: '90vw',
           maxHeight: '90vh',
@@ -594,9 +580,9 @@ class ImageFieldEditorModal extends React.Component {
 
             // Replace original checkbox
             e('div', {
+              className: 'image-editor-replace-section',
               style: {
                 padding: '12px',
-                backgroundColor: replaceOriginal ? '#fff3cd' : '#f5f5f5',
                 borderRadius: '4px'
               }
             },
@@ -616,10 +602,10 @@ class ImageFieldEditorModal extends React.Component {
                 e('span', {},
                   'Remplacer l\'original',
                   replaceOriginal && e('span', {
+                    className: 'replace-warning',
                     style: {
                       display: 'block',
                       fontSize: '12px',
-                      color: '#856404',
                       marginTop: '4px'
                     }
                   }, '⚠️ L\'image originale sera remplacée')
@@ -629,6 +615,7 @@ class ImageFieldEditorModal extends React.Component {
 
             // Actions
             e('div', {
+              className: 'modal-footer',
               style: {
                 display: 'flex',
                 gap: '8px',
@@ -638,14 +625,10 @@ class ImageFieldEditorModal extends React.Component {
               e('button', {
                 onClick: this.handleSave,
                 disabled: saving,
+                className: 'btn-save-image',
                 style: {
                   flex: 1,
                   padding: '12px',
-                  backgroundColor: '#28a745',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: saving ? 'not-allowed' : 'pointer',
                   fontWeight: 'bold',
                   opacity: saving ? 0.6 : 1
                 }
@@ -653,13 +636,9 @@ class ImageFieldEditorModal extends React.Component {
               e('button', {
                 onClick: onCancel,
                 disabled: saving,
+                className: 'btn-cancel',
                 style: {
                   padding: '12px 24px',
-                  backgroundColor: '#6c757d',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: saving ? 'not-allowed' : 'pointer',
                   opacity: saving ? 0.6 : 1
                 }
               }, 'Annuler')

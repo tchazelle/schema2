@@ -534,6 +534,7 @@ module.exports = {
     Place : {
       displayFields: ["name"],
       pageSize: 300,
+      hasAttachmentsTab: true, // Permet d'attacher des pièces jointes
       granted: { "admin": ["read", "create", "update", "delete", "publish"] },
       fields: {
         id: { type: "integer", isPrimary: true, autoIncrement: true },
