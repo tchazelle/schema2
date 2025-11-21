@@ -958,11 +958,11 @@ tr.detail-row td {
    BUTTONS
    ======================================== */
 
-._btn-add-record {
+.btn-add-record {
   padding: var(--space-sm) var(--space-lg);
-  background: var(--color-primary);
-  color: var(--color-bg-white);
-  border: solid 1px red;
+  background: var(--color-primary-bg);
+  color: var(--color-white);
+  border: none;
   border-radius: var(--border-radius-sm);
   font-size: var(--font-size-base);
   font-weight: var(--font-weight-medium);
