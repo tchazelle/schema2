@@ -201,7 +201,7 @@ class TemplateService {
       <span>${user.fullName}</span>
     </button>
 
-    <div class="user-dropdown" id="userDropdown">
+    <div class="user-dropdown menu-dropdown" id="userDropdown">
       ${user.isAuthenticated ? `
         <div class="user-info">
           ${user.email}<br>
