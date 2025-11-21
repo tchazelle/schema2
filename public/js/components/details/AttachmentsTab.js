@@ -346,7 +346,10 @@ class AttachmentsTab extends React.Component {
       const data = await response.json();
 
       if (data.success) {
-        alert('✓ Image définie comme image principale');
+        // Show a subtle toast-style notification instead of alert
+        if (window.showToast) {
+          window.showToast('✅ Sauvegardé', 'success');
+        }
 
         // Notify parent component if callback provided
         if (onImageFieldUpdate) {
