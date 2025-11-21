@@ -39,17 +39,17 @@ function adjustDropdownPosition(dropdown, trigger = null) {
 
   // Apply appropriate alignment based on overflow
   if (overflowsRight && !overflowsLeft) {
-    // Dropdown overflows right edge - align to right of trigger
-    dropdown.classList.add('align-left');
-    dropdown.classList.add('overflow-right');
-    dropdown.style.right = 'auto';
-    dropdown.style.left = '0';
-  } else if (overflowsLeft && !overflowsRight) {
-    // Dropdown overflows left edge - align to left of trigger
+    // Dropdown overflows right edge - align to RIGHT of parent container
     dropdown.classList.add('align-right');
-    dropdown.classList.add('overflow-left');
+    dropdown.classList.add('overflow-right');
     dropdown.style.left = 'auto';
     dropdown.style.right = '0';
+  } else if (overflowsLeft && !overflowsRight) {
+    // Dropdown overflows left edge - align to LEFT of parent container
+    dropdown.classList.add('align-left');
+    dropdown.classList.add('overflow-left');
+    dropdown.style.right = 'auto';
+    dropdown.style.left = '0';
   } else if (!dropdown.classList.contains('align-left') && !dropdown.classList.contains('align-center')) {
     // Default to right alignment if no specific class
     dropdown.classList.add('align-right');
