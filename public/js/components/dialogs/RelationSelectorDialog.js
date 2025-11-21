@@ -70,7 +70,7 @@ class RelationSelectorDialog extends React.Component {
         e('div', { className: 'modal-header' },
           e('h3', null, 'Dupliquer avec relations'),
           e('button', {
-            className: 'modal-close',
+            className: 'modal-close btn-icon',
             onClick: onCancel
           }, '✖')
         ),

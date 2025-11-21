@@ -68,18 +68,18 @@ class FieldSelectorModal extends React.Component {
         e('div', { className: 'modal-header' },
           e('h3', null, 'Sélectionner les champs à afficher'),
           e('button', {
-            className: 'modal-close',
+            className: 'modal-close btn-icon',
             onClick: onClose
           }, '✖')
         ),
         e('div', { className: 'modal-body' },
           e('div', { className: 'modal-actions' },
             e('button', {
-              className: 'btn-select-all',
+              className: 'btn-select-all btn btn-secondary',
               onClick: this.selectAll
             }, 'Tout sélectionner'),
             e('button', {
-              className: 'btn-select-none',
+              className: 'btn-select-none btn btn-secondary',
               onClick: this.selectNone
             }, 'Tout désélectionner')
           ),
@@ -105,11 +105,11 @@ class FieldSelectorModal extends React.Component {
         ),
         e('div', { className: 'modal-footer' },
           e('button', {
-            className: 'btn-cancel',
+            className: 'btn-cancel btn btn-secondary',
             onClick: onClose
           }, 'Annuler'),
           e('button', {
-            className: 'btn-apply',
+            className: 'btn-apply btn btn-primary',
             onClick: this.apply
           }, 'Appliquer')
         )

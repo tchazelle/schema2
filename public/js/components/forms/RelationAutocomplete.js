@@ -229,7 +229,7 @@ class RelationAutocomplete extends React.Component {
         }),
         canCreate && e('button', {
           type: 'button',
-          className: 'btn-add-relation',
+          className: 'btn-add-relation btn btn-primary',
           onClick: this.handleAddNew,
           title: 'Créer un nouvel enregistrement'
         }, '+')

@@ -68,11 +68,11 @@ class ThreeDotsMenu extends React.Component {
 
     return e('div', { className: 'menu-dots', ref: this.menuRef },
       e('button', {
-        className: 'btn-menu',
+        className: 'btn-menu btn-icon menu-three-dots',
         onClick: this.toggleMenu,
         'aria-label': 'Options'
       }, '⋮'),
-      isOpen && e('div', { className: 'menu-dropdown' },
+      isOpen && e('div', { className: 'menu-dropdown open' },
         // Display mode section (hide for sub-lists)
         !isSubList && e('div', { className: 'menu-section' },
           e('div', { className: 'menu-label' }, 'Mode de présentation'),
@@ -105,12 +105,12 @@ class ThreeDotsMenu extends React.Component {
             }
           }, displayMode === 'custom' ? '✓ ' : '', 'Sélection personnalisée')
         ),
-        !isSubList && e('div', { className: 'menu-divider' }),
+        !isSubList && e('div', { className: 'menu-divider divider' }),
         !isSubList && e('button', {
           className: 'menu-item',
           onClick: () => this.handleOptionClick('onFieldSelect')
         }, '🎯 Sélectionner les champs'),
-        !isSubList && e('div', { className: 'menu-divider' }),
+        !isSubList && e('div', { className: 'menu-divider divider' }),
         !isSubList && onAdvancedSearch && e('button', {
           className: `menu-item ${hasAdvancedSearch ? 'active' : ''}`,
           onClick: () => this.handleOptionClick('onAdvancedSearch')
