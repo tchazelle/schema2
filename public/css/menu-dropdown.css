@@ -24,7 +24,7 @@
 .menu-dropdown {
   position: absolute;
   background: var(--color-bg-white);
-  border: var(--border-width) solid var(--color-border);
+  border: solid var(--border-width) var(--color-border);
   border-radius: var(--border-radius-md);
   box-shadow: var(--shadow-md);
   min-width: 200px;
@@ -141,7 +141,7 @@
  */
 .menu-section {
   padding: var(--space-xs) 0;
-  border-bottom: var(--border-width) solid var(--color-border);
+  border-bottom: solid var(--border-width) var(--color-border);
 }
 
 .menu-section:last-child {
@@ -273,7 +273,7 @@
 
 .user-dropdown .user-info {
   padding: var(--space-md) var(--space-md);
-  border-bottom: var(--border-width) solid var(--color-border);
+  border-bottom: solid var(--border-width) var(--color-border);
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
   line-height: var(--line-height-tight);
@@ -343,7 +343,7 @@
 .image-menu-dropdown,
 .attachment-menu-dropdown {
   background: var(--color-bg-white);
-  border: var(--border-width) solid var(--color-border);
+  border: solid var(--border-width) var(--color-border);
   border-radius: var(--border-radius-sm);
   box-shadow: var(--shadow-lg);
   min-width: 180px;

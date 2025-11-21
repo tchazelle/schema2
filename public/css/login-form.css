@@ -12,7 +12,7 @@
   background: var(--color-bg-white);
   padding: var(--space-xsxl);
   border-radius: var(--border-radius-lg);
-  border: var(--border-width) solid var(--color-border-light);
+  border: solid var(--border-width) var(--color-border-light);
   box-shadow: var(--shadow-xs);
 
   min-width: 40rem;
@@ -49,7 +49,7 @@
 .form-group input {
   width: 100%;
   padding: var(--space-md);
-  border: var(--border-width) solid var(--color-border-card);
+  border: solid var(--border-width) var(--color-border-card);
   border-radius: var(--border-radius-sm);
   font-size: var(--font-size-base);
   transition: border-color var(--transition-base);
@@ -89,7 +89,7 @@
   display: none;
   padding: var(--space-md);
   background: var(--color-error-bg);
-  border: var(--border-width) solid var(--color-error-border);
+  border: solid var(--border-width) var(--color-error-border);
   border-radius: var(--border-radius-sm);
 }
 

@@ -42,7 +42,7 @@ h2 {
   font-size: var(--font-size-xl);
   margin-bottom: var(--space-lg);
   padding-bottom: var(--space-md);
-  border-bottom: var(--border-width) solid var(--color-primary);
+  border-bottom: solid var(--border-width) var(--color-primary);
 }
 
 /* Subtitle */
@@ -67,7 +67,7 @@ h2 {
   font-size: var(--font-size-xl);
   margin-bottom: var(--space-lg);
   padding-bottom: var(--space-md);
-  border-bottom: var(--border-width) solid var(--color-primary);
+  border-bottom: solid var(--border-width) var(--color-primary);
 }
 
 /* Responsive */

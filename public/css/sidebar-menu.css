@@ -32,7 +32,7 @@
 .sidebar-header {
   padding: var(--space-xl);
   background: var(--color-bg-section);
-  border-bottom: var(--border-width) solid var(--color-border-light);
+  border-bottom: solid var(--border-width) var(--color-border-light);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -61,7 +61,7 @@
 /* Sidebar sections */
 .sidebar-section {
   padding: var(--space-xl);
-  border-bottom: var(--border-width) solid var(--color-border-light);
+  border-bottom: solid var(--border-width) var(--color-border-light);
 }
 
 .sidebar-section h3 {
