@@ -104,15 +104,15 @@
  * Applied dynamically by dropdownPosition.js
  */
 .menu-dropdown.overflow-right {
-  /* Dropdown was going to overflow right edge, now opens to the left */
-  right: auto !important;
-  left: 0 !important;
+  /* Dropdown was going to overflow right edge, align to right of container */
+  left: auto !important;
+  right: 0 !important;
 }
 
 .menu-dropdown.overflow-left {
-  /* Dropdown was going to overflow left edge, now opens to the right */
-  left: auto !important;
-  right: 0 !important;
+  /* Dropdown was going to overflow left edge, align to left of container */
+  right: auto !important;
+  left: 0 !important;
 }
 
 /**
