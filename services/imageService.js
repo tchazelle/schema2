@@ -617,6 +617,17 @@ class ImageService {
       // Get input file path
       const inputPath = ImageService.getImagePath(imageUrl);
 
+      if (!inputPath) {
+        throw new Error('Invalid image URL or path');
+      }
+
+      // Verify file exists
+      try {
+        await fs.access(inputPath);
+      } catch (error) {
+        throw new Error(`Image file not found: ${inputPath}`);
+      }
+
       // Determine output format
       const outputFormat = operations.format || path.extname(inputPath).substring(1) || 'jpg';
       const baseFilename = path.basename(inputPath, path.extname(inputPath));
@@ -730,6 +741,21 @@ class ImageService {
    */
   static async applyTransformations(inputPath, outputPath, operations = {}) {
     try {
+      if (!inputPath) {
+        throw new Error('Input path is required');
+      }
+
+      if (!outputPath) {
+        throw new Error('Output path is required');
+      }
+
+      // Verify input file exists
+      try {
+        await fs.access(inputPath);
+      } catch (error) {
+        throw new Error(`Input file not found: ${inputPath}`);
+      }
+
       let pipeline = sharp(inputPath);
 
       // Get original metadata

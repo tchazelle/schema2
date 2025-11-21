@@ -21,6 +21,22 @@ class ImageEditorService {
    */
   static async applyTransformations(inputPath, outputPath, operations = {}) {
     try {
+      if (!inputPath) {
+        throw new Error('Input path is required');
+      }
+
+      if (!outputPath) {
+        throw new Error('Output path is required');
+      }
+
+      // Verify input file exists
+      const fs = require('fs').promises;
+      try {
+        await fs.access(inputPath);
+      } catch (error) {
+        throw new Error(`Input file not found: ${inputPath}`);
+      }
+
       let pipeline = sharp(inputPath);
 
       // Get original metadata

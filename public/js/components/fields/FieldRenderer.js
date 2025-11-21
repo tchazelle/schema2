@@ -133,32 +133,55 @@ class FieldRenderer extends React.Component {
             style: {
               display: 'flex',
               flexDirection: 'column',
-              gap: '8px'
+              gap: '8px',
+              position: 'relative'
             }
           },
-            e('img', {
-              src: value,
-              alt: 'Image',
+            e('div', {
               style: {
-                maxWidth: '100%',
-                maxHeight: '400px',
-                objectFit: 'contain',
-                borderRadius: '8px',
-                border: '1px solid #ddd'
+                position: 'relative',
+                display: 'inline-block'
               }
-            }),
-            e('a', {
-              href: value,
-              target: '_blank',
-              rel: 'noopener noreferrer',
-              onClick: (ev) => ev.stopPropagation(),
-              className: 'image-link',
-              style: {
-                fontSize: '12px',
-                color: '#007bff',
-                textDecoration: 'none'
-              }
-            }, '🔗 Ouvrir dans un nouvel onglet')
+            },
+              e('img', {
+                src: value,
+                alt: 'Image',
+                style: {
+                  maxWidth: '100%',
+                  maxHeight: '200px',
+                  objectFit: 'contain',
+                  borderRadius: '8px',
+                  border: '1px solid #ddd'
+                }
+              }),
+              // Zoom icon button (top left of image)
+              e('button', {
+                type: 'button',
+                className: 'btn-image-zoom',
+                style: {
+                  position: 'absolute',
+                  top: '8px',
+                  left: '8px',
+                  width: '32px',
+                  height: '32px',
+                  backgroundColor: 'rgba(0, 0, 0, 0.6)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '18px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  zIndex: 10
+                },
+                onClick: (ev) => {
+                  ev.stopPropagation();
+                  window.open(value, '_blank');
+                },
+                title: 'Ouvrir dans un nouvel onglet'
+              }, '🔍')
+            )
           );
         }
 

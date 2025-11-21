@@ -235,10 +235,35 @@ class TableRow extends React.Component {
     const { expanded, editMode, fullData, loading, focusFieldName } = this.state;
 
     if (displayMode === 'raw') {
-      return e('tr', null,
-        fields.map(fieldName =>
-          e('td', { key: fieldName }, String(row[fieldName] || ''))
-        )
+      return e(React.Fragment, null,
+        e('tr', {
+          className: 'data-row',
+          onClick: this.toggleExpand,
+          style: { cursor: 'pointer' }
+        },
+          fields.map(fieldName =>
+            e('td', { key: fieldName }, String(row[fieldName] || ''))
+          )
+        ),
+        // Modal overlay when expanded (same as normal mode)
+        expanded && e(RowDetailModal, {
+          row: fullData || row,
+          tableName,
+          tableConfig: tableConfig || {},
+          structure,
+          permissions: permissions || {},
+          editMode,
+          loading,
+          focusFieldName,
+          onClose: () => this.setState({ expanded: false, editMode: false }),
+          onEnterEditMode: this.enterEditMode,
+          onExitEditMode: this.exitEditMode,
+          onSave: this.handleSave,
+          onUpdate: this.props.onUpdate,
+          parentTable: parentTable,
+          hideRelations1N: !!parentTable,
+          onSubRecordUpdate: this.reloadFullData
+        })
       );
     }
 
