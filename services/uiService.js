@@ -146,7 +146,8 @@ class UIService {
 
   <link rel="stylesheet" href="/css/common.css">
   <link rel="stylesheet" href="/css/error-pages.css">
-    <link rel="stylesheet" href="/css/generic.css">
+  <link rel="stylesheet" href="/css/generic.css">
+  <link rel="stylesheet" href="/css/menu-dropdown.css">
 </head>
 <body>
   <div class="error-container">

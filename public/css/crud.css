@@ -90,51 +90,10 @@
   box-shadow: var(--shadow-focus);
 }
 
+/* Menu dropdown styles now in menu-dropdown.css */
+
 .menu-dots {
   position: relative;
-}
-
-._btn-menu {
-  /* Extends .btn-icon and .three-dots from generic.css */
-  font-size: var(--font-size-xl);
-  color: var(--color-text-muted-light);
-}
-
-.menu-dropdown {
-  /* Extends .menu-dropdown from generic.css */
-  position: absolute;
-  right: 0;
-  top: 100%;
-  margin-top: var(--space-xs);
-  min-width: 280px;
-}
-
-.menu-section {
-  padding: var(--space-xs) 0;
-}
-
-.menu-label {
-  padding: var(--space-xs) var(--space-md);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-muted-light);
-  text-transform: uppercase;
-  letter-spacing: var(--letter-spacing-normal);
-}
-
-.menu-item {
-  /* Extends .menu-item from generic.css */
-  font-size: var(--font-size-13);
-}
-
-.menu-item.active {
-  /* Extends .active from generic.css */
-  background: var(--color-primary-bg);
-  color: var(--color-primary-hover);
-}
-
-.menu-divider {
-  /* Extends .divider from generic.css */
 }
 
 /* Filter Options */

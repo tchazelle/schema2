@@ -260,12 +260,13 @@ router.get('/:table/view', async (req, res) => {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CRUD - ${table}</title>
   <link rel="stylesheet" href="/css/variables.css">
-  
+
   <link rel="stylesheet" href="/css/common.css">
   <link rel="stylesheet" href="/css/navigation.css">
   <link rel="stylesheet" href="/css/json-viewer.css">
   <link rel="stylesheet" href="/css/crud.css">
   <link rel="stylesheet" href="/css/generic.css">
+  <link rel="stylesheet" href="/css/menu-dropdown.css">
 </head>
 <body>
   <div class="container">
