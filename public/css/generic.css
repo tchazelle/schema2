@@ -539,12 +539,6 @@
   background: var(--color-bg-hover);
 }
 
-.menu-dropdown {
-  filter: brightness(0.95);
-}
-[data-theme="dark"] .menu-dropdown  {
-    filter: brightness(1.3);
-}
 
 
 /* ======================================= 

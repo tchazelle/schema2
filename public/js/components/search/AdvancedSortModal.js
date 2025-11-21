@@ -309,9 +309,11 @@ class AdvancedSortModal extends React.Component {
               key: index,
               style: {
                 display: 'flex',
+                maxWidth: '100%',
                 gap: '8px',
                 marginBottom: '8px',
-                alignItems: 'center'
+                alignItems: 'center',
+                border: '1px solid red',
               }
             },
               e('span', {
@@ -337,7 +339,7 @@ class AdvancedSortModal extends React.Component {
               ),
               e('select', {
                 className: 'edit-field-select',
-                style: { width: '110px', flexShrink: 0 },
+                style: { width: '12em', _flexShrink: 0 },
                 value: criterion.order,
                 onChange: (e) => this.handleCriterionChange(index, 'order', e.target.value)
               },
