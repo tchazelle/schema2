@@ -354,11 +354,10 @@ class EditForm extends React.Component {
         e('label', { className: 'edit-field-label' }, label, ' ', e('span', { style: { fontSize: '10px', color: '#6c757d', fontWeight: 400 } }, '(calculé)')),
         e('input', {
           type: 'text',
-          className: 'edit-field-input',
+          className: 'edit-field-input edit-field-computed',
           value: value || '',
           readOnly: true,
-          disabled: true,
-          style: { background: '#e9ecef', cursor: 'not-allowed' }
+          disabled: true
         })
       );
     }
@@ -369,11 +368,10 @@ class EditForm extends React.Component {
         e('label', { className: 'edit-field-label' }, label, ' ', e('span', { style: { fontSize: '10px', color: '#6c757d', fontWeight: 400 } }, '(lecture seule)')),
         e('input', {
           type: 'text',
-          className: 'edit-field-input',
+          className: 'edit-field-input edit-field-readonly',
           value: value || '',
           readOnly: true,
-          disabled: true,
-          style: { background: '#e9ecef', cursor: 'not-allowed' }
+          disabled: true
         })
       );
     }

@@ -121,7 +121,9 @@ class ImageFieldUploader extends React.Component {
         await this.loadVersions();
 
         // Show success feedback
-        alert('✓ Image uploadée avec succès');
+        if (window.showToast) {
+          window.showToast('Image uploadée avec succès', 'success');
+        }
       } else {
         alert(`Erreur lors de l'upload: ${data.error}`);
       }
@@ -160,7 +162,9 @@ class ImageFieldUploader extends React.Component {
         }
 
         // Show success feedback
-        alert('✓ Image supprimée avec succès');
+        if (window.showToast) {
+          window.showToast('Image supprimée avec succès', 'success');
+        }
       } else {
         alert(`Erreur lors de la suppression: ${data.error}`);
       }
@@ -223,7 +227,9 @@ class ImageFieldUploader extends React.Component {
       await this.loadVersions();
 
       // Show success feedback
-      alert('✓ Image modifiée avec succès');
+      if (window.showToast) {
+        window.showToast('Image modifiée avec succès', 'success');
+      }
     }
   }
 
@@ -262,7 +268,9 @@ class ImageFieldUploader extends React.Component {
         await this.loadVersions();
 
         // Show success feedback
-        alert('✓ Version changée avec succès');
+        if (window.showToast) {
+          window.showToast('Version changée avec succès', 'success');
+        }
       } else {
         alert(`Erreur: ${data.error}`);
       }
@@ -298,7 +306,8 @@ class ImageFieldUploader extends React.Component {
         borderRadius: '8px',
         backgroundColor: dragOver ? '#f0f8ff' : '#fafafa',
         transition: 'all 0.3s',
-        position: 'relative'
+        position: 'relative',
+        overflow: 'visible'
       },
       onDragOver: this.handleDragOver,
       onDragLeave: this.handleDragLeave,
@@ -367,12 +376,12 @@ class ImageFieldUploader extends React.Component {
             position: 'absolute',
             top: '48px',
             right: '8px',
-            backgroundColor: 'white',
-            border: '1px solid #ddd',
             borderRadius: '4px',
             boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-            zIndex: 20,
-            minWidth: '200px'
+            zIndex: 1000,
+            minWidth: '200px',
+            maxHeight: '400px',
+            overflowY: 'auto'
           }
         },
           e('div', { style: { padding: '4px 0' } },
