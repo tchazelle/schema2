@@ -1610,9 +1610,8 @@ a.modal-subtitle:hover {
 
 /* Dark mode for three-dots menu dropdown */
 [data-theme="dark"] .menu-dropdown {
-  background-color: var(--color-bg-white);
-  border-color: var(--color-border);
-  color: var(--color-text-primary);
+  background-color: var(--bg-color);
+  color: var(--color);
 }
 
 [data-theme="dark"] .menu-item {
