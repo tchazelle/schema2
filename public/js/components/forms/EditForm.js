@@ -447,7 +447,7 @@ class EditForm extends React.Component {
               ref: (el) => { if (el) this.fieldRefs[fieldName] = el; }
             }),
             e('button', {
-              className: 'btn-fullscreen-edit',
+              className: 'btn btn-fullscreen-edit',
               onClick: () => this.setState({ fullscreenField: fieldName }),
               type: 'button',
               title: 'Ouvrir en plein écran'
@@ -761,7 +761,7 @@ class EditForm extends React.Component {
               // Right side: "+ ajouter" button
               e('div', { style: { display: 'flex', alignItems: 'center', gap: '8px' } },
                 e('button', {
-                  className: 'btn-add-relation-item btn btn-primary',
+                  className: 'btn btn-add-relation-item btn-primary',
                   onClick: (ev) => {
                     ev.stopPropagation();
                     window.open(`/_crud/${relatedTable}?parent=${tableName}&parentId=${row.id}`, '_blank');

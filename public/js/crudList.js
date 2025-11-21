@@ -651,7 +651,7 @@ class CrudList extends React.Component {
           e('p', null, error),
           e('button', {
             onClick: this.closeFullscreenModal,
-            className: 'btn-back'
+            className: 'btn btn-back'
           }, '← Retour à la liste')
         );
       }
@@ -836,7 +836,7 @@ class CrudList extends React.Component {
             `Affichage de ${data.pagination.offset + 1} à ${data.pagination.offset + data.pagination.count} sur ${data.pagination.total} résultats`
           ),
           (data.pagination.offset + data.pagination.count < data.pagination.total) && e('button', {
-            className: 'btn-load-more',
+            className: 'btn btn-load-more',
             onClick: this.handleLoadMore
           }, '+ Plus de lignes')
         )

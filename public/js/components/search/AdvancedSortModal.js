@@ -282,7 +282,7 @@ class AdvancedSortModal extends React.Component {
         e('div', { className: 'modal-header' },
           e('h3', null, '📊 Tri avancé'),
           e('button', {
-            className: 'modal-close btn-icon',
+            className: 'btn btn-close modal-close btn-icon',
             onClick: onClose
           }, '✖')
         ),
@@ -377,15 +377,15 @@ class AdvancedSortModal extends React.Component {
         ),
         e('div', { className: 'modal-footer' },
           e('button', {
-            className: 'btn-cancel',
+            className: 'btn btn-cancel',
             onClick: this.handleReset
           }, 'Réinitialiser'),
           e('button', {
-            className: 'btn-cancel',
+            className: 'btn btn-cancel',
             onClick: onClose
           }, 'Annuler'),
           e('button', {
-            className: 'btn-apply',
+            className: 'btn btn-apply',
             onClick: this.handleApply
           }, 'Appliquer')
         )

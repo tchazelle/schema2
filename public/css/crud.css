@@ -94,8 +94,8 @@
   position: relative;
 }
 
-.btn-menu {
-  /* Extends .btn-icon and .menu-three-dots from generic.css */
+._btn-menu {
+  /* Extends .btn-icon and .three-dots from generic.css */
   font-size: var(--font-size-xl);
   color: var(--color-text-muted-light);
 }
@@ -389,7 +389,7 @@ tr.detail-row td {
   text-align: center;
 }
 
-.btn-add-relation-item {
+.__btn-add-relation-item {
   /* Extends .btn and .btn-primary from generic.css */
   padding: var(--space-xs) var(--space-md);
   font-size: var(--font-size-sm);
@@ -805,7 +805,7 @@ tr.detail-row td {
   min-width: 10rem;
 }
 
-.btn-add-relation {
+.__btn-add-relation {
   /* Extends .btn and .btn-primary from generic.css */
   padding: var(--space-sm) var(--space-md);
   font-size: var(--font-size-base);
@@ -858,7 +858,7 @@ tr.detail-row td {
    BUTTONS
    ======================================== */
 
-.btn-add-record {
+.__btn-add-record {
   /* Extends .btn from generic.css */
   padding: var(--space-sm) var(--space-sm);
   
@@ -1112,7 +1112,7 @@ a.modal-subtitle:hover {
 }
 
 /* Close button */
-.modal-close-detail {
+.__modal-close-detail {
   /* Extends .btn-icon from generic.css */
   font-size: var(--font-size-2xl);
   color: var(--color-text-muted-light);
@@ -1915,9 +1915,9 @@ a.modal-subtitle:hover {
 }
 
 /* Primary button styles */
-.btn-primary {
-  background-color: var(--color-primary-bg);
-  color: var(--color-bg-white);
+.__btn-primary {
+  _background-color: var(--color-primary-bg);
+  _color: var(--color-bg-white);
   border: none;
   border-radius: 4px;
   padding: 8px 16px;
@@ -1926,17 +1926,17 @@ a.modal-subtitle:hover {
   cursor: pointer;
 }
 
-.btn-primary:hover {
-  background-color: var(--color-primary-hover);
+.__btn-primary:hover {
+  _background-color: var(--color-primary-hover);
 }
 
-.btn-primary:disabled {
+.__btn-primary:disabled {
   cursor: not-allowed;
   opacity: 0.5;
 }
 
-[data-theme="dark"] .btn-primary {
-  background-color: var(--color-primary-bg) !important;
+[data-theme="dark"] .__btn-primary {
+  _background-color: var(--color-primary-bg) !important;
   color: var(--color-bg-white) !important;
 }
 

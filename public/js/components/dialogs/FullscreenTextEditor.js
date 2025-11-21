@@ -183,7 +183,7 @@ class FullscreenTextEditor extends React.Component {
           e('div', { className: 'fullscreen-editor-actions' },
             // Preview toggle for markdown fields
             isMarkdown && e('button', {
-              className: showPreview ? 'btn-preview active' : 'btn-preview',
+              className: showPreview ? 'btn btn-preview active' : 'btn btn-preview',
               onClick: this.togglePreview,
               type: 'button'
             }, showPreview ? '✏️ Éditer' : 'Aperçu'),

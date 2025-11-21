@@ -277,22 +277,22 @@ class CalendarDateRangeTool extends React.Component {
           e('span', { className: 'duration-presets' },
             e('button', {
               type: 'button',
-              className: 'btn-duration-preset',
+              className: 'btn btn-duration-preset',
               onClick: () => this.handleDurationChange(30)
             }, '30 min'),
             e('button', {
               type: 'button',
-              className: 'btn-duration-preset',
+              className: 'btn btn-duration-preset',
               onClick: () => this.handleDurationChange(60)
             }, '1h'),
             e('button', {
               type: 'button',
-              className: 'btn-duration-preset',
+              className: 'btn btn-duration-preset',
               onClick: () => this.handleDurationChange(90)
             }, '1h30'),
             e('button', {
               type: 'button',
-              className: 'btn-duration-preset',
+              className: 'btn btn-duration-preset',
               onClick: () => this.handleDurationChange(120)
             }, '2h')
           )

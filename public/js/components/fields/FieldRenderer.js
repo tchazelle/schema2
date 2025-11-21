@@ -157,7 +157,7 @@ class FieldRenderer extends React.Component {
               // Zoom icon button (top left of image)
               e('button', {
                 type: 'button',
-                className: 'btn-image-zoom',
+                className: 'btn btn-image-zoom',
                 style: {
                   position: 'absolute',
                   top: '8px',

@@ -48,13 +48,13 @@
   margin-bottom: var(--space-xs);
 }
 
-.sidebar-close {
+.__sidebar-close {
   /* Base styles from .btn-icon in generic.css */
   font-size: var(--font-size-2xl);
   line-height: var(--line-height-tight);
 }
 
-.sidebar-close:hover {
+.__sidebar-close:hover {
   color: var(--color-text-heading);
 }
 

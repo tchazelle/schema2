@@ -70,7 +70,7 @@ class RelationSelectorDialog extends React.Component {
         e('div', { className: 'modal-header' },
           e('h3', null, 'Dupliquer avec relations'),
           e('button', {
-            className: 'modal-close btn-icon',
+            className: 'btn btn-close modal-close btn-icon',
             onClick: onCancel
           }, '✖')
         ),
@@ -82,12 +82,12 @@ class RelationSelectorDialog extends React.Component {
           relations.length > 0 ? [
             e('div', { key: 'actions', className: 'modal-actions', style: { marginBottom: '12px' } },
               e('button', {
-                className: 'btn-select-all',
+                className: 'btn btn-select-all',
                 onClick: this.selectAll,
                 style: { fontSize: '12px', padding: '4px 8px' }
               }, 'Tout sélectionner'),
               e('button', {
-                className: 'btn-select-none',
+                className: 'btn btn-select-none',
                 onClick: this.selectNone,
                 style: { fontSize: '12px', padding: '4px 8px' }
               }, 'Tout désélectionner')
@@ -134,11 +134,11 @@ class RelationSelectorDialog extends React.Component {
         ),
         e('div', { className: 'modal-footer' },
           e('button', {
-            className: 'btn-cancel',
+            className: 'btn btn-cancel',
             onClick: onCancel
           }, 'Annuler'),
           e('button', {
-            className: 'btn-apply',
+            className: 'btn btn-apply',
             onClick: this.confirm,
             disabled: selectedRelations.size === 0 && relations.length > 0
           }, selectedRelations.size === 0 ? 'Dupliquer sans relations' : `Dupliquer avec ${selectedRelations.size} relation(s)`)

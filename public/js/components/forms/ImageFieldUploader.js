@@ -341,17 +341,14 @@ class ImageFieldUploader extends React.Component {
         // Zoom button (top left of image)
         e('button', {
           type: 'button',
-          className: 'btn-image-zoom',
+          className: 'btn btn-image-zoom',
           style: {
             position: 'absolute',
             top: '8px',
             left: '8px',
             width: '32px',
             height: '32px',
-            backgroundColor: 'rgba(0, 0, 0, 0.6)',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
+          
             cursor: 'pointer',
             fontSize: '18px',
             display: 'flex',
@@ -370,18 +367,14 @@ class ImageFieldUploader extends React.Component {
         // Three-dot menu button (top right of image)
         e('button', {
           type: 'button',
-          className: 'btn-image-menu',
+          className: 'btn three-dots image-menu',
           style: {
             position: 'absolute',
             top: '8px',
             right: '8px',
             width: '32px',
             height: '32px',
-            backgroundColor: 'rgba(0, 0, 0, 0.6)',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: 'pointer',
+            
             fontSize: '18px',
             display: 'flex',
             alignItems: 'center',
@@ -560,7 +553,7 @@ class ImageFieldUploader extends React.Component {
       // Upload button (only show if no image)
       !previewUrl && e('button', {
         type: 'button',
-        className: 'btn-upload-image',
+        className: 'btn btn-upload-image',
         style: {
           padding: '12px 16px',
           backgroundColor: '#007bff',

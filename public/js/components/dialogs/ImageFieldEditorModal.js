@@ -625,7 +625,7 @@ class ImageFieldEditorModal extends React.Component {
               e('button', {
                 onClick: this.handleSave,
                 disabled: saving,
-                className: 'btn-save-image',
+                className: 'btn btn-save-image',
                 style: {
                   flex: 1,
                   padding: '12px',
@@ -636,7 +636,7 @@ class ImageFieldEditorModal extends React.Component {
               e('button', {
                 onClick: onCancel,
                 disabled: saving,
-                className: 'btn-cancel',
+                className: 'btn btn-cancel',
                 style: {
                   padding: '12px 24px',
                   opacity: saving ? 0.6 : 1

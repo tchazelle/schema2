@@ -521,7 +521,7 @@ class CreateFormModal extends React.Component {
               ref: (el) => { if (el) this.fieldRefs[fieldName] = el; }
             }),
             e('button', {
-              className: 'btn-fullscreen-edit btn btn-secondary btn-sm',
+              className: 'btn btn-fullscreen-edit btn btn-secondary btn-sm',
               onClick: () => this.setState({ fullscreenField: fieldName }),
               type: 'button',
               title: 'Ouvrir en plein écran'
@@ -652,7 +652,7 @@ class CreateFormModal extends React.Component {
           ),
           // Close button
           e('button', {
-            className: 'modal-close-detail btn-icon',
+            className: 'btn btn-close modal-close-detail btn-icon',
             onClick: onClose,
             title: 'Fermer (Echap)'
           }, '✖')
@@ -704,13 +704,13 @@ class CreateFormModal extends React.Component {
               // Only show "Annuler" if record hasn't been created yet, otherwise show "Fermer"
               e('button', {
                 type: 'button',
-                className: 'btn-cancel btn btn-secondary',
+                className: 'btn btn-cancel btn btn-secondary',
                 onClick: onClose
               }, createdRecordId ? 'Fermer' : 'Annuler'),
               // Hide the "Créer" button after record is auto-created
               !createdRecordId && e('button', {
                 type: 'submit',
-                className: 'btn-apply btn btn-primary',
+                className: 'btn btn-apply btn btn-primary',
                 disabled: saveStatus === 'saving',
                 style: { opacity: 0.5 }
               }, 'Créer (ou tapez pour auto-créer)')

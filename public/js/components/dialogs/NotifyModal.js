@@ -433,12 +433,12 @@ class NotifyModal extends React.Component {
         },
           e('button', {
             onClick: onCancel,
-            className: 'btn-cancel'
+            className: 'btn btn-cancel'
           }, 'Annuler'),
           e('button', {
             onClick: this.handleConfirm,
             disabled: recipients.length === 0,
-            className: 'btn-primary',
+            className: 'btn btn-primary',
             style: {
               opacity: recipients.length === 0 ? 0.5 : 1,
               cursor: recipients.length === 0 ? 'not-allowed' : 'pointer'

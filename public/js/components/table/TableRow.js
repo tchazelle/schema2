@@ -316,7 +316,7 @@ class TableRow extends React.Component {
           style: { width: '40px', textAlign: 'center' }
         },
           e('button', {
-            className: 'btn-delete-row',
+            className: 'btn btn-delete-row',
             onClick: this.handleDelete,
             title: 'Supprimer cet enregistrement',
             style: {

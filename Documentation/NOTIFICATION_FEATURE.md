@@ -70,7 +70,7 @@ Ajouté dans l'en-tête de la modale de détail, à côté du bouton de duplicat
 ```javascript
 // Ligne 307-323
 !editMode && permissions && permissions.canRead && e('button', {
-  className: 'btn-notify',
+  className: 'btn btn-notify',
   onClick: this.handleNotifyClick,
   title: 'Envoyer une notification par email',
   disabled: this.state.notifying,

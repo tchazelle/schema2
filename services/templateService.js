@@ -180,9 +180,9 @@ class TemplateService {
   
   static htmlSidebar(pages, accessibleTables, hasCalendarAccess = false) {
     return `<nav class="sidebar" id="sidebar">
-      <button class="sidebar-close" onclick="closeMenu()" aria-label="Fermer le menu">✖️</button>
+      <button class="btn btn-close sidebar-close" onclick="closeMenu()" aria-label="Fermer le menu">✖️</button>
       ${this.htmlMenu(pages, accessibleTables, hasCalendarAccess)}
-    </nav>`
+    </nav>` 
   }
 
   static htmlThemeToggle(user) {
@@ -199,7 +199,7 @@ class TemplateService {
   static htmlUserMenu(user) {
   return `<div class="user-menu">
 
-    <button class="user-button" onclick="toggleUserMenu()">
+    <button class="btn user-button" onclick="toggleUserMenu()">
       <span class="user-icon">${user.abbreviation}</span>
       <span>${user.fullName}</span>
     </button>
@@ -317,7 +317,7 @@ class TemplateService {
         </div>
 
         <!-- Menu hamburger -->
-        <button class="menu-toggle" onclick="toggleMenu()">☰</button>
+        <button class="btn menu-toggle" onclick="toggleMenu()">☰</button>
       </div>
     </header>
   `}
@@ -1072,7 +1072,11 @@ class TemplateService {
     <div class="calendar-modal">
       <div class="calendar-modal-header">
         <h3>Créer un événement</h3>
-        <button type="button" class="calendar-modal-close" id="closeModal">&times;</button>
+        <button type="button" class name {
+          constructor(parameters) {
+            
+          }
+        }="btn btn-close calendar-modal-close" id="closeModal">&times;</button>
       </div>
       <div class="calendar-modal-date" id="modalDate"></div>
       <div class="calendar-modal-body">

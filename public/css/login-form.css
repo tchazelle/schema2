@@ -61,7 +61,7 @@
   box-shadow: var(--shadow-focus-light);
 }
 
-.btn {
+._btn {
   width: 100%;
   padding: var(--space-md);
   background: var(--color-primary);

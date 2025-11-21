@@ -68,14 +68,14 @@ class ThreeDotsMenu extends React.Component {
 
     return e('div', { className: 'menu-dots', ref: this.menuRef },
       e('button', {
-        className: 'btn-menu btn-icon menu-three-dots',
+        className: 'btn btn-menu btn-icon three-dots',
         onClick: this.toggleMenu,
         'aria-label': 'Options'
       }, '⋮'),
       isOpen && e('div', { className: 'menu-dropdown open' },
         // Display mode section (hide for sub-lists)
         !isSubList && e('div', { className: 'menu-section' },
-          e('div', { className: 'menu-label' }, 'Mode de présentation'),
+          e('div', { className: 'menu-label' }, 'Sélection des colonnes'),
           e('button', {
             className: `menu-item ${displayMode === 'default' ? 'active' : ''}`,
             onClick: () => {
