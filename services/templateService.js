@@ -78,7 +78,9 @@ class TemplateService {
 
   <!-- Global React.createElement shorthand -->
   <script>
-    window.e = React.createElement;
+    // Define as global variable (not just window property) for direct access in components
+    var e = React.createElement;
+    window.e = e; // Also set on window for explicit access
   </script>
 
   <!-- 2. Field Components (foundational, no dependencies) -->
