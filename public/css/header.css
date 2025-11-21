@@ -8,7 +8,7 @@
 /* Header */
 header {
   background: var(--color-bg-white);
-  border-bottom: var(--border-width-thin) solid var(--color-border-light);
+  border-bottom: var(--border-width) solid var(--color-border-light);
   padding: var(--space-md) var(--space-md);
   display: flex;
   justify-content: space-between;

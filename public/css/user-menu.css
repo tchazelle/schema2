@@ -11,7 +11,7 @@
 
 .user-button {
   background: var(--color-bg-section);
-  border: var(--border-width-thin) solid var(--color-border-light);
+  border: var(--border-width) solid var(--color-border-light);
   padding: var(--space-sm) var(--space-lg);
   border-radius: var(--border-radius-pill);
   cursor: pointer;
@@ -66,7 +66,7 @@
 
 .user-info {
   padding: var(--space-md) var(--space-lg);
-  border-bottom: var(--border-width-thin) solid var(--color-border-light);
+  border-bottom: var(--border-width) solid var(--color-border-light);
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);
 }

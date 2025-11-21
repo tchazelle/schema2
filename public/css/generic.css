@@ -29,7 +29,7 @@
 
 header {
   background-color: var(--bg-color);
-  border-bottom: solid var(--border-width-thin)  var(--border-color);
+  border-bottom: solid var(--border-width)  var(--border-color);
 
   padding: var(--space-md) var(--space-md);
   display: flex;
@@ -70,7 +70,7 @@ header {
 .sidebar-section {
   
   padding: var(--space-xl);
-  border-bottom: var(--border-width-thin) solid var(--border-color);
+  border-bottom: var(--border-width) solid var(--border-color);
 }
 
 .sidebar-section h3 {
@@ -117,7 +117,7 @@ header {
 
 .user-button {
   background: var(--color-bg-section);
-  border: var(--border-width-thin) solid var(--color-border-light);
+  border: var(--border-width) solid var(--color-border-light);
   padding: var(--space-sm) var(--space-lg);
   border-radius: var(--border-radius-pill);
   cursor: pointer;
@@ -176,7 +176,7 @@ header {
 
 .user-info {
   padding: var(--space-md) var(--space-lg);
-  border-bottom: var(--border-width-thin) solid var(--color-border-light);
+  border-bottom: var(--border-width) solid var(--color-border-light);
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);
 }

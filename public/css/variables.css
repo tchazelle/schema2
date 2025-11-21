@@ -1,16 +1,9 @@
 /**
  * CSS Variables - Schema2
  * Version 2.0 - Refactored & Dark Mode Ready
- *
- * Centralized design tokens for colors, spacing, typography, shadows, etc.
- * Reduced from ~127 to ~65 variables (-50%) by consolidating similar values.
- *
- * Usage: var(--variable-name)
- * Example: color: var(--color-primary-text);
- */
+**/
 
 :root {
-
    --black: #1f2937;
    --white: #ffffff;
    --grey: #6c6c6c;
@@ -25,13 +18,9 @@
    --border-color-active: #c7c2be;
    --hover-background-color: #8929ff;
 
-   --space-xs: 3px;
-   --space-sm: 6px;
-   --space-md: 12px;
-   --space-lg: 18px;
-   --space-xl: 24px;
+   --space-xs: 3px; --space-sm: 6px; --space-md: 12px; --space-lg: 18px; --space-xl: 24px;
 
-   --border-width-thin: 1px;
+   --border-width: 1px;
 
 
 
@@ -111,7 +100,6 @@
 
   --color-bg-page: #f5f5f5;
   --color-bg-section: #f8f9fa;
-  --color-bg-hover: #e9ecef;
   --color-bg-white: #ffffff;
 
   /* Legacy aliases */
@@ -226,7 +214,7 @@
   --border-width-thick: 2px;
 
   /* Legacy aliases */
-  --border-width-thin: var(--border-width);
+  --border-width: var(--border-width);
   --border-width-md: var(--border-width); /*  var(--border-width-thick- */
 
 
@@ -327,7 +315,6 @@
   /* Backgrounds */
   --color-bg-page: #111827;
   --color-bg-section: #1f2937;
-  --color-bg-hover: #374151;
   --color-bg-white: #1f2937;
 
   /* JSON Viewer - stays mostly the same */

@@ -17,7 +17,7 @@ main.rows > article {
   display: flex;
   flex-direction: column;
   padding: 0.4rem;
-  border: var(--border-width-thin) solid var(--color-border-card);
+  border: var(--border-width) solid var(--color-border-card);
   border-radius: var(--border-radius-md);
   background: var(--color-bg-card);
   transition: transform var(--transition-base), box-shadow var(--transition-base);
@@ -55,7 +55,7 @@ main.rows.cards > article {
   display: block;
   border-radius: 1rem;
   background: var(--color-bg-white);
-  border: var(--border-width-thin) solid var(--border-card);
+  border: var(--border-width) solid var(--border-card);
   box-shadow: var(--shadow-sm);
   transition: transform var(--transition-base), box-shadow var(--transition-base);
 }
