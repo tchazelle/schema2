@@ -5,20 +5,9 @@
 
 @import 'variables.css';
 
-/* Menu hamburger toggle button */
+/* Menu hamburger toggle button - extends .toggle-menu from generic.css */
 .menu-toggle {
-  background: var(--color-primary);
-  color: var(--color-bg-white);
-  border: none;
-  padding: var(--space-md) var(--space-lg);
-  border-radius: var(--border-radius-sm);
-  cursor: pointer;
-  font-size: var(--font-size-lg);
-  transition: background var(--transition-base);
-}
-
-.menu-toggle:hover {
-  background: var(--color-primary-hover);
+  /* Inherits styles from .toggle-menu in generic.css */
 }
 
 /* Sidebar container */
@@ -60,18 +49,13 @@
 }
 
 .sidebar-close {
-  background: none;
-  border: none;
+  /* Base styles from .btn-icon in generic.css */
   font-size: var(--font-size-2xl);
-  color: var(--color-text-muted);
-  cursor: pointer;
-  padding: var(--space-xs) var(--space-md);
   line-height: var(--line-height-tight);
-  transition: color var(--transition-base);
 }
 
 .sidebar-close:hover {
-  color: #000;
+  color: var(--color-text-heading);
 }
 
 /* Sidebar sections */
@@ -105,24 +89,18 @@
   transition: background var(--transition-base);
 }
 
-.sidebar-section a:hover, .sidebar-section a.active {
+.sidebar-section a:hover {
   background: var(--color-bg-subtle);
 }
 
-/* Overlay to close sidebar */
-.overlay {
-  display: none;
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: var(--color-overlay);
-  z-index: var(--z-overlay);
+.sidebar-section a.active {
+  /* Inherits from .active in generic.css */
+  background: var(--color-bg-subtle);
 }
 
-.overlay.open {
-  display: block;
+/* Overlay to close sidebar - extends .overlay from generic.css */
+.overlay {
+  /* Inherits most styles from .overlay in generic.css */
 }
 
 /* Responsive */

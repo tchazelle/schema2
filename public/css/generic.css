@@ -1,0 +1,539 @@
+/**
+ * Generic CSS Classes - Schema2
+ * Reusable utility classes for common UI patterns
+ * Uses CSS variables from variables.css
+ */
+
+@import 'variables.css';
+
+/* ========================================
+   BUTTONS
+   ======================================== */
+
+/* Base button */
+.btn {
+  padding: var(--space-sm) var(--space-lg);
+  border: none;
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: background var(--transition-base), transform var(--transition-fast);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  text-decoration: none;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+}
+
+.btn:active {
+  transform: translateY(0);
+}
+
+.btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* Button variants */
+.btn-primary {
+  background: var(--color-primary);
+  color: var(--color-bg-white);
+}
+
+.btn-primary:hover {
+  background: var(--color-primary-hover);
+}
+
+.btn-secondary {
+  background: var(--color-bg-section);
+  color: var(--color-text-secondary);
+  border: var(--border-width-thin) solid var(--color-border);
+}
+
+.btn-secondary:hover {
+  background: var(--color-bg-hover);
+}
+
+/* Icon-only button */
+.btn-icon {
+  padding: var(--space-xs) var(--space-sm);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-muted);
+  transition: color var(--transition-base), background var(--transition-base);
+}
+
+.btn-icon:hover {
+  color: var(--color-text-primary);
+  background: var(--color-bg-hover);
+  border-radius: var(--border-radius-sm);
+}
+
+/* Button sizes */
+.btn-sm {
+  padding: var(--space-xs) var(--space-md);
+  font-size: var(--font-size-sm);
+}
+
+.btn-lg {
+  padding: var(--space-md) var(--space-xl);
+  font-size: var(--font-size-lg);
+}
+
+/* ========================================
+   MENUS
+   ======================================== */
+
+/* Menu container */
+.menu {
+  background: var(--color-bg-white);
+  border: var(--border-width-thin) solid var(--color-border);
+  border-radius: var(--border-radius-sm);
+  box-shadow: var(--shadow-sm);
+  min-width: 200px;
+  z-index: var(--z-dropdown);
+}
+
+/* Three-dots menu icon */
+.menu-three-dots {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xl);
+  transition: color var(--transition-base);
+}
+
+.menu-three-dots:hover {
+  color: var(--color-text-primary);
+}
+
+.menu-three-dots::before {
+  content: "⋮";
+}
+
+/* Menu dropdown (positioned) */
+.menu-dropdown {
+  position: absolute;
+  background: var(--color-bg-white);
+  border: var(--border-width-thin) solid var(--color-border);
+  border-radius: var(--border-radius-sm);
+  box-shadow: var(--shadow-md);
+  min-width: 200px;
+  z-index: var(--z-dropdown);
+  display: none;
+}
+
+.menu-dropdown.open {
+  display: block;
+}
+
+/* Menu item */
+.menu-item {
+  display: block;
+  width: 100%;
+  padding: var(--space-sm) var(--space-lg);
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  font-size: var(--font-size-base);
+  color: var(--color-text-primary);
+  text-decoration: none;
+  transition: background var(--transition-fast);
+}
+
+.menu-item:hover {
+  background: var(--color-bg-section);
+}
+
+/* Menu divider */
+.menu-divider {
+  height: var(--border-width-thin);
+  background: var(--color-border);
+  margin: var(--space-xs) 0;
+}
+
+/* ========================================
+   TOGGLE / STATE CLASSES
+   ======================================== */
+
+/* Toggle menu button */
+.toggle-menu {
+  background: var(--color-primary);
+  color: var(--color-bg-white);
+  border: none;
+  padding: var(--space-md) var(--space-lg);
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  font-size: var(--font-size-lg);
+  transition: background var(--transition-base);
+}
+
+.toggle-menu:hover {
+  background: var(--color-primary-hover);
+}
+
+/* Active state */
+.active {
+  background: var(--color-primary-bg);
+  color: var(--color-primary-text);
+  font-weight: var(--font-weight-medium);
+}
+
+.menu-item.active {
+  background: var(--color-primary-bg);
+  color: var(--color-primary-text);
+}
+
+/* Open state (for dropdowns, sidebars) */
+.open {
+  display: block !important;
+}
+
+/* Expanded state */
+.expanded {
+  background: var(--color-bg-hover);
+}
+
+/* Selected state */
+.selected {
+  background: var(--color-primary-bg);
+  border-color: var(--color-primary);
+}
+
+/* Disabled state */
+.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* ========================================
+   TEXT MODIFIERS
+   ======================================== */
+
+/* Muted text */
+.muted {
+  color: var(--color-text-muted);
+}
+
+/* Text colors */
+.text-primary {
+  color: var(--color-primary-text);
+}
+
+.text-secondary {
+  color: var(--color-text-secondary);
+}
+
+.text-error {
+  color: var(--color-error);
+}
+
+.text-success {
+  color: var(--color-primary);
+}
+
+/* Text styles */
+.text-bold {
+  font-weight: var(--font-weight-bold);
+}
+
+.text-semibold {
+  font-weight: var(--font-weight-semibold);
+}
+
+.text-uppercase {
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-normal);
+}
+
+/* ========================================
+   OPTIONS
+   ======================================== */
+
+/* Generic option (in lists, selectors) */
+.option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  border: var(--border-width-thin) solid var(--color-border);
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.option:hover {
+  background: var(--color-bg-section);
+}
+
+.option.selected {
+  background: var(--color-primary-bg);
+  border-color: var(--color-primary);
+}
+
+/* ========================================
+   CARDS
+   ======================================== */
+
+/* Card container */
+.card {
+  background: var(--color-bg-white);
+  border: var(--border-width-thin) solid var(--color-border);
+  border-radius: var(--border-radius-lg);
+  padding: var(--space-xl);
+  box-shadow: var(--shadow-sm);
+}
+
+.card-header {
+  padding-bottom: var(--space-md);
+  border-bottom: var(--border-width-thin) solid var(--color-border);
+  margin-bottom: var(--space-md);
+}
+
+.card-title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.card-body {
+  padding: var(--space-md) 0;
+}
+
+.card-footer {
+  padding-top: var(--space-md);
+  border-top: var(--border-width-thin) solid var(--color-border);
+  margin-top: var(--space-md);
+}
+
+/* ========================================
+   BADGES
+   ======================================== */
+
+/* Badge / pill */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-xs) var(--space-sm);
+  background: var(--color-text-muted);
+  color: var(--color-bg-white);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  border-radius: var(--border-radius-xl);
+  min-width: var(--space-xl);
+  text-align: center;
+}
+
+.badge-primary {
+  background: var(--color-primary);
+}
+
+.badge-error {
+  background: var(--color-error);
+}
+
+.badge-success {
+  background: var(--color-primary);
+}
+
+/* ========================================
+   DIVIDERS
+   ======================================== */
+
+/* Horizontal divider */
+.divider {
+  height: var(--border-width-thin);
+  background: var(--color-border);
+  margin: var(--space-md) 0;
+  border: none;
+}
+
+/* Vertical divider */
+.divider-vertical {
+  width: var(--border-width-thin);
+  background: var(--color-border);
+  margin: 0 var(--space-md);
+  border: none;
+}
+
+/* ========================================
+   OVERLAY
+   ======================================== */
+
+/* Overlay for modals/sidebars */
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--color-overlay);
+  z-index: var(--z-overlay);
+  display: none;
+}
+
+.overlay.open {
+  display: block;
+}
+
+/* ========================================
+   UTILITY CLASSES
+   ======================================== */
+
+/* Hide element */
+.hidden {
+  display: none !important;
+}
+
+/* Visually hidden but accessible */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Loading state */
+.loading {
+  text-align: center;
+  padding: var(--space-xl);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-base);
+}
+
+.loading::before {
+  content: "⏳ ";
+}
+
+/* Empty state */
+.empty {
+  color: var(--color-text-placeholder);
+  font-style: italic;
+}
+
+/* Clickable */
+.clickable {
+  cursor: pointer;
+}
+
+/* No-select */
+.no-select {
+  user-select: none;
+}
+
+/* ========================================
+   SPACING UTILITIES
+   ======================================== */
+
+/* Margin utilities */
+.m-0 { margin: 0; }
+.mt-sm { margin-top: var(--space-sm); }
+.mt-md { margin-top: var(--space-md); }
+.mt-lg { margin-top: var(--space-lg); }
+.mb-sm { margin-bottom: var(--space-sm); }
+.mb-md { margin-bottom: var(--space-md); }
+.mb-lg { margin-bottom: var(--space-lg); }
+
+/* Padding utilities */
+.p-0 { padding: 0; }
+.p-sm { padding: var(--space-sm); }
+.p-md { padding: var(--space-md); }
+.p-lg { padding: var(--space-lg); }
+
+/* ========================================
+   FLEX UTILITIES
+   ======================================== */
+
+.flex {
+  display: flex;
+}
+
+.flex-col {
+  display: flex;
+  flex-direction: column;
+}
+
+.flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.flex-between {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.flex-gap-sm {
+  gap: var(--space-sm);
+}
+
+.flex-gap-md {
+  gap: var(--space-md);
+}
+
+.flex-gap-lg {
+  gap: var(--space-lg);
+}
+
+/* ========================================
+   DARK MODE SUPPORT
+   ======================================== */
+
+[data-theme="dark"] .card {
+  background: var(--color-bg-white);
+  border-color: var(--color-border);
+}
+
+[data-theme="dark"] .menu,
+[data-theme="dark"] .menu-dropdown {
+  background: var(--color-bg-white);
+  border-color: var(--color-border);
+}
+
+[data-theme="dark"] .menu-item {
+  color: var(--color-text-primary);
+}
+
+[data-theme="dark"] .menu-item:hover {
+  background: var(--color-bg-hover);
+}
+
+[data-theme="dark"] .btn-secondary {
+  background: var(--color-bg-section);
+  color: var(--color-text-secondary);
+  border-color: var(--color-border);
+}
+
+[data-theme="dark"] .btn-secondary:hover {
+  background: var(--color-bg-hover);
+}
+
+[data-theme="dark"] .option {
+  background: var(--color-bg-white);
+  border-color: var(--color-border);
+  color: var(--color-text-primary);
+}
+
+[data-theme="dark"] .option:hover {
+  background: var(--color-bg-hover);
+}
