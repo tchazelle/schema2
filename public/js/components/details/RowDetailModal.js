@@ -260,7 +260,7 @@ class RowDetailModal extends React.Component {
                 }
               }, '⋮'),
               this.state.showDuplicateMenu && e('div', {
-                className: 'menu-dropdown',
+                className: 'menu-dropdown open',
                 style: {
                   position: 'absolute',
                   right: 0,
@@ -295,11 +295,7 @@ class RowDetailModal extends React.Component {
                 }, this.state.notifying ? '⏳ Envoi...' : '📧 Notifier'),
                 // Separator (only if both notify and duplicate options are visible)
                 permissions.canRead && permissions.canCreate && e('div', {
-                  style: {
-                    height: '1px',
-                    backgroundColor: '#ddd',
-                    margin: '4px 0'
-                  }
+                  className: 'menu-divider divider'
                 }),
                 // Duplicate options (only show if has create permission)
                 permissions.canCreate && e('button', {
