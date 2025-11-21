@@ -468,6 +468,21 @@ class SchemaService {
   }
 
   /**
+   * Vérifie si un champ est calculé via SQL (a une définition 'as')
+   * @param {string} tableName - Nom de la table
+   * @param {string} fieldName - Nom du champ
+   * @returns {boolean} - true si le champ est calculé SQL
+   */
+  static isCalculatedSqlField(tableName, fieldName) {
+    const tableConfig = schema.tables[tableName];
+    if (!tableConfig || !tableConfig.fields) {
+      return false;
+    }
+    const fieldConfig = tableConfig.fields[fieldName];
+    return fieldConfig && fieldConfig.as !== undefined;
+  }
+
+  /**
    * Obtient les champs avec fonction calculate (JavaScript)
    * @param {string} tableName - Nom de la table
    * @param {Object} user - L'utilisateur (pour vérifier les permissions)
