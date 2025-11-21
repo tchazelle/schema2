@@ -7,11 +7,11 @@
 
 .nav {
   margin-bottom: var(--space-xl);
-  padding: var(--space-5);
+  padding: var(--space-lg);
   background: var(--color-bg-white);
   border-radius: var(--border-radius-lg);
   display: flex;
-  gap: var(--space-4);
+  gap: var(--space-md);
   flex-wrap: wrap;
   box-shadow: var(--shadow-sm);
 }

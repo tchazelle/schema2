@@ -31,7 +31,7 @@
 
 .date-range-mode-selector .edit-field-label {
   display: block;
-  margin-bottom: var(--space-3);
+  margin-bottom: var(--space-xs);
   font-weight: var(--font-weight-medium);
   font-size: var(--font-size-base);
   color: var(--color-text-secondary);
@@ -66,7 +66,7 @@
 
 .duration-presets {
   display: flex;
-  gap: var(--space-3);
+  gap: var(--space-xs);
   flex-wrap: wrap;
 }
 
@@ -74,7 +74,7 @@
   background: var(--color-bg-white);
   border: var(--border-width-thin) solid var(--color-border-input);
   border-radius: var(--border-radius-sm);
-  padding: var(--space-3) var(--space-md);
+  padding: var(--space-xs) var(--space-md);
   font-size: var(--font-size-13);
   cursor: pointer;
   color: var(--color-text-secondary);
@@ -143,7 +143,7 @@
 
 .calendar-date-range-tool .edit-field-label {
   display: block;
-  margin-bottom: var(--space-3);
+  margin-bottom: var(--space-xs);
   font-weight: var(--font-weight-medium);
   font-size: var(--font-size-base);
   color: var(--color-text-secondary);

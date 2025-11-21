@@ -14,22 +14,18 @@
      COLORS - Primary & Brand
      ======================================== */
 
-  --color-primary: #007bff;
-  --color-primary-hover: #0056b3;
-  --color-primary-light: #80bdff;
-
-  /* Legacy aliases */
-  --color-primary-active: var(--color-primary-hover);
-  --color-primary-bg: var(--color-primary-light);
-
+   --color-primary: #007bff;
+   --color-primary-bg: #0056b3; /* remplacé */
+   --color-primary-hover: #0874e8;
+   --color-primary-border: #0056b3;
+   --color-primary-light: #80bdff;
+   --color-primary-active: #0072ca;
 
   /* ========================================
      COLORS - Semantic (Success, Error, Warning, Info)
      ======================================== */
 
-  --color-success: #28a745;
-  --color-success-bg: #d4edda;
-
+  
   --color-error: #dc3545;
   --color-error-bg: #f8d7da;
 
@@ -38,8 +34,8 @@
   --color-info: #0066cc;
 
   /* Legacy aliases */
-  --color-success-hover: var(--color-success);
-  --color-success-border: var(--color-success-bg);
+ 
+ 
   --color-error-border: var(--color-error-bg);
 
 
@@ -108,7 +104,6 @@
 
   --color-overlay: rgba(0, 0, 0, 0.5);
   --color-shadow: rgba(0, 0, 0, 0.1);
-  --color-shadow-dark: rgba(0, 0, 0, 0.3);
   --color-focus: rgba(0, 123, 255, 0.25);
 
 
@@ -121,18 +116,7 @@
   --space-md: 12px;
   --space-lg: 16px;
   --space-xl: 20px;
-  --space-2xl: 24px;
-
-  /* Legacy aliases for backward compatibility */
-  --space-0: 0;
-  --space-1: var(--space-xs);
-  --space-2: var(--space-xs);
-  --space-3: var(--space-xs);
-  --space-4: var(--space-md);
-  --space-5: var(--space-lg);
-  --space-3xl: 30px;
-  --space-4xl: 40px;
-  --space-5xl: 60px;
+  --space-xsxl: 24px;
 
 
   /* ========================================
@@ -214,7 +198,7 @@
 
   --shadow-sm: 0 2px 4px var(--color-shadow);
   --shadow-md: 0 4px 8px var(--color-shadow);
-  --shadow-lg: 0 8px 16px var(--color-shadow-dark);
+  --shadow-lg: 0 8px 16px var(--color-shadow);
   --shadow-focus: 0 0 0 3px var(--color-focus);
 
   /* Legacy aliases for backward compatibility */
@@ -272,24 +256,22 @@
 [data-theme="dark"] {
   /* Primary & Brand */
   --color-primary: #4da3ff;
+  --color-primary-bg: #1e4620;
   --color-primary-hover: #66b3ff;
   --color-primary-light: #99ccff;
 
-  /* Semantic */
-  --color-success: #4ade80;
-  --color-success-bg: #1e4620;
-
-  --color-error: #f87171;
-  --color-error-bg: #4c1d1d;
-
-  --color-warning-bg: #4a3f1a;
-
-  --color-info: #60a5fa;
-
-  /* Text */
+ /* Text */
   --color-text-primary: #e5e7eb;
   --color-text-secondary: #9ca3af;
   --color-text-muted: #6b7280;
+
+
+  --color-error: #f87171;
+  --color-error-bg: #4c1d1d;
+  --color-warning-bg: #4a3f1a;
+  --color-info: #60a5fa;
+
+ 
 
   /* Borders */
   --color-border: #374151;
@@ -307,6 +289,5 @@
   /* Shadows & Overlays */
   --color-overlay: rgba(0, 0, 0, 0.7);
   --color-shadow: rgba(0, 0, 0, 0.3);
-  --color-shadow-dark: rgba(0, 0, 0, 0.6);
   --color-focus: rgba(77, 163, 255, 0.4);
 }

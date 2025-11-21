@@ -26,7 +26,7 @@ body {
 .container {
   text-align: center;
   background: var(--color-bg-white);
-  padding: var(--space-5xl) var(--space-4xl);
+  padding: var(--space-xsxl) var(--space-xsxl);
   border-radius: var(--border-radius-lg);
   box-shadow: var(--shadow-sm-medium);
   max-width: 500px;
@@ -51,14 +51,14 @@ h1.error-500 {
 p {
   font-size: var(--font-size-lg);
   color: var(--color-text-muted);
-  margin-bottom: var(--space-3xl);
+  margin-bottom: var(--space-xsxl);
   line-height: var(--line-height-normal);
 }
 
 /* Back link button */
 a {
   display: inline-block;
-  padding: var(--space-md) var(--space-2xl);
+  padding: var(--space-md) var(--space-xsxl);
   background: var(--color-primary);
   color: var(--color-bg-white);
   text-decoration: none;
@@ -78,7 +78,7 @@ a:active {
 /* Responsive */
 @media (max-width: 768px) {
   .container {
-    padding: var(--space-4xl) var(--space-xl);
+    padding: var(--space-xsxl) var(--space-xl);
   }
 
   h1 {

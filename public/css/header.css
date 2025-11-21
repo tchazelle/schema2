@@ -9,7 +9,7 @@
 header {
   background: var(--color-bg-white);
   border-bottom: var(--border-width-thin) solid var(--color-border-light);
-  padding: var(--space-5) var(--space-3xl);
+  padding: var(--space-lg) var(--space-xsxl);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -27,7 +27,7 @@ header {
 .header-right {
   display: flex;
   align-items: center;
-  gap: var(--space-5);
+  gap: var(--space-lg);
 }
 
 /* Theme toggle in header */
@@ -111,7 +111,7 @@ header {
 /* Responsive */
 @media (max-width: 768px) {
   header {
-    padding: var(--space-md) var(--space-5);
+    padding: var(--space-md) var(--space-lg);
   }
 
   .logo {

@@ -10,7 +10,7 @@
   background: var(--color-primary);
   color: var(--color-bg-white);
   border: none;
-  padding: var(--space-4) var(--space-5);
+  padding: var(--space-md) var(--space-lg);
   border-radius: var(--border-radius-sm);
   cursor: pointer;
   font-size: var(--font-size-lg);
@@ -56,7 +56,7 @@
 .sidebar-header h2 {
   font-size: var(--font-size-lg);
   color: var(--color-text-heading);
-  margin-bottom: var(--space-2);
+  margin-bottom: var(--space-xs);
 }
 
 .sidebar-close {
@@ -65,7 +65,7 @@
   font-size: var(--font-size-2xl);
   color: var(--color-text-muted);
   cursor: pointer;
-  padding: var(--space-2) var(--space-4);
+  padding: var(--space-xs) var(--space-md);
   line-height: var(--line-height-tight);
   transition: color var(--transition-base);
 }
@@ -84,7 +84,7 @@
   font-size: var(--font-size-base);
   color: var(--color-text-muted);
   text-transform: uppercase;
-  margin-bottom: var(--space-5);
+  margin-bottom: var(--space-lg);
   font-weight: var(--font-weight-semibold);
 }
 

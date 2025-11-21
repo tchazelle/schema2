@@ -139,7 +139,7 @@
 }
 
 .theme-toggle-switch input:checked + .theme-toggle-slider {
-  background-color: var(--color-primary);
+  background-color: var(--color-primary-bg);
 }
 
 .theme-toggle-slider::before {
@@ -188,7 +188,7 @@
 /* Responsive */
 @media (max-width: 768px) {
   .user-button {
-    padding: var(--space-3) var(--space-md);
+    padding: var(--space-xs) var(--space-md);
     font-size: var(--font-size-13);
   }
 

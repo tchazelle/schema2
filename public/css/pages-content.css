@@ -9,19 +9,19 @@
 .container {
   max-width: var(--container-max-width);
   margin: 0 auto;
-  padding: var(--space-4xl) var(--space-xl);
+  padding: var(--space-xsxl) var(--space-xl);
 }
 
 /* Welcome section */
 .welcome {
   text-align: center;
-  margin-bottom: var(--space-4xl);
+  margin-bottom: var(--space-xsxl);
 }
 
 .welcome h1 {
   font-size: var(--font-size-4xl);
   color: var(--color-text-heading);
-  margin-bottom: var(--space-4);
+  margin-bottom: var(--space-md);
   font-weight: var(--font-weight-semibold);
 }
 
@@ -36,7 +36,7 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: var(--space-xl);
-  margin-top: var(--space-4xl);
+  margin-top: var(--space-xsxl);
 }
 
 .stat-card {
@@ -56,7 +56,7 @@
 .stat-card h3 {
   font-size: var(--font-size-base);
   color: var(--color-text-muted);
-  margin-bottom: var(--space-4);
+  margin-bottom: var(--space-md);
   text-transform: uppercase;
   font-weight: var(--font-weight-semibold);
   letter-spacing: var(--letter-spacing-normal);
@@ -70,26 +70,26 @@
 
 /* Content sections */
 .content-section {
-  margin-bottom: var(--space-3xl);
+  margin-bottom: var(--space-xsxl);
 }
 
 .content-section h2 {
   font-size: var(--font-size-2xl);
   color: var(--color-text-heading);
-  margin-bottom: var(--space-5);
+  margin-bottom: var(--space-lg);
   font-weight: var(--font-weight-semibold);
 }
 
 .content-section p {
   color: var(--color-text-muted);
   line-height: var(--line-height-relaxed);
-  margin-bottom: var(--space-4);
+  margin-bottom: var(--space-md);
 }
 
 /* Responsive */
 @media (max-width: 768px) {
   .container {
-    padding: var(--space-xl) var(--space-5);
+    padding: var(--space-xl) var(--space-lg);
   }
 
   .welcome h1 {
@@ -102,11 +102,11 @@
 
   .stats {
     grid-template-columns: 1fr;
-    gap: var(--space-5);
+    gap: var(--space-lg);
   }
 
   .stat-card {
-    padding: var(--space-5);
+    padding: var(--space-lg);
   }
 
   .stat-card .number {
