@@ -543,7 +543,8 @@ module.exports = {
         "streetAddress": { type: "text", wrapper:{name: "address", type: "PostalAddress"} },
         "postalCode": { type: "varchar(10)", wrapper:{name: "address", type: "PostalAddress"} },
         "addressLocality": { type: "varchar", wrapper:{name: "address", type: "PostalAddress"} },
-        "addressCountry": { type: "varchar", wrapper:{name: "address", type: "PostalAddress"} }
+        "addressCountry": { type: "varchar", wrapper:{name: "address", type: "PostalAddress"} },
+        mapLink: { type: "varchar", renderer: "url" }, // Lien vers une carte (Google Maps, OpenStreetMap, etc.)  
       }
     },
 
