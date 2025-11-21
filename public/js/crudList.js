@@ -768,7 +768,7 @@ class CrudList extends React.Component {
         e('div', { className: 'crud-actions' },
           (() => {
             return data && data.permissions && data.permissions.canCreate && e('button', {
-              className: 'btn-add-record',
+              className: 'btn btn-add-record',
               onClick: (e) => {
                 this.handleAddNew();
               }

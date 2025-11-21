@@ -23,6 +23,7 @@
   align-items: center;
   gap: var(--space-xs);
   text-decoration: none;
+  border:solid 1px red !important;
 }
 
 .btn:hover {
@@ -167,7 +168,7 @@
    ======================================== */
 
 /* Toggle menu button */
-.toggle-menu {
+.menu-toggle {
   background: var(--color-primary);
   color: var(--color-bg-white);
   border: none;
@@ -178,7 +179,7 @@
   transition: background var(--transition-base);
 }
 
-.toggle-menu:hover {
+.menu-toggle:hover {
   background: var(--color-primary-hover);
 }
 

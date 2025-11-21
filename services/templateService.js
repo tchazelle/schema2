@@ -567,8 +567,7 @@ class TemplateService {
       border: 1px solid var(--color-border);
       border-radius: 4px;
       font-size: 1rem;
-      background: var(--color-bg);
-      color: var(--color-text);
+      background: var(--color: var(--color-primary)lor-text);
     }
 
     .search-input:focus {
