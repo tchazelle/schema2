@@ -801,13 +801,15 @@ tr.detail-row td {
 
 .relation-input {
   flex: 1;
-  min-width: 0;
+  min-width: 10rem;
 }
 
 .btn-add-relation {
   /* Extends .btn and .btn-primary from generic.css */
   padding: var(--space-sm) var(--space-md);
   font-size: var(--font-size-base);
+  text-align: center;
+  width:2.5rem;
 }
 
 .autocomplete-dropdown {
@@ -1039,6 +1041,8 @@ tr.detail-row td {
 /* Modal container */
 .modal-content-detail {
   background: var(--color-bg-white);
+  border: var(--border-width-thin) solid var(--color-border);
+  
   border-radius: var(--border-radius-lg);
   box-shadow: var(--shadow-xl);
   max-width: var(--container-max-width);
@@ -1121,8 +1125,11 @@ a.modal-subtitle:hover {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: var(--space-xl) var(--space-xsxl);
+  padding: var(--space-xl) var(--space-md);
   min-height: 0;
+  margin-bottom: 5rem; /*au cas où liste de sélection */
+  
+  border-top: none;
 }
 
 /* Loading state */
