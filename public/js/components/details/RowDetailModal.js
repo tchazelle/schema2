@@ -52,7 +52,18 @@ class RowDetailModal extends React.Component {
 
   toggleDuplicateMenu = (ev) => {
     ev.stopPropagation();
-    this.setState(prev => ({ showDuplicateMenu: !prev.showDuplicateMenu }));
+    this.setState(prev => ({ showDuplicateMenu: !prev.showDuplicateMenu }), () => {
+      // After opening, adjust dropdown position to prevent overflow
+      if (this.state.showDuplicateMenu && this.menuRef.current) {
+        const dropdown = this.menuRef.current.querySelector('.menu-dropdown');
+        if (dropdown && window.adjustDropdownPosition) {
+          // Use requestAnimationFrame to ensure dropdown is rendered
+          requestAnimationFrame(() => {
+            window.adjustDropdownPosition(dropdown);
+          });
+        }
+      }
+    });
   }
 
   handleDuplicate = async () => {
@@ -254,8 +265,11 @@ class RowDetailModal extends React.Component {
                   cursor: (this.state.duplicating || this.state.notifying) ? 'wait' : 'pointer',
                 }
               }, '⋮'),
-              this.state.showDuplicateMenu && e('div', 
-                { className: 'menu-dropdown open' },
+              this.state.showDuplicateMenu && e('div',
+                {
+                  className: 'menu-dropdown open align-right',
+                  style: { top: '100%', marginTop: '4px' }
+                },
                 // Notify option (only show if has read permission)
                 permissions.canRead && e('button', {
                   className: 'menu-item',
