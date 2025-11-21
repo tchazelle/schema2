@@ -78,7 +78,7 @@ class TemplateService {
 
   <!-- Global React.createElement shorthand -->
   <script>
-    const e = React.createElement;
+    window.e = React.createElement;
   </script>
 
   <!-- 2. Field Components (foundational, no dependencies) -->
