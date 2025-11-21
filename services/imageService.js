@@ -680,14 +680,28 @@ class ImageService {
         newImageUrl = `/_images/${tableName}/${id}/${outputFilename}`;
       }
 
+      // Verify that output file was created successfully
+      try {
+        await fs.access(outputPath);
+      } catch (error) {
+        throw new Error(`Failed to create edited image: ${error.message}`);
+      }
+
       // Update database with new image URL
       await pool.query(
         `UPDATE ${tableName} SET ${field} = ?, updatedAt = NOW() WHERE id = ?`,
         [newImageUrl, id]
       );
 
-      // Get new metadata
-      const newMetadata = await sharp(outputPath).metadata();
+      // Get new metadata - wrap in try-catch for better error handling
+      let newMetadata;
+      try {
+        newMetadata = await sharp(outputPath).metadata();
+      } catch (error) {
+        console.error('Error reading edited image metadata:', error);
+        throw new Error(`Invalid image file created: ${error.message}`);
+      }
+
       const stats = await fs.stat(outputPath);
 
       return {
@@ -839,8 +853,20 @@ class ImageService {
       // Save to output
       await pipeline.toFile(outputPath);
 
+      // Verify the file was created
+      try {
+        await fs.access(outputPath);
+      } catch (error) {
+        throw new Error(`Failed to save transformed image: ${error.message}`);
+      }
+
       // Get new metadata
-      const newMetadata = await sharp(outputPath).metadata();
+      let newMetadata;
+      try {
+        newMetadata = await sharp(outputPath).metadata();
+      } catch (error) {
+        throw new Error(`Invalid transformed image: ${error.message}`);
+      }
 
       return {
         success: true,

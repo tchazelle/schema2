@@ -239,8 +239,8 @@ class RowDetailModal extends React.Component {
           ),
           // Action buttons section
           e('div', { style: { display: 'flex', alignItems: 'center', gap: '8px' } },
-            // Duplicate menu (only show if has create permission and not in edit mode)
-            !editMode && permissions && permissions.canCreate && e('div', {
+            // Actions menu (only show if not in edit mode and has permissions)
+            !editMode && permissions && (permissions.canCreate || permissions.canRead) && e('div', {
               className: 'menu-dots',
               ref: this.menuRef,
               style: { position: 'relative' }
@@ -248,14 +248,14 @@ class RowDetailModal extends React.Component {
               e('button', {
                 className: 'btn-menu',
                 onClick: this.toggleDuplicateMenu,
-                title: 'Options de duplication',
-                disabled: this.state.duplicating,
+                title: 'Actions',
+                disabled: this.state.duplicating || this.state.notifying,
                 style: {
                   background: '#f8f9fa',
                   border: '1px solid #ddd',
                   borderRadius: '4px',
                   padding: '4px 8px',
-                  cursor: this.state.duplicating ? 'wait' : 'pointer',
+                  cursor: (this.state.duplicating || this.state.notifying) ? 'wait' : 'pointer',
                   fontSize: '16px'
                 }
               }, '⋮'),
@@ -274,7 +274,35 @@ class RowDetailModal extends React.Component {
                   zIndex: 1000
                 }
               },
-                e('button', {
+                // Notify option (only show if has read permission)
+                permissions.canRead && e('button', {
+                  className: 'menu-item',
+                  onClick: () => {
+                    this.setState({ showDuplicateMenu: false });
+                    this.handleNotifyClick();
+                  },
+                  disabled: this.state.notifying,
+                  style: {
+                    display: 'block',
+                    width: '100%',
+                    padding: '8px 12px',
+                    border: 'none',
+                    background: 'none',
+                    textAlign: 'left',
+                    cursor: this.state.notifying ? 'wait' : 'pointer',
+                    fontSize: '14px'
+                  }
+                }, this.state.notifying ? '⏳ Envoi...' : '📧 Notifier'),
+                // Separator (only if both notify and duplicate options are visible)
+                permissions.canRead && permissions.canCreate && e('div', {
+                  style: {
+                    height: '1px',
+                    backgroundColor: '#ddd',
+                    margin: '4px 0'
+                  }
+                }),
+                // Duplicate options (only show if has create permission)
+                permissions.canCreate && e('button', {
                   className: 'menu-item',
                   onClick: this.handleDuplicate,
                   style: {
@@ -288,7 +316,7 @@ class RowDetailModal extends React.Component {
                     fontSize: '14px'
                   }
                 }, '📋 Dupliquer'),
-                e('button', {
+                permissions.canCreate && e('button', {
                   className: 'menu-item',
                   onClick: this.handleDuplicateWithRelations,
                   style: {
@@ -304,23 +332,6 @@ class RowDetailModal extends React.Component {
                 }, '📋 Dupliquer avec relations...')
               )
             ),
-            // Notify button (only show if not in edit mode and user has read permission)
-            !editMode && permissions && permissions.canRead && e('button', {
-              className: 'btn-notify',
-              onClick: this.handleNotifyClick,
-              title: 'Envoyer une notification par email',
-              disabled: this.state.notifying,
-              style: {
-                background: '#007bff',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                padding: '6px 12px',
-                cursor: this.state.notifying ? 'wait' : 'pointer',
-                fontSize: '14px',
-                fontWeight: 'bold'
-              }
-            }, this.state.notifying ? '⏳ Envoi...' : '📧 Notifier'),
             // Close button (X exits edit mode if in edit, otherwise closes modal)
             // Special case: if parentTable is set and in edit mode, close the entire modal
             // instead of going back to detail view (for sub-records)
