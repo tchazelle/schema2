@@ -74,6 +74,7 @@ class TemplateService {
     return `
   <!-- 1. Utilities (no dependencies) -->
   <script src="/js/utils/crudListUtils.js"></script>
+  <script src="/js/utils/dropdownPosition.js"></script>
   <script src="/js/autoExpandTextarea.js"></script>
   <script src="/js/toast.js"></script>
 
@@ -436,6 +437,9 @@ class TemplateService {
   <main class="container">
     ${main}
   </main>
+
+  <!-- Dropdown positioning utility for user menu -->
+  <script src="/js/utils/dropdownPosition.js"></script>
 </body>
 </html>
     `;
@@ -968,6 +972,9 @@ class TemplateService {
       }
     });
   </script>
+
+  <!-- Dropdown positioning utility for user menu -->
+  <script src="/js/utils/dropdownPosition.js"></script>
 </body>
 </html>
     `;
@@ -1411,6 +1418,9 @@ class TemplateService {
         .catch(error => console.error('Erreur lors du chargement des statistiques:', error));
     });
   </script>
+
+  <!-- Dropdown positioning utility for user menu -->
+  <script src="/js/utils/dropdownPosition.js"></script>
 </body>
 </html>
     `;
