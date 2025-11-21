@@ -140,6 +140,12 @@ class CrudService {
               return `${joinAlias}.${relatedField} ${criterion.order || 'ASC'}`;
             }
           }
+          // Check if field is a calculated SQL field (has 'as' in schema)
+          // Calculated fields are aliased without table prefix, so we should not prefix them
+          const isCalculatedField = SchemaService.isCalculatedSqlField(table, criterion.field);
+          if (isCalculatedField) {
+            return `${criterion.field} ${criterion.order || 'ASC'}`;
+          }
           return `${table}.${criterion.field} ${criterion.order || 'ASC'}`;
         })
         .join(', ');
@@ -172,8 +178,12 @@ class CrudService {
       }
     } else if (finalOrderBy) {
       // Prefix table name for non-relation fields to avoid ambiguity when JOINs are present
+      // EXCEPT for calculated SQL fields (with 'as'), which are aliased without table prefix
       if (joins.length > 0 && !finalOrderBy.includes('.')) {
-        finalOrderBy = `${table}.${finalOrderBy}`;
+        const isCalculatedField = SchemaService.isCalculatedSqlField(table, finalOrderBy);
+        if (!isCalculatedField) {
+          finalOrderBy = `${table}.${finalOrderBy}`;
+        }
       }
     }
 
