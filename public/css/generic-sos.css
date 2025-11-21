@@ -100,68 +100,7 @@
   z-index: var(--z-dropdown);
 }
 
-/* Three-dots menu icon */
-.three-dots {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  cursor: pointer;
-  color: var(--color-text-muted);
-  font-size: var(--font-size-xl);
-  transition: color var(--transition-base);
-}
-
-.three-dots:hover {
-  color: var(--color-text-primary);
-}
-
-.three-dots::before {
-  content: "⋮";
-}
-
-/* Menu dropdown (positioned) */
-.menu-dropdown {
-  position: absolute;
-  background: var(--color-bg-white);
-  border: var(--border-width-thin) solid var(--color-border);
-  border-radius: var(--border-radius-sm);
-  box-shadow: var(--shadow-md);
-  min-width: 200px;
-  z-index: var(--z-dropdown);
-  display: none;
-}
-
-.menu-dropdown.open {
-  display: block;
-}
-
-/* Menu item */
-.menu-item {
-  display: block;
-  width: 100%;
-  padding: var(--space-sm) var(--space-lg);
-  background: none;
-  border: none;
-  text-align: left;
-  cursor: pointer;
-  font-size: var(--font-size-base);
-  color: var(--color-text-primary);
-  text-decoration: none;
-  transition: background var(--transition-fast);
-}
-
-.menu-item:hover {
-  background: red; /* var(--color-bg-section);*/
-}
-
-/* Menu divider */
-.menu-divider {
-  height: var(--border-width-thin);
-  background: var(--color-border);
-  margin: var(--space-xs) 0;
-}
+/* Menu dropdown styles now in menu-dropdown.css */
 
 /* ========================================
    TOGGLE / STATE CLASSES
