@@ -1716,3 +1716,309 @@ a.modal-subtitle:hover {
   width: 100% !important;
   max-width: none !important;
 }
+
+/* ========================================
+   DARK MODE OVERRIDES
+   ======================================== */
+
+/* Dark mode for three-dots menu dropdown */
+[data-theme="dark"] .menu-dropdown {
+  background-color: var(--color-bg-white);
+  border-color: var(--color-border);
+  color: var(--color-text-primary);
+}
+
+[data-theme="dark"] .menu-item {
+  color: var(--color-text-primary);
+}
+
+[data-theme="dark"] .menu-item:hover {
+  background-color: var(--color-bg-hover);
+}
+
+[data-theme="dark"] .menu-item.active {
+  background-color: var(--color-primary-bg);
+  color: var(--color-primary);
+}
+
+[data-theme="dark"] .menu-label {
+  color: var(--color-text-secondary);
+}
+
+/* Dark mode for input fields */
+[data-theme="dark"] .edit-field-input,
+[data-theme="dark"] .edit-field-textarea,
+[data-theme="dark"] .edit-field-select {
+  background-color: var(--color-bg-white);
+  color: var(--color-text-primary);
+  border-color: var(--color-border-input);
+}
+
+[data-theme="dark"] .search-input {
+  background-color: var(--color-bg-white);
+  color: var(--color-text-primary);
+  border-color: var(--color-border-input);
+}
+
+[data-theme="dark"] .edit-field-input::placeholder,
+[data-theme="dark"] .edit-field-textarea::placeholder,
+[data-theme="dark"] .search-input::placeholder {
+  color: var(--color-text-muted);
+}
+
+/* Dark mode for attachment cards */
+[data-theme="dark"] .attachment-card {
+  background-color: var(--color-bg-white) !important;
+  border-color: var(--color-border) !important;
+}
+
+[data-theme="dark"] .attachment-card .attachment-preview-section {
+  background-color: var(--color-bg-section) !important;
+  border-bottom-color: var(--color-border) !important;
+}
+
+[data-theme="dark"] .upload-card {
+  background-color: var(--color-bg-section) !important;
+  border-color: var(--color-border) !important;
+}
+
+[data-theme="dark"] .upload-card.drag-over {
+  background-color: var(--color-bg-hover) !important;
+}
+
+[data-theme="dark"] .upload-card > div:first-child {
+  background-color: var(--color-bg-section) !important;
+}
+
+/* Dark mode for attachment menu dropdown */
+[data-theme="dark"] .attachment-menu-dropdown {
+  background-color: var(--color-bg-white) !important;
+  border-color: var(--color-border) !important;
+  color: var(--color-text-primary) !important;
+}
+
+[data-theme="dark"] .attachment-menu-dropdown button {
+  color: var(--color-text-primary) !important;
+}
+
+[data-theme="dark"] .attachment-menu-dropdown button:hover {
+  background-color: var(--color-bg-hover) !important;
+}
+
+/* Dark mode for fullscreen viewer */
+[data-theme="dark"] .attachment-fullscreen-viewer > div:last-child {
+  background-color: var(--color-bg-white) !important;
+}
+
+/* Dark mode for relation autocomplete */
+[data-theme="dark"] .autocomplete-dropdown {
+  background-color: var(--color-bg-white);
+  border-color: var(--color-border-input);
+}
+
+[data-theme="dark"] .autocomplete-item {
+  color: var(--color-text-primary);
+}
+
+[data-theme="dark"] .autocomplete-item:hover {
+  background-color: var(--color-bg-hover);
+}
+
+/* Dark mode for granted selector */
+[data-theme="dark"] .granted-option {
+  background-color: var(--color-bg-white);
+  border-color: var(--color-border);
+  color: var(--color-text-primary);
+}
+
+[data-theme="dark"] .granted-option:hover {
+  background-color: var(--color-bg-hover);
+}
+
+[data-theme="dark"] .granted-compact-select {
+  background-color: var(--color-bg-white);
+  color: var(--color-text-primary);
+  border-color: var(--color-border-input);
+}
+
+/* Dark mode for modals */
+[data-theme="dark"] .modal-content,
+[data-theme="dark"] .modal-content-detail {
+  background-color: var(--color-bg-white);
+  color: var(--color-text-primary);
+}
+
+[data-theme="dark"] .modal-header,
+[data-theme="dark"] .modal-header-detail {
+  background-color: var(--color-bg-section);
+  border-bottom-color: var(--color-border);
+}
+
+[data-theme="dark"] .modal-body,
+[data-theme="dark"] .modal-body-detail {
+  background-color: var(--color-bg-white);
+}
+
+[data-theme="dark"] .modal-footer {
+  border-top-color: var(--color-border);
+}
+
+/* Dark mode for image editor modal */
+[data-theme="dark"] .modal-content {
+  background-color: var(--color-bg-white) !important;
+}
+
+/* Image editor specific overrides */
+[data-theme="dark"] .modal-content input[type="number"],
+[data-theme="dark"] .modal-content input[type="text"],
+[data-theme="dark"] .modal-content select {
+  background-color: var(--color-bg-white) !important;
+  color: var(--color-text-primary) !important;
+  border-color: var(--color-border-input) !important;
+}
+
+[data-theme="dark"] .modal-content input[type="checkbox"] {
+  filter: invert(1) hue-rotate(180deg);
+}
+
+[data-theme="dark"] .modal-content label {
+  color: var(--color-text-primary) !important;
+}
+
+/* Image editor buttons */
+[data-theme="dark"] .modal-content button[style*="background"] {
+  background-color: var(--color-bg-white) !important;
+  color: var(--color-text-primary) !important;
+  border-color: var(--color-border-input) !important;
+}
+
+[data-theme="dark"] .modal-content button[style*="#007bff"] {
+  background-color: var(--color-primary) !important;
+  color: var(--color-bg-white) !important;
+  border-color: var(--color-primary) !important;
+}
+
+/* Image editor info boxes */
+[data-theme="dark"] .modal-content > div > div[style*="#f8f9fa"] {
+  background-color: var(--color-bg-section) !important;
+  color: var(--color-text-secondary) !important;
+}
+
+/* Image editor preview area */
+[data-theme="dark"] .modal-content div[style*="minHeight"] {
+  background-color: var(--color-bg-section) !important;
+  border-color: var(--color-border) !important;
+}
+
+/* Image editor header */
+[data-theme="dark"] .modal-content h2 {
+  color: var(--color-primary) !important;
+}
+
+/* Image editor tabs */
+[data-theme="dark"] .modal-content div[style*="borderBottom"] {
+  border-bottom-color: var(--color-border) !important;
+}
+
+/* Error messages in image editor */
+[data-theme="dark"] .modal-content div[style*="#f8d7da"] {
+  background-color: var(--color-error-bg) !important;
+  border-color: var(--color-error) !important;
+  color: var(--color-error) !important;
+}
+
+/* Loading and info text in image editor */
+[data-theme="dark"] .modal-content div[style*="#666"] {
+  color: var(--color-text-secondary) !important;
+}
+
+/* Tab navigation buttons */
+[data-theme="dark"] .modal-content button[style*="borderBottom"] {
+  color: var(--color-text-primary) !important;
+  border-bottom-color: var(--color-border) !important;
+}
+
+/* Checkbox labels */
+[data-theme="dark"] .modal-content div[style*="alignItems: center"] label {
+  color: var(--color-text-primary) !important;
+}
+
+/* Dark mode for NotifyModal */
+[data-theme="dark"] .modal-overlay > div[style*="backgroundColor: 'white'"],
+[data-theme="dark"] .modal-overlay > div[style*="background-color: white"],
+[data-theme="dark"] .modal-overlay > div[style*="backgroundColor: \"white\""] {
+  background-color: var(--color-bg-white) !important;
+  color: var(--color-text-primary) !important;
+}
+
+[data-theme="dark"] .modal-overlay iframe {
+  background-color: var(--color-bg-white) !important;
+  border-color: var(--color-border) !important;
+}
+
+[data-theme="dark"] .modal-overlay button[style*="backgroundColor: 'white'"],
+[data-theme="dark"] .modal-overlay button[style*="background-color: white"] {
+  background-color: var(--color-bg-white) !important;
+  color: var(--color-text-primary) !important;
+  border-color: var(--color-border-input) !important;
+}
+
+/* Dark mode for ImageFieldEditorModal */
+[data-theme="dark"] .modal-overlay button[style*="#fff"]:not([style*="#007bff"]) {
+  background-color: var(--color-bg-white) !important;
+  color: var(--color-text-primary) !important;
+  border-color: var(--color-border-input) !important;
+}
+
+[data-theme="dark"] .modal-overlay div[style*="backgroundColor: '#fff3cd'"],
+[data-theme="dark"] .modal-overlay div[style*="background-color: #fff3cd"] {
+  background-color: var(--color-warning-bg) !important;
+  color: var(--color-text-primary) !important;
+}
+
+[data-theme="dark"] .modal-overlay div[style*="backgroundColor: '#f5f5f5'"],
+[data-theme="dark"] .modal-overlay div[style*="background-color: #f5f5f5"] {
+  background-color: var(--color-bg-section) !important;
+}
+
+/* General modal text colors */
+[data-theme="dark"] .modal-overlay h1,
+[data-theme="dark"] .modal-overlay h2,
+[data-theme="dark"] .modal-overlay h3,
+[data-theme="dark"] .modal-overlay h4,
+[data-theme="dark"] .modal-overlay p,
+[data-theme="dark"] .modal-overlay span {
+  color: var(--color-text-primary) !important;
+}
+
+/* Buttons with #6c757d */
+[data-theme="dark"] .modal-overlay button[style*="#6c757d"] {
+  background-color: var(--color-bg-white) !important;
+  color: var(--color-text-secondary) !important;
+  border-color: var(--color-text-secondary) !important;
+}
+
+/* Field selector modal */
+[data-theme="dark"] .btn-select-all,
+[data-theme="dark"] .btn-select-none {
+  background-color: var(--color-bg-section);
+  border-color: var(--color-border);
+  color: var(--color-text-primary);
+}
+
+[data-theme="dark"] .btn-select-all:hover,
+[data-theme="dark"] .btn-select-none:hover {
+  background-color: var(--color-bg-hover);
+}
+
+[data-theme="dark"] .field-list {
+  color: var(--color-text-primary);
+}
+
+[data-theme="dark"] .field-checkbox {
+  color: var(--color-text-primary);
+}
+
+[data-theme="dark"] .field-checkbox:hover {
+  background-color: var(--color-bg-hover);
+}
