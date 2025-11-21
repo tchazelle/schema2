@@ -124,7 +124,7 @@
 }
 
 .date-range-preview .preview-value {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-weight: var(--font-weight-medium);
   font-family: var(--font-family-mono);
 }

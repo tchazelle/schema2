@@ -286,7 +286,7 @@
 }
 
 .field-value.boolean.true {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 
 .field-value.boolean.false {
@@ -294,7 +294,7 @@
 }
 
 .field-icon-link {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   text-decoration: none;
   cursor: pointer;
   transition: transform var(--transition-fast);
@@ -306,7 +306,7 @@
 }
 
 .relation-link {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   text-decoration: none;
   display: inline-flex;
   align-items: center;
@@ -514,11 +514,11 @@ tr.detail-row td {
 }
 
 .save-indicator.saving {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 
 .save-indicator.saved {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 
 .save-indicator.error {
@@ -841,7 +841,7 @@ tr.detail-row td {
 
 .granted-option.selected {
   background: var(--color-primary-bg);
-  border-color: var(--color-primary);
+  border-color: var(--color-primary-text);
 }
 
 .granted-option input[type="radio"] {
@@ -961,8 +961,8 @@ tr.detail-row td {
 .btn-add-record {
   padding: var(--space-sm) var(--space-lg);
   background: var(--color-primary-bg);
-  color: var(--color-white);
-  border: none;
+  color: var(--color-primary-text);
+  border: none; 
   border-radius: var(--border-radius-sm);
   font-size: var(--font-size-base);
   font-weight: var(--font-weight-medium);
@@ -977,7 +977,7 @@ tr.detail-row td {
 }
 
 .success {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   padding: var(--space-md);
   background: var(--color-primary-bg);
   border: var(--border-width-thin) solid var(--color-primary-border);
@@ -1392,7 +1392,7 @@ a.modal-subtitle:hover {
 }
 
 .field-value.markdown a {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   text-decoration: none;
 }
 
@@ -1517,7 +1517,7 @@ a.modal-subtitle:hover {
 .btn-preview.active {
   background: var(--color-primary);
   color: var(--color-bg-white);
-  border-color: var(--color-primary);
+  border-color: var(--color-primary-text);
 }
 
 .fullscreen-editor-close {
@@ -1738,7 +1738,7 @@ a.modal-subtitle:hover {
 
 [data-theme="dark"] .menu-item.active {
   background-color: var(--color-primary-bg);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 
 [data-theme="dark"] .menu-label {
@@ -1895,7 +1895,7 @@ a.modal-subtitle:hover {
 [data-theme="dark"] .modal-content button[style*="#007bff"] {
   background-color: var(--color-primary-bg) !important;
   color: var(--color-bg-white) !important;
-  border-color: var(--color-primary) !important;
+  border-color: var(--color-primary-text) !important;
 }
 
 /* Image editor info boxes */
@@ -1912,7 +1912,7 @@ a.modal-subtitle:hover {
 
 /* Image editor header */
 [data-theme="dark"] .modal-content h2 {
-  color: var(--color-primary) !important;
+  color: var(--color-primary-text) !important;
 }
 
 /* Image editor tabs */
@@ -1976,7 +1976,7 @@ a.modal-subtitle:hover {
 }
 
 .notify-modal-header h2 {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 
 .notify-params-column {
@@ -1993,11 +1993,11 @@ a.modal-subtitle:hover {
 
 [data-theme="dark"] .notify-modal-header {
   background-color: var(--color-bg-section) !important;
-  border-bottom-color: var(--color-primary) !important;
+  border-bottom-color: var(--color-primary-text) !important;
 }
 
 [data-theme="dark"] .notify-modal-header h2 {
-  color: var(--color-primary) !important;
+  color: var(--color-primary-text) !important;
 }
 
 [data-theme="dark"] .notify-params-column {

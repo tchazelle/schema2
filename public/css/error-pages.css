@@ -36,7 +36,7 @@ body {
 /* Error heading */
 h1 {
   font-size: var(--font-size-6xl);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   margin-bottom: var(--space-xl);
   font-weight: var(--font-weight-bold);
 }

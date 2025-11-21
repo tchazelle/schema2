@@ -6,7 +6,7 @@
  * Reduced from ~127 to ~65 variables (-50%) by consolidating similar values.
  *
  * Usage: var(--variable-name)
- * Example: color: var(--color-primary);
+ * Example: color: var(--color-primary-text);
  */
 
 :root {
@@ -15,8 +15,10 @@
      ======================================== */
 
    --color-primary: #007bff;
+   --color-primary-text: #89c1fd;
    --color-primary-bg: #0056b3; /* remplacé */
-   --color-primary-hover: #0874e8;
+   --color-primary-hover: #2b87ea;
+
    --color-primary-border: #0056b3;
    --color-primary-light: #80bdff;
    --color-primary-active: #0072ca;
@@ -234,8 +236,8 @@
      ======================================== */
 
   --transition-fast: 0.15s ease;
-  --transition-base: 0.2s ease;
-  --transition-slow: 0.3s ease;
+  --transition-base: 0.3s ease;
+  --transition-slow: 0.5s ease;
 
 
   /* ========================================

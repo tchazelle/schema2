@@ -571,7 +571,7 @@ class TemplateService {
 
     .search-input:focus {
       outline: none;
-      border-color: var(--color-primary);
+      border-color: var(--color-primary-text);
     }
 
     .search-button {

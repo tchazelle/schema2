@@ -453,7 +453,7 @@ class FieldSelectorUI {
       }
 
       .breadcrumb-item {
-        color: var(--color-primary);
+        color: var(--color-primary-text);
         text-decoration: none;
         transition: color 0.2s;
       }
@@ -577,7 +577,7 @@ class FieldSelectorUI {
       }
 
       .selected-path {
-        color: var(--color-primary);
+        color: var(--color-primary-text);
         font-weight: 500;
         margin-bottom: 5px;
       }

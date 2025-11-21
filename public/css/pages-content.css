@@ -64,7 +64,7 @@
 
 .stat-card .number {
   font-size: var(--font-size-4xl);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-weight: var(--font-weight-semibold);
 }
 
