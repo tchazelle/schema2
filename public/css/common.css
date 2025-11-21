@@ -16,15 +16,17 @@
 body {
   font-family: var(--font-family-base);
   background: var(--color-bg-page);
-  padding: var(--space-xl);
+  padding: var(--space-xs);
+  padding: 0;
   line-height: var(--line-height-normal);
   color: var(--color-text-heading);
 }
 
 /* Container */
-.container {
+._container {
   max-width: var(--container-max-width);
   margin: 0 auto;
+  border: solid 2px red;
 }
 
 /* Headings */
@@ -40,7 +42,7 @@ h2 {
   font-size: var(--font-size-xl);
   margin-bottom: var(--space-lg);
   padding-bottom: var(--space-md);
-  border-bottom: var(--border-width-medium) solid var(--color-primary);
+  border-bottom: var(--border-width-md) solid var(--color-primary);
 }
 
 /* Subtitle */
@@ -55,6 +57,7 @@ h2 {
   background: var(--color-bg-white);
   border-radius: var(--border-radius-lg);
   padding: var(--space-xl);
+  padding:0;
   margin-bottom: var(--space-xl);
   box-shadow: var(--shadow-sm);
 }
@@ -64,7 +67,7 @@ h2 {
   font-size: var(--font-size-xl);
   margin-bottom: var(--space-lg);
   padding-bottom: var(--space-md);
-  border-bottom: var(--border-width-medium) solid var(--color-primary);
+  border-bottom: var(--border-width-md) solid var(--color-primary);
 }
 
 /* Responsive */

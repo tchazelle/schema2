@@ -241,7 +241,7 @@ class RowDetailModal extends React.Component {
           e('div', { style: { display: 'flex', alignItems: 'center', gap: '8px' } },
             // Actions menu (only show if not in edit mode and has permissions)
             !editMode && permissions && (permissions.canCreate || permissions.canRead) && e('div', {
-              className: 'menu-dots',
+              className: '_menu-dots',
               ref: this.menuRef,
               style: { position: 'relative' }
             },
@@ -251,29 +251,11 @@ class RowDetailModal extends React.Component {
                 title: 'Actions',
                 disabled: this.state.duplicating || this.state.notifying,
                 style: {
-                  background: '#f8f9fa',
-                  border: '1px solid #ddd',
-                  borderRadius: '4px',
-                  padding: '4px 8px',
                   cursor: (this.state.duplicating || this.state.notifying) ? 'wait' : 'pointer',
-                  fontSize: '16px'
                 }
               }, '⋮'),
-              this.state.showDuplicateMenu && e('div', {
-                className: 'menu-dropdown open',
-                style: {
-                  position: 'absolute',
-                  right: 0,
-                  top: '100%',
-                  marginTop: '4px',
-                  backgroundColor: 'white',
-                  border: '1px solid #ddd',
-                  borderRadius: '4px',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-                  minWidth: '200px',
-                  zIndex: 1000
-                }
-              },
+              this.state.showDuplicateMenu && e('div', 
+                { className: 'menu-dropdown open' },
                 // Notify option (only show if has read permission)
                 permissions.canRead && e('button', {
                   className: 'menu-item',
@@ -281,51 +263,13 @@ class RowDetailModal extends React.Component {
                     this.setState({ showDuplicateMenu: false });
                     this.handleNotifyClick();
                   },
-                  disabled: this.state.notifying,
-                  style: {
-                    display: 'block',
-                    width: '100%',
-                    padding: '8px 12px',
-                    border: 'none',
-                    background: 'none',
-                    textAlign: 'left',
-                    cursor: this.state.notifying ? 'wait' : 'pointer',
-                    fontSize: '14px'
-                  }
+                  disabled: this.state.notifying
                 }, this.state.notifying ? '⏳ Envoi...' : '📧 Notifier'),
                 // Separator (only if both notify and duplicate options are visible)
-                permissions.canRead && permissions.canCreate && e('div', {
-                  className: 'menu-divider divider'
-                }),
+                permissions.canRead && permissions.canCreate && e('div', {className: 'menu-divider divider' }),
                 // Duplicate options (only show if has create permission)
-                permissions.canCreate && e('button', {
-                  className: 'menu-item',
-                  onClick: this.handleDuplicate,
-                  style: {
-                    display: 'block',
-                    width: '100%',
-                    padding: '8px 12px',
-                    border: 'none',
-                    background: 'none',
-                    textAlign: 'left',
-                    cursor: 'pointer',
-                    fontSize: '14px'
-                  }
-                }, '📋 Dupliquer'),
-                permissions.canCreate && e('button', {
-                  className: 'menu-item',
-                  onClick: this.handleDuplicateWithRelations,
-                  style: {
-                    display: 'block',
-                    width: '100%',
-                    padding: '8px 12px',
-                    border: 'none',
-                    background: 'none',
-                    textAlign: 'left',
-                    cursor: 'pointer',
-                    fontSize: '14px'
-                  }
-                }, '📋 Dupliquer avec relations...')
+                permissions.canCreate && e('button', { className: 'menu-item',onClick: this.handleDuplicate }, '📋 Dupliquer'),
+                permissions.canCreate && e('button', { className: 'menu-item', onClick: this.handleDuplicateWithRelations }, '📋 Dupliquer avec relations...')
               )
             ),
             // Close button (X exits edit mode if in edit, otherwise closes modal)

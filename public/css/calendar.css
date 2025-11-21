@@ -20,7 +20,7 @@
   align-items: center;
   margin-bottom: var(--space-xl);
   padding-bottom: var(--space-lg);
-  border-bottom: var(--border-width-medium) solid var(--color-border-light);
+  border-bottom: var(--border-width-md) solid var(--color-border-light);
 }
 
 .calendar-header h1 {
@@ -234,7 +234,7 @@
   align-items: center;
   margin-bottom: var(--space-xl);
   padding-bottom: var(--space-md);
-  border-bottom: var(--border-width-medium) solid var(--color-border-light);
+  border-bottom: var(--border-width-md) solid var(--color-border-light);
 }
 
 .calendar-modal-header h3 {

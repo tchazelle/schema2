@@ -52,7 +52,7 @@ class TemplateService {
   static htmlCssFiles() {
     return `
       <link rel="stylesheet" href="/css/variables.css">
-      <link rel="stylesheet" href="/css/generic.css">
+      
       <link rel="stylesheet" href="/css/common.css">
       <link rel="stylesheet" href="/css/header.css">
       <link rel="stylesheet" href="/css/sidebar-menu.css">
@@ -60,6 +60,7 @@ class TemplateService {
       <link rel="stylesheet" href="/css/login-form.css">
       <link rel="stylesheet" href="/css/pages-content.css">
       <link rel="stylesheet" href="/css/rows.css">
+      <link rel="stylesheet" href="/css/generic.css">
     `
   }
 

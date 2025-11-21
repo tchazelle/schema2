@@ -178,7 +178,7 @@
 
   --border-radius-sm: 4px;
   --border-radius-md: 6px;
-  --border-radius-lg: 8px;
+  --border-radius-lg: 12px;
   --border-radius-circle: 50%;
 
 
@@ -191,7 +191,7 @@
 
   /* Legacy aliases */
   --border-width-thin: var(--border-width);
-  --border-width-medium: var(--border-width-thick);
+  --border-width-md: var(--border-width); /*  var(--border-width-thick- */
 
 
   /* ========================================
