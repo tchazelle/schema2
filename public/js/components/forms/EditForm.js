@@ -761,7 +761,7 @@ class EditForm extends React.Component {
               // Right side: "+ ajouter" button
               e('div', { style: { display: 'flex', alignItems: 'center', gap: '8px' } },
                 e('button', {
-                  className: 'btn-add-relation-item',
+                  className: 'btn-add-relation-item btn btn-primary',
                   onClick: (ev) => {
                     ev.stopPropagation();
                     window.open(`/_crud/${relatedTable}?parent=${tableName}&parentId=${row.id}`, '_blank');

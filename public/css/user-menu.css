@@ -41,47 +41,27 @@
 }
 
 .user-dropdown {
-  display: none;
+  /* Extends .menu-dropdown from generic.css */
   position: absolute;
   top: 100%;
   right: 0;
   margin-top: var(--space-sm);
-  background: var(--color-bg-white);
-  border: var(--border-width-thin) solid var(--color-border-light);
-  border-radius: var(--border-radius-sm);
-  box-shadow: var(--shadow-sm-medium);
-  min-width: 200px;
-  z-index: var(--z-dropdown);
 }
 
 .user-dropdown.open {
+  /* Inherits from .open in generic.css */
   display: block;
 }
 
 .user-dropdown a,
 .user-dropdown button {
+  /* Extends .menu-item from generic.css */
   display: block;
-  padding: var(--space-md) var(--space-lg);
-  color: var(--color-text-heading);
-  text-decoration: none;
-  border: none;
-  background: none;
   width: 100%;
-  text-align: left;
-  cursor: pointer;
-  font-size: var(--font-size-base);
-  transition: background var(--transition-base);
-}
-
-.user-dropdown a:hover,
-.user-dropdown button:hover {
-  background: var(--color-bg-section);
 }
 
 .user-dropdown .divider {
-  height: var(--border-width-thin);
-  background: var(--color-border-light);
-  margin: var(--space-sm) 0;
+  /* Extends .divider from generic.css */
 }
 
 .user-info {

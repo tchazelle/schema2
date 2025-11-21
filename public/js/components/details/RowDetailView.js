@@ -412,7 +412,7 @@ class RowDetailView extends React.Component {
               // Right side: "+ ajouter" button and three-dots menu on same line
               e('div', { style: { display: 'flex', alignItems: 'center', gap: '8px' } },
                 e('button', {
-                  className: 'btn-add-relation-item',
+                  className: 'btn-add-relation-item btn btn-primary',
                   onClick: (ev) => {
                     ev.stopPropagation();
                     this.handleOpenCreateModal(relatedTable);

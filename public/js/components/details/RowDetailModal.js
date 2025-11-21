@@ -246,7 +246,7 @@ class RowDetailModal extends React.Component {
               style: { position: 'relative' }
             },
               e('button', {
-                className: 'btn-menu',
+                className: 'btn-menu btn-icon menu-three-dots',
                 onClick: this.toggleDuplicateMenu,
                 title: 'Actions',
                 disabled: this.state.duplicating || this.state.notifying,
@@ -336,7 +336,7 @@ class RowDetailModal extends React.Component {
             // Special case: if parentTable is set and in edit mode, close the entire modal
             // instead of going back to detail view (for sub-records)
             e('button', {
-              className: 'modal-close-detail',
+              className: 'modal-close-detail btn-icon',
               onClick: editMode ? (parentTable ? onClose : onExitEditMode) : onClose,
               title: editMode ? (parentTable ? 'Retour à la fiche parent' : 'Retour à la fiche') : 'Fermer (Echap)'
             }, '✖')
