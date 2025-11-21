@@ -202,19 +202,19 @@ class TemplateService {
       <span>${user.fullName}</span>
     </button>
 
-    <div class="user-dropdown menu-dropdown" id="userDropdown">
+    <div class="user-dropdown menu-dropdown" id="userDropdown" style="z-index: 200000;">
       ${user.isAuthenticated ? `
         <div class="user-info">
           ${user.email}<br>
           <strong>Rôles:</strong> ${user.allRoles.join(', ')}
         </div>
         <div class="divider"></div>
-        <a href="/_debug/user">Mon profil</a>
-        <a href="/_debug/user/grant">Mes autorisations</a>
+        <a class="menu-item"  href="/_debug/user">Mon profil</a>
+        <a class="menu-item"  href="/_debug/user/grant">Mes autorisations</a>
         <div class="divider"></div>
-        <button onclick="logout()">Déconnexion</button>
+        <button class="menu-item" onclick="logout()">Déconnexion</button>
       ` : `
-        <a href="#" onclick="showLoginForm(); return false;">Connexion</a>
+        <a class="menu-item"  href="#" onclick="showLoginForm(); return false;">Connexion</a>
       `}
     </div>
     <script>
