@@ -215,7 +215,7 @@
 
   /* Legacy aliases */
   --border-width: var(--border-width);
-  --border-width-md: var(--border-width); /*  var(--border-width-thick- */
+  --border-width: var(--border-width); /*  var(--border-width-thick- */
 
 
   /* ========================================

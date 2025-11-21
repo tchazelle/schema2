@@ -29,7 +29,7 @@
   padding: var(--space-sm) var(--space-md);
   padding: var(--space-md);
   background: var(--color-bg-section);
-  border-bottom: var(--border-width-md) solid var(--color-border);
+  border-bottom: var(--border-width) solid var(--color-border);
   _margin-bottom: var(--space-sm);
   flex-shrink: 0;
 }
@@ -147,7 +147,7 @@
   background: var(--color-bg-section);
   padding: var(--space-xs) var(--space-sm);
   text-align: left;
-  border-bottom: var(--border-width-md) solid var(--color-border);
+  border-bottom: var(--border-width) solid var(--color-border);
   font-weight: var(--font-weight-semibold);
   color: var(--color-text-label);
   font-size: var(--font-size-sm);
@@ -1020,7 +1020,7 @@ tr.detail-row td {
   gap: var(--space-lg);
   padding: var(--space-lg) var(--space-xsxl);
   background: var(--color-bg-section);
-  border-bottom: var(--border-width-md) solid var(--color-border);
+  border-bottom: var(--border-width) solid var(--color-border);
   flex-shrink: 0;
 }
 
