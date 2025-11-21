@@ -385,10 +385,11 @@ class NotifyModal extends React.Component {
                 )
               )
             )
-          ),
+          )
+        ),
 
-          // Right column: Preview
-          !loading && !error && e('div', {
+        // Right column: Preview
+        !loading && !error && e('div', {
             className: 'notify-preview-column',
             style: {
               flex: 1,
