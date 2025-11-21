@@ -313,7 +313,6 @@ class AdvancedSortModal extends React.Component {
                 gap: '8px',
                 marginBottom: '8px',
                 alignItems: 'center',
-                border: '1px solid red',
               }
             },
               e('span', {
