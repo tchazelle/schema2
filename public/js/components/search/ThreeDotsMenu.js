@@ -52,7 +52,18 @@ class ThreeDotsMenu extends React.Component {
 
   toggleMenu = (ev) => {
     ev.stopPropagation();
-    this.setState(prev => ({ isOpen: !prev.isOpen }));
+    this.setState(prev => ({ isOpen: !prev.isOpen }), () => {
+      // After opening, adjust dropdown position to prevent overflow
+      if (this.state.isOpen && this.menuRef.current) {
+        const dropdown = this.menuRef.current.querySelector('.menu-dropdown');
+        if (dropdown && window.adjustDropdownPosition) {
+          // Use requestAnimationFrame to ensure dropdown is rendered
+          requestAnimationFrame(() => {
+            window.adjustDropdownPosition(dropdown);
+          });
+        }
+      }
+    });
   }
 
   handleOptionClick = (action) => {
@@ -72,7 +83,10 @@ class ThreeDotsMenu extends React.Component {
         onClick: this.toggleMenu,
         'aria-label': 'Options'
       }, '⋮'),
-      isOpen && e('div', { className: 'menu-dropdown open' },
+      isOpen && e('div', {
+        className: 'menu-dropdown open align-right',
+        style: { top: '100%', marginTop: '4px' }
+      },
         // Display mode section (hide for sub-lists)
         !isSubList && e('div', { className: 'menu-section' },
           e('div', { className: 'menu-label' }, 'Sélection des colonnes'),
