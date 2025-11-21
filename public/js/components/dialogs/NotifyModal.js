@@ -385,7 +385,7 @@ class NotifyModal extends React.Component {
                 )
               )
             )
-          ),
+          )),
 
           // Right column: Preview
           !loading && !error && e('div', {
