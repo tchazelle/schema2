@@ -2022,3 +2022,133 @@ a.modal-subtitle:hover {
 [data-theme="dark"] .field-checkbox:hover {
   background-color: var(--color-bg-hover);
 }
+
+/* ========================================
+   COMPUTED AND READONLY FIELDS
+   ======================================== */
+
+.edit-field-computed,
+.edit-field-readonly {
+  background: #e9ecef;
+  cursor: not-allowed;
+}
+
+[data-theme="dark"] .edit-field-computed,
+[data-theme="dark"] .edit-field-readonly {
+  background-color: var(--color-bg-section) !important;
+  color: var(--color-text-muted) !important;
+  border-color: var(--color-border) !important;
+}
+
+/* ========================================
+   TOAST NOTIFICATION SYSTEM
+   ======================================== */
+
+.toast-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.toast-message {
+  background: var(--color-bg-white);
+  color: var(--color-text-primary);
+  padding: 12px 16px;
+  border-radius: 8px;
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--color-border);
+  font-size: var(--font-size-sm);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 250px;
+  max-width: 400px;
+  pointer-events: auto;
+  animation: slideInRight 0.3s ease-out;
+  transition: opacity 0.3s ease-out;
+}
+
+.toast-message.success {
+  border-left: 4px solid var(--color-success);
+}
+
+.toast-message.error {
+  border-left: 4px solid var(--color-error);
+}
+
+.toast-message.info {
+  border-left: 4px solid var(--color-primary);
+}
+
+.toast-message.fading {
+  opacity: 0;
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+[data-theme="dark"] .toast-message {
+  background-color: var(--color-bg-white);
+  color: var(--color-text-primary);
+  border-color: var(--color-border);
+}
+
+/* ========================================
+   IMAGE FIELD UPLOADER
+   ======================================== */
+
+/* Image field menu dropdown - ensure proper positioning and overflow */
+.image-preview {
+  position: relative;
+  overflow: visible;
+}
+
+.image-menu-dropdown {
+  background-color: var(--color-bg-white);
+  color: var(--color-text-primary);
+  border-color: var(--color-border);
+  position: absolute;
+  z-index: 1000;
+  overflow: visible;
+}
+
+.image-menu-dropdown button {
+  color: var(--color-text-primary);
+}
+
+.image-menu-dropdown button:hover {
+  background-color: var(--color-bg-hover);
+}
+
+/* Dark mode for image field uploader */
+[data-theme="dark"] .image-field-uploader {
+  background-color: var(--color-bg-section) !important;
+  border-color: var(--color-border) !important;
+}
+
+[data-theme="dark"] .image-menu-dropdown {
+  background-color: var(--color-bg-white) !important;
+  color: var(--color-text-primary) !important;
+  border-color: var(--color-border) !important;
+}
+
+[data-theme="dark"] .image-menu-dropdown button {
+  color: var(--color-text-primary) !important;
+}
+
+[data-theme="dark"] .image-menu-dropdown button:hover {
+  background-color: var(--color-bg-hover) !important;
+}

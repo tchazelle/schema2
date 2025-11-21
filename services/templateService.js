@@ -71,6 +71,7 @@ class TemplateService {
   <!-- 1. Utilities (no dependencies) -->
   <script src="/js/utils/crudListUtils.js"></script>
   <script src="/js/autoExpandTextarea.js"></script>
+  <script src="/js/toast.js"></script>
 
   <!-- Global React.createElement shorthand -->
   <script>
