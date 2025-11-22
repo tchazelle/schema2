@@ -9,8 +9,8 @@
   margin: var(--space-xs) auto;
   padding: var(--space-md);
   background-color: var(--color-bg);
-  border-radius: var(--border-radius-lg);
-  box-shadow: var(--shadow-sm);
+  _border-radius: var(--border-radius-lg);
+  _box-shadow: var(--shadow-sm);
 }
 
 .calendar-header {
