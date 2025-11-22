@@ -48,6 +48,9 @@ class RendererService {
       case 'datetime':
         return this.renderDateTime(value);
 
+      case 'duration':
+        return this.renderDuration(value);
+
       case 'email':
       case 'telephone':
       case 'url':
@@ -135,6 +138,59 @@ class RendererService {
     } catch (error) {
       console.error('[RendererService] Error rendering datetime:', error);
       return String(datetime);
+    }
+  }
+
+  /**
+   * Render ISO 8601 duration to human-readable format
+   * Converts PT37M53S to 37'53"
+   * Supports: PT1H30M, PT45M, PT2H, PT1H2M3S, etc.
+   * @param {string} duration - ISO 8601 duration string (e.g., PT37M53S)
+   * @returns {string} - Formatted duration (e.g., 37'53")
+   */
+  static renderDuration(duration) {
+    if (!duration || typeof duration !== 'string') return '';
+
+    try {
+      // ISO 8601 duration format: PT1H30M45S
+      // P = Period, T = Time separator
+      const regex = /^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+(?:\.\d+)?)S)?$/;
+      const match = duration.match(regex);
+
+      if (!match) {
+        return duration; // Return original if not valid ISO 8601
+      }
+
+      const hours = match[1] ? parseInt(match[1], 10) : 0;
+      const minutes = match[2] ? parseInt(match[2], 10) : 0;
+      const seconds = match[3] ? parseFloat(match[3]) : 0;
+
+      // Build formatted string
+      const parts = [];
+
+      if (hours > 0) {
+        parts.push(`${hours}h`);
+      }
+
+      if (minutes > 0) {
+        parts.push(`${minutes}'`);
+      }
+
+      if (seconds > 0) {
+        // Format seconds as integer if no decimal part
+        const formattedSeconds = seconds % 1 === 0 ? seconds : seconds.toFixed(2);
+        parts.push(`${formattedSeconds}"`);
+      }
+
+      // If no parts, return 0"
+      if (parts.length === 0) {
+        return '0"';
+      }
+
+      return parts.join('');
+    } catch (error) {
+      console.error('[RendererService] Error rendering duration:', error);
+      return String(duration);
     }
   }
 
