@@ -692,7 +692,7 @@ class CreateFormModal extends React.Component {
             ),
 
             // Form fields grid
-            e('div', { className: 'edit-form-grid' },
+            e('div', { className: `edit-form-grid layout-${tableConfig?.formLayout || 'vertical'}` },
               editableFields.map((fieldName) => {
                 const field = structure.fields[fieldName];
                 return this.renderField(fieldName, field);

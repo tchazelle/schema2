@@ -54,13 +54,36 @@
   border-radius: var(--border-radius-sm);
   cursor: pointer;
   color: var(--color-text-primary);
-  transition: background var(--transition-fast), color var(--transition-fast);
+  transition: background var(--transition-fast), color var(--transition-fast), transform var(--transition-fast);
+  animation: slideInFromLeft 0.3s ease-out;
 }
 
 .btn-pinned:hover {
   background: var(--color-primary);
   color: var(--color-bg);
   border-color: var(--color-primary);
+  transform: scale(1.05);
+  animation: pulse 0.6s ease-in-out;
+}
+
+@keyframes slideInFromLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1.05);
+  }
+  50% {
+    transform: scale(1.1);
+  }
 }
 
 /* Bouton d'épinglage dans le menu */
@@ -321,6 +344,17 @@ tr.detail-row td {
   grid-template-columns: repeat(auto-fill, minmax(min(350px, 100%), 1fr));
   gap: var(--space-md);
   margin-bottom: var(--space-md);
+  grid-auto-flow: column; /* Par défaut : remplissage vertical (colonnes de haut en bas) */
+}
+
+/* Layout horizontal : remplissage ligne par ligne (ancien comportement) */
+.detail-fields.layout-horizontal {
+  grid-auto-flow: row;
+}
+
+/* Layout vertical : remplissage colonne par colonne (nouveau comportement par défaut) */
+.detail-fields.layout-vertical {
+  grid-auto-flow: column;
 }
 
 .detail-field {
@@ -507,6 +541,17 @@ tr.detail-row td {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(350px, 100%), 1fr));
   gap: var(--space-lg);
+  grid-auto-flow: column; /* Par défaut : remplissage vertical (colonnes de haut en bas) */
+}
+
+/* Layout horizontal : remplissage ligne par ligne (ancien comportement) */
+.edit-form-grid.layout-horizontal {
+  grid-auto-flow: row;
+}
+
+/* Layout vertical : remplissage colonne par colonne (nouveau comportement par défaut) */
+.edit-form-grid.layout-vertical {
+  grid-auto-flow: column;
 }
 
 .edit-field {
