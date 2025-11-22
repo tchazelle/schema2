@@ -136,6 +136,8 @@ function userEnrich(user) {
     roles: user.roles, // Format original "@admin @dev"
     givenName: user.givenName,
     familyName: user.familyName,
+    image: user.image, // Photo de profil
+    theme: user.theme, // Préférence de thème
 
     // Données enrichies
     allRoles: allRoles, // Array de tous les rôles avec héritage
