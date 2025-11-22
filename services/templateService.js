@@ -45,7 +45,6 @@ class TemplateService {
     </article>`
   }
   
-
   static htmlDebugJSON(json) {
     return `<pre>${JSON.stringify(json, null, 4)}</pre>`
   }
@@ -353,7 +352,6 @@ class TemplateService {
     </header>
   `}
 
-
   /**
    * Génère le formulaire de connexion HTML
    * @returns {string} - HTML du formulaire de login
@@ -424,7 +422,6 @@ class TemplateService {
     }
   </script>`;
   }
-
 
   /**
    * Génère la page HTML complète avec header, menu et contenu
@@ -1602,7 +1599,7 @@ class TemplateService {
 
     let template = `${indent}{{#${fieldName}}}\n`;
     template += `${indent}<div class="relation relation-n1 ${fieldName}" data-table="${relatedTable}">\n`;
-    template += `${indent}  <h3>${TemplateService._humanizeFieldName(fieldName)}</h3>\n`;
+    template += `${indent}  <label>${TemplateService._humanizeFieldName(fieldName)}</label>\n`;
 
     // Afficher les champs d'affichage de la table liée
     for (const displayField of displayFields) {
@@ -1644,7 +1641,7 @@ class TemplateService {
 
     let template = `${indent}{{#${arrayName}}}\n`;
     template += `${indent}<div class="relation relation-1n ${arrayName}">\n`;
-    template += `${indent}  <h3>${TemplateService._humanizeFieldName(arrayName)}</h3>\n`;
+    template += `${indent}  <label>${TemplateService._humanizeFieldName(arrayName)}</label>\n`;
     template += `${indent}  <div class="relation-items">\n`;
 
     // Afficher les champs de base de la relation
@@ -1720,7 +1717,7 @@ class TemplateService {
     }
 
     let template = `${indent}<div class="relation relation-1n relation-1n-table ${arrayName}">\n`;
-    template += `${indent}  <h3>${TemplateService._humanizeFieldName(arrayName)}</h3>\n`;
+    template += `${indent}  <label>${TemplateService._humanizeFieldName(arrayName)}</label>\n`;
     template += `${indent}  <table class="relation-table" data-table="${relatedTable}">\n`;
 
     // En-tête de table
