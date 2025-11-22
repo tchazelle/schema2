@@ -186,6 +186,15 @@ class TemplateService {
   
   static htmlSidebar(pages, accessibleTables, hasCalendarAccess = false) {
     return `<nav class="sidebar" id="sidebar">
+      <div class="sidebar-search">
+        <input
+          type="text"
+          id="sidebarSearchInput"
+          class="sidebar-search-input"
+          placeholder="🔍 Filtrer le menu..."
+          oninput="filterSidebarMenu(this.value)"
+        />
+      </div>
       ${this.htmlMenu(pages, accessibleTables, hasCalendarAccess)}
     </nav>`
   }
@@ -284,6 +293,35 @@ class TemplateService {
       sidebar.classList.remove('open');
       overlay.classList.remove('open');
       menuToggle.classList.remove('active');
+    }
+
+    // Filter sidebar menu items
+    function filterSidebarMenu(searchText) {
+      const sidebar = document.getElementById('sidebar');
+      if (!sidebar) return;
+
+      const normalizedSearch = searchText.toLowerCase().trim();
+
+      // Get all sections and their items
+      const sections = sidebar.querySelectorAll('.sidebar-section');
+
+      sections.forEach(section => {
+        let sectionHasVisibleItems = false;
+        const items = section.querySelectorAll('li');
+
+        items.forEach(item => {
+          const text = item.textContent.toLowerCase();
+          const shouldShow = normalizedSearch === '' || text.includes(normalizedSearch);
+
+          item.style.display = shouldShow ? '' : 'none';
+          if (shouldShow) {
+            sectionHasVisibleItems = true;
+          }
+        });
+
+        // Hide section if no items are visible
+        section.style.display = sectionHasVisibleItems ? '' : 'none';
+      });
     }
 
     // Toggle user menu
