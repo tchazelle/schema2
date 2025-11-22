@@ -214,7 +214,6 @@ class TemplateService {
     : `<span class="user-avatar-initials">${user.abbreviation || '?'}</span>`;
 
   return `<div class="user-menu">
-
     <button class="user-button" onclick="toggleUserMenu()" aria-label="Menu utilisateur">
       ${userAvatar}
     </button>
@@ -265,7 +264,15 @@ class TemplateService {
         <a class="menu-item"  href="#" onclick="showLoginForm(); return false;">Connexion</a>
       `}
     </div>
-    <script>
+  </div>`
+  }
+
+  /**
+   * Génère les scripts nécessaires pour le header (menu, theme, etc.)
+   * Ces scripts doivent être placés en fin de body pour ne pas interférer avec le layout du header
+   */
+  static htmlHeaderScripts() {
+    return `<script>
     // Toggle menu hamburger
     function toggleMenu() {
       const sidebar = document.getElementById('sidebar');
@@ -476,6 +483,9 @@ class TemplateService {
     ${main}
   </main>
 
+  <!-- Header scripts (menu, theme, etc.) -->
+  ${this.htmlHeaderScripts()}
+
   <!-- Dropdown positioning utility for user menu -->
   <script src="/js/utils/dropdownPosition.js"></script>
 </body>
@@ -526,6 +536,9 @@ class TemplateService {
   <div id="root"></div>
 
   ${this.htmlCrudComponentScripts()}
+
+  <!-- Header scripts (menu, theme, etc.) -->
+  ${this.htmlHeaderScripts()}
 
   <script>
     // Mount the React component
@@ -1011,6 +1024,9 @@ class TemplateService {
     });
   </script>
 
+  <!-- Header scripts (menu, theme, etc.) -->
+  ${this.htmlHeaderScripts()}
+
   <!-- Dropdown positioning utility for user menu -->
   <script src="/js/utils/dropdownPosition.js"></script>
 </body>
@@ -1064,6 +1080,9 @@ class TemplateService {
   <div id="root"></div>
 
   ${this.htmlCrudComponentScripts()}
+
+  <!-- Header scripts (menu, theme, etc.) -->
+  ${this.htmlHeaderScripts()}
 
   <script>
     // Mount the React component with recordId to trigger fullscreen modal
@@ -1452,6 +1471,9 @@ class TemplateService {
         .catch(error => console.error('Erreur lors du chargement des statistiques:', error));
     });
   </script>
+
+  <!-- Header scripts (menu, theme, etc.) -->
+  ${this.htmlHeaderScripts()}
 
   <!-- Dropdown positioning utility for user menu -->
   <script src="/js/utils/dropdownPosition.js"></script>
