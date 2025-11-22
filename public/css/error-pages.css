@@ -15,7 +15,7 @@
 /* Centered layout for error pages */
 body {
   font-family: var(--font-family-base);
-  background: var(--color-bg-page);
+  background: var(--color-bg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -25,8 +25,8 @@ body {
 /* Error container */
 .container {
   text-align: center;
-  background: var(--color-bg-white);
-  padding: var(--space-xsxl) var(--space-xsxl);
+  background: var(--color-bg);
+  padding: var(--space-xl) var(--space-xl);
   border-radius: var(--border-radius-lg);
   box-shadow: var(--shadow-sm-medium);
   max-width: 500px;
@@ -35,7 +35,7 @@ body {
 
 /* Error heading */
 h1 {
-  font-size: var(--font-size-6xl);
+  font-size: var(--font-size-xl);
   color: var(--color-primary-text);
   margin-bottom: var(--space-xl);
   font-weight: var(--font-weight-bold);
@@ -43,7 +43,7 @@ h1 {
 
 /* 500 error specific color */
 h1.error-500 {
-  font-size: var(--font-size-5xl);
+  font-size: var(--font-size-xl);
   color: var(--color-error);
 }
 
@@ -51,16 +51,16 @@ h1.error-500 {
 p {
   font-size: var(--font-size-lg);
   color: var(--color-text-muted);
-  margin-bottom: var(--space-xsxl);
+  margin-bottom: var(--space-xl);
   line-height: var(--line-height-normal);
 }
 
 /* Back link button */
 a {
   display: inline-block;
-  padding: var(--space-md) var(--space-xsxl);
+  padding: var(--space-md) var(--space-xl);
   background: var(--color-primary);
-  color: var(--color-bg-white);
+  color: var(--color-bg);
   text-decoration: none;
   border-radius: var(--border-radius-sm);
   font-weight: var(--font-weight-semibold);
@@ -78,15 +78,15 @@ a:active {
 /* Responsive */
 @media (max-width: 768px) {
   .container {
-    padding: var(--space-xsxl) var(--space-xl);
+    padding: var(--space-xl) var(--space-xl);
   }
 
   h1 {
-    font-size: var(--font-size-5xl);
+    font-size: var(--font-size-xl);
   }
 
   h1.error-500 {
-    font-size: var(--font-size-36);
+    font-size: var(--font-size-xl);
   }
 
   p {

@@ -404,14 +404,14 @@ class FieldSelectorUI {
     style.textContent = `
       .field-selector-ui {
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        background: var(--color-bg-white);
+        background: var(--color-bg);
         border-radius: 8px;
         box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         overflow: hidden;
       }
 
       .field-selector-header {
-        background: var(--color-bg-section);
+        background: var(--color-bg);
         padding: 15px;
         border-bottom: 1px solid var(--color-border);
       }
@@ -445,7 +445,7 @@ class FieldSelectorUI {
 
       .field-selector-breadcrumb {
         padding: 12px 15px;
-        background: var(--color-bg-white);
+        background: var(--color-bg);
         border-bottom: 1px solid var(--color-border);
         font-size: 14px;
         overflow-x: auto;
@@ -497,7 +497,7 @@ class FieldSelectorUI {
         text-transform: uppercase;
         letter-spacing: 0.5px;
         padding: 8px 10px;
-        background: var(--color-bg-section);
+        background: var(--color-bg);
         border-radius: 4px;
         margin-bottom: 5px;
       }
@@ -517,7 +517,7 @@ class FieldSelectorUI {
       }
 
       .field-item.selectable:hover {
-        background: var(--color-bg-hover);
+        background: var(--color-bg);
       }
 
       .field-item.navigable {
@@ -525,7 +525,7 @@ class FieldSelectorUI {
       }
 
       .field-item.navigable:hover {
-        background: var(--color-bg-hover);
+        background: var(--color-bg);
       }
 
       .field-icon {
@@ -543,7 +543,7 @@ class FieldSelectorUI {
       .field-type {
         font-size: 12px;
         color: var(--color-text-secondary);
-        background: var(--color-bg-section);
+        background: var(--color-bg);
         padding: 2px 8px;
         border-radius: 3px;
       }
@@ -556,7 +556,7 @@ class FieldSelectorUI {
 
       .field-selector-selected {
         padding: 15px;
-        background: var(--color-bg-section);
+        background: var(--color-bg);
         border-top: 1px solid var(--color-border);
       }
 

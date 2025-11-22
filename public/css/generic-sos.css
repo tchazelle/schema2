@@ -15,7 +15,7 @@
   padding: var(--space-sm) var(--space-lg);
   border: none;
   border-radius: var(--border-radius-sm);
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-md);
   font-weight: var(--font-weight-medium);
   cursor: pointer;
   transition: background var(--transition-base), transform var(--transition-fast);
@@ -42,7 +42,7 @@
 /* Button variants */
 .__btn-primary {
   _background: var(--color-primary);
-  color: var(--color-bg-white);
+  color: var(--color-bg);
 }
 
 .__btn-primary:hover {
@@ -50,13 +50,13 @@
 }
 
 .btn-secondary {
-  background: var(--color-bg-section);
+  background: var(--color-bg);
   color: var(--color-text-secondary);
   border: solid var(--border-width) var(--color-border);
 }
 
 .btn-secondary:hover {
-  background: var(--color-bg-hover);
+  background: var(--color-bg);
 }
 
 /* Icon-only button */
@@ -71,7 +71,7 @@
 
 .btn-icon:hover {
   color: var(--color-text-primary);
-  background: var(--color-bg-hover);
+  background: var(--color-bg);
   border-radius: var(--border-radius-sm);
 }
 
@@ -92,7 +92,7 @@
 
 /* Menu container */
 .menu {
-  background: var(--color-bg-white);
+  background: var(--color-bg);
   border: solid var(--border-width) var(--color-border);
   border-radius: var(--border-radius-sm);
   box-shadow: var(--shadow-sm);
@@ -109,7 +109,7 @@
 /* Toggle menu button */
 .menu-toggle {
   background: var(--color-primary);
-  color: var(--color-bg-white);
+  color: var(--color-bg);
   border: none;
   padding: var(--space-sm) var(--space-md);
   border-radius: var(--border-radius-sm);
@@ -141,7 +141,7 @@
 
 /* Expanded state */
 .expanded {
-  background: var(--color-bg-hover);
+  background: var(--color-bg);
 }
 
 /* Selected state */
@@ -214,7 +214,7 @@
 }
 
 .option:hover {
-  background: var(--color-bg-section);
+  background: var(--color-bg);
 }
 
 .option.selected {
@@ -228,7 +228,7 @@
 
 /* Card container */
 .card {
-  background: var(--color-bg-white);
+  background: var(--color-bg);
   border: solid var(--border-width) var(--color-border);
   border-radius: var(--border-radius-lg);
   padding: var(--space-xl);
@@ -269,7 +269,7 @@
   justify-content: center;
   padding: var(--space-xs) var(--space-sm);
   background: var(--color-text-muted);
-  color: var(--color-bg-white);
+  color: var(--color-bg);
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-semibold);
   border-radius: var(--border-radius-xl);
@@ -304,7 +304,7 @@
 /* Vertical divider */
 .divider-vertical {
   width: var(--border-width);
-  background: var(--color-border);
+  background: var(--color-bg);
   margin: 0 var(--space-md);
   border: none;
 }
@@ -356,7 +356,7 @@
   text-align: center;
   padding: var(--space-xl);
   color: var(--color-text-muted);
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-md);
 }
 
 .loading::before {
@@ -440,14 +440,14 @@
    ======================================== */
 
 [data-theme="dark"] .card {
-  background: var(--color-bg-white);
+  background: var(--color-bg);
   border-color: var(--color-border);
 }
 
 [data-theme="dark"] .menu,
 [data-theme="dark"] .menu-dropdown {
-  background: var(--bg-color);
-  border-color: var(--border-color);
+  background: var(--color-bg);
+  border-color: var(--color-border);
 }
 
 [data-theme="dark"] .menu-item {
@@ -455,27 +455,27 @@
 }
 
 [data-theme="dark"] .menu-item:hover {
-  background: var(--color-bg-hover);
+  background: var(--color-bg);
 }
 
 [data-theme="dark"] .btn-secondary {
-  background: var(--color-bg-section);
+  background: var(--color-bg);
   color: var(--color-text-secondary);
   border-color: var(--color-border);
 }
 
 [data-theme="dark"] .btn-secondary:hover {
-  background: var(--color-bg-hover);
+  background: var(--color-bg);
 }
 
 [data-theme="dark"] .option {
-  __background: var(--color-bg-white);
+  __background: var(--color-bg);
   border-color: var(--color-border);
   color: var(--color-text-primary);
 }
 
 [data-theme="dark"] .option:hover {
-  background: var(--color-bg-hover);
+  background: var(--color-bg);
 }
 
 
@@ -491,10 +491,10 @@
   --black: #1f2937;
   --grey: #434952;
   --white: #ffffff;
-  --bg-color: var(--white);
+  --color-bg: var(--white);
   --color: var(--black);
-  --border-color: #bec2c7;
-  --border-color-active: #c7c2be;
+  --color-border: #bec2c7;
+  --color-border-active: #c7c2be;
   --hover-background-color: #8929ff;
   --space-xs: 3px;
   --space-sm: 6px;
@@ -505,43 +505,43 @@
 }
 
 body * {
-  background-color: var(--bg-color);
+  background-color: var(--color-bg);
   color: var(--color);
   
 } 
 
 [data-theme="dark"]  {
-  --bg-color: var(--color);
-  --color: var(--bg-color);
+  --color-bg: var(--color);
+  --color: var(--color-bg);
 }
 
 
 .search-input {
   padding: var(--space-sm);
-  border: solid 1px var(--border-color);
+  border: solid 1px var(--color-border);
   border-radius: var(--border-radius-sm);
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-md);
   transition: border-color var(--transition-base);
 }
 
 .btn, button {
   cursor: pointer;
   padding: var(--space-sm) var(--space-lg);
-  background-color: var(--bg-color);
+  background-color: var(--color-bg);
   color: var(--color);
-  border: solid 1px var(--border-color) ;
+  border: solid 1px var(--color-border) ;
 }
 
 .btn:hover, button:hover  {
   background-color: var(--color);
-  color: var(--bg-color);
+  color: var(--color-bg);
   transition: ease-in-out 0.3s;
   _transform: translate(-2px);
 }
 
 .three-dots { /* exception de .btn  */
   border:none;
-  background-color: var(--bg-color);
+  background-color: var(--color-bg);
   color: var(--color);
   font-weight: 700;
   font-size: 24px;

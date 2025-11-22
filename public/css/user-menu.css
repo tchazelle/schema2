@@ -10,12 +10,12 @@
 }
 
 .user-button {
-  background: var(--color-bg-section);
-  border: solid var(--border-width) var(--color-border-light);
+  background: var(--color-bg);
+  border: solid var(--border-width) var(--color-border);
   padding: var(--space-sm) var(--space-lg);
   border-radius: var(--border-radius-pill);
   cursor: pointer;
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-md);
   color: var(--color-text-primary);
   display: flex;
   align-items: center;
@@ -24,14 +24,14 @@
 }
 
 .user-button:hover {
-  background: var(--color-bg-hover);
+  background: var(--color-bg);
 }
 
 .user-icon {
   width: 24px;
   height: 24px;
   background: var(--color-primary);
-  color: var(--color-bg-white);
+  color: var(--color-bg);
   border-radius: var(--border-radius-circle);
   display: flex;
   align-items: center;
@@ -66,7 +66,7 @@
 
 .user-info {
   padding: var(--space-md) var(--space-lg);
-  border-bottom: solid var(--border-width) var(--color-border-light);
+  border-bottom: solid var(--border-width) var(--color-border);
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);
 }
@@ -85,7 +85,7 @@
 }
 
 .theme-label-text {
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-md);
   color: var(--color-text-primary);
 }
 
@@ -110,7 +110,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: var(--color-border-input);
+  background-color: var(--color-border);
   border-radius: 28px;
   transition: background-color var(--transition-base);
   display: flex;
@@ -128,7 +128,7 @@
   height: 20px;
   width: 20px;
   left: 4px;
-  background-color: var(--color-bg-white);
+  background-color: var(--color-bg);
   border-radius: 50%;
   transition: transform var(--transition-base);
   z-index: 1;
@@ -169,7 +169,7 @@
 @media (max-width: 768px) {
   .user-button {
     padding: var(--space-xs) var(--space-md);
-    font-size: var(--font-size-13);
+    font-size: var(--font-size-sm);
   }
 
   .user-dropdown {

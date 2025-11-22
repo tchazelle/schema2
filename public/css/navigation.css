@@ -8,7 +8,7 @@
 .nav {
   margin-bottom: var(--space-xl);
   padding: var(--space-lg);
-  background: var(--color-bg-white);
+  background: var(--color-bg);
   border-radius: var(--border-radius-lg);
   display: flex;
   gap: var(--space-md);
@@ -19,10 +19,10 @@
 .nav a {
   padding: var(--space-sm) var(--space-lg);
   background: var(--color-primary);
-  color: var(--color-bg-white);
+  color: var(--color-bg);
   text-decoration: none;
   border-radius: var(--border-radius-sm);
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-md);
   transition: background var(--transition-base);
   display: inline-block;
 }

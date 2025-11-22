@@ -8,12 +8,12 @@
 .login-form {
   display: none;
   max-width: 400px;
-  margin: var(--space-xsxl) auto;
-  background: var(--color-bg-white);
-  padding: var(--space-xsxl);
+  margin: var(--space-xl) auto;
+  background: var(--color-bg);
+  padding: var(--space-xl);
   border-radius: var(--border-radius-lg);
-  border: solid var(--border-width) var(--color-border-light);
-  box-shadow: var(--shadow-xs);
+  border: solid var(--border-width) var(--color-border);
+  box-shadow: var(--shadow-sm);
 
   min-width: 40rem;
   position: fixed;
@@ -30,7 +30,7 @@
 .login-form h2 {
   margin-bottom: var(--space-xl);
   color: var(--color-text-heading);
-  font-size: var(--font-size-2xl);
+  font-size: var(--font-size-xl);
   font-weight: var(--font-weight-semibold);
 }
 
@@ -42,7 +42,7 @@
   display: block;
   margin-bottom: var(--space-xs);
   color: var(--color-text-muted);
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-md);
   font-weight: var(--font-weight-medium);
 }
 
@@ -51,25 +51,25 @@
   padding: var(--space-md);
   border: solid var(--border-width) var(--color-border-card);
   border-radius: var(--border-radius-sm);
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-md);
   transition: border-color var(--transition-base);
 }
 
 .form-group input:focus {
   outline: none;
   border-color: var(--color-primary-text);
-  box-shadow: var(--shadow-focus-light);
+  box-shadow: var(--shadow-focus);
 }
 
 ._btn {
   width: 100%;
   padding: var(--space-md);
   background: var(--color-primary);
-  color: var(--color-bg-white);
+  color: var(--color-bg);
   border: none;
   border-radius: var(--border-radius-sm);
   cursor: pointer;
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-md);
   font-weight: var(--font-weight-semibold);
   transition: background var(--transition-base);
 }
@@ -84,11 +84,11 @@
 
 .error-message {
   color: var(--color-error);
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-md);
   margin-top: var(--space-md);
   display: none;
   padding: var(--space-md);
-  background: var(--color-error-bg);
+  background: var(--color-bg-error);
   border: solid var(--border-width) var(--color-error-border);
   border-radius: var(--border-radius-sm);
 }

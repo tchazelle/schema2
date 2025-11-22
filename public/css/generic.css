@@ -28,8 +28,8 @@
 
 
 header {
-  background-color: var(--bg-color);
-  border-bottom: solid var(--border-width)  var(--border-color);
+  background-color: var(--color-bg);
+  border-bottom: solid var(--border-width)  var(--color-border);
 
   padding: var(--space-md) var(--space-md);
   display: flex;
@@ -55,7 +55,7 @@ header {
   right: -300px;
   width: 300px;
   height: 100vh;
-  background-color: var(--bg-color);
+  background-color: var(--color-bg);
   box-shadow: var(--shadow-left);
   transition: right var(--transition-slow) ease;
   z-index: var(--z-dropdown);
@@ -70,11 +70,11 @@ header {
 .sidebar-section {
   
   padding: var(--space-xl);
-  border-bottom: solid var(--border-width) var(--border-color);
+  border-bottom: solid var(--border-width) var(--color-border);
 }
 
 .sidebar-section h3 {
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-md);
   color: var(--color-text-muted);
   text-transform: uppercase;
   margin-bottom: var(--space-sm);
@@ -99,12 +99,12 @@ header {
 }
 
 .sidebar-section a:hover {
-  background: var(--bg-color-hover);
+  background: var(--color-bg-hover);
 }
 
 .sidebar-section a.active {
   /* Inherits from .active in generic.css */
-  background: var(--bg-color-hover);
+  background: var(--color-bg-hover);
 }
 
 
@@ -116,12 +116,12 @@ header {
 }
 
 .user-button {
-  background: var(--color-bg-section);
-  border: solid var(--border-width) var(--color-border-light);
+  background: var(--color-bg);
+  border: solid var(--border-width) var(--color-border);
   padding: var(--space-sm) var(--space-lg);
   border-radius: var(--border-radius-pill);
   cursor: pointer;
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-md);
   color: var(--color-text-primary);
   display: flex;
   align-items: center;
@@ -130,14 +130,14 @@ header {
 }
 
 .user-button:hover {
-  background: var(--color-bg-hover);
+  background: var(--color-bg);
 }
 
 .user-icon {
   width: 24px;
   height: 24px;
   background: var(--color-primary);
-  color: var(--color-bg-white);
+  color: var(--color-bg);
   border-radius: var(--border-radius-circle);
   display: flex;
   align-items: center;
@@ -176,7 +176,7 @@ header {
 
 .user-info {
   padding: var(--space-md) var(--space-lg);
-  border-bottom: solid var(--border-width) var(--color-border-light);
+  border-bottom: solid var(--border-width) var(--color-border);
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);
 }
@@ -195,7 +195,7 @@ header {
 }
 
 .theme-label-text {
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-md);
   color: var(--color-text-primary);
 }
 
@@ -220,7 +220,7 @@ header {
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: var(--color-border-input);
+  background-color: var(--color-border);
   border-radius: 28px;
   transition: background-color var(--transition-base);
   display: flex;
@@ -238,7 +238,7 @@ header {
   height: 20px;
   width: 20px;
   left: 4px;
-  background-color: var(--color-bg-white);
+  background-color: var(--color-bg);
   border-radius: 50%;
   transition: transform var(--transition-base);
   z-index: 1;
@@ -279,7 +279,7 @@ header {
 @media (max-width: 768px) {
   .user-button {
     padding: var(--space-xs) var(--space-md);
-    font-size: var(--font-size-13);
+    font-size: var(--font-size-sm);
   }
 
   .user-dropdown {
@@ -290,9 +290,9 @@ header {
 
 .search-input {
   padding: var(--space-sm);
-  border: solid 1px var(--border-color);
+  border: solid 1px var(--color-border);
   border-radius: var(--border-radius-sm);
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-md);
   transition: border-color var(--transition-base);
 }
 
@@ -300,21 +300,21 @@ header {
   cursor: pointer;
   padding: var(--space-sm) var(--space-lg);
   border-radius: var(--border-radius-sm);
-  background-color: var(--bg-color);
+  background-color: var(--color-bg);
   color: var(--color);
-  border: solid 1px var(--border-color) ;
+  border: solid 1px var(--color-border) ;
 }
 
 .btn:hover {
   background-color: var(--color);
-  color: var(--bg-color);
+  color: var(--color-bg);
   transition: ease-in-out 0.3s;
   _transform: translate(-2px);
 }
 
 .three-dots { /* exception de .btn  */
   border:none;
-  background-color: var(--bg-color);
+  background-color: var(--color-bg);
   color: var(--color);
   font-weight: 700;
   font-size: 24px;
@@ -342,4 +342,13 @@ header {
   transition: ease-in-out 0.3s;
   transform: rotate(22deg);
   
+}
+
+.card {
+  background: var(--color-bg);
+  border-radius: var(--border-radius-lg);
+  border: solid var(--border-width) var(--color-border);
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--transition-base), box-shadow var(--transition-base);
+  padding:var(--space-md);
 }

@@ -8,7 +8,7 @@
   max-width: var(--container-max-width);
   margin: var(--space-xl) auto;
   padding: var(--space-xl);
-  background-color: var(--color-bg-white);
+  background-color: var(--color-bg);
   border-radius: var(--border-radius-lg);
   box-shadow: var(--shadow-sm);
 }
@@ -20,25 +20,25 @@
   align-items: center;
   margin-bottom: var(--space-xl);
   padding-bottom: var(--space-lg);
-  border-bottom: solid var(--border-width) var(--color-border-light);
+  border-bottom: solid var(--border-width) var(--color-border);
 }
 
 .calendar-header h1 {
   margin: 0;
-  font-size: var(--font-size-3xl);
+  font-size: var(--font-size-xl);
   color: var(--color-text-heading);
 }
 
 .calendar-stats {
   display: flex;
   gap: var(--space-xl);
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-md);
   color: var(--color-text-muted);
 }
 
 .calendar-stats span {
   padding: var(--space-xs) var(--space-md);
-  background-color: var(--color-bg-page);
+  background-color: var(--color-bg);
   border-radius: var(--border-radius-sm);
   font-weight: var(--font-weight-medium);
 }
@@ -59,12 +59,12 @@
 
 .fc-event:hover {
   transform: translateY(-2px);
-  box-shadow: var(--shadow-md-dark);
+  box-shadow: var(--shadow-md);
 }
 
 /* Amélioration de la lisibilité */
 .fc-daygrid-day-number {
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-md);
   padding: var(--space-sm);
 }
 
@@ -104,7 +104,7 @@
   }
 
   .calendar-header h1 {
-    font-size: var(--font-size-22);
+    font-size: var(--font-size-xl);
   }
 
   .calendar-stats {
@@ -151,18 +151,18 @@
 
 /* Amélioration de la vue liste */
 .fc-list-event:hover td {
-  background-color: var(--color-bg-page);
+  background-color: var(--color-bg);
 }
 
 /* Styles pour le jour actuel */
 .fc-day-today {
-  background-color: var(--color-warning-bg) !important;
+  background-color: var(--color-bg-warning) !important;
 }
 
 /* Styles pour le titre de l'événement */
 .fc-event-title {
   font-weight: var(--font-weight-medium);
-  font-size: var(--font-size-13);
+  font-size: var(--font-size-sm);
 }
 
 /* Amélioration du contraste */
@@ -208,9 +208,9 @@
 }
 
 .calendar-modal {
-  background-color: var(--color-bg-white);
+  background-color: var(--color-bg);
   border-radius: var(--border-radius-lg);
-  padding: var(--space-xsxl);
+  padding: var(--space-xl);
   max-width: 400px;
   width: 90%;
   box-shadow: var(--shadow-lg);
@@ -234,7 +234,7 @@
   align-items: center;
   margin-bottom: var(--space-xl);
   padding-bottom: var(--space-md);
-  border-bottom: solid var(--border-width) var(--color-border-light);
+  border-bottom: solid var(--border-width) var(--color-border);
 }
 
 .calendar-modal-header h3 {
@@ -246,7 +246,7 @@
 .calendar-modal-close {
   background: none;
   border: none;
-  font-size: var(--font-size-2xl);
+  font-size: var(--font-size-xl);
   color: var(--color-text-muted);
   cursor: pointer;
   padding: 0;
@@ -267,9 +267,9 @@
 .calendar-modal-date {
   margin-bottom: var(--space-lg);
   padding: var(--space-md);
-  background-color: var(--color-bg-section);
+  background-color: var(--color-bg);
   border-radius: var(--border-radius-sm);
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-md);
   color: var(--color-text-muted);
   text-align: center;
 }
@@ -284,7 +284,7 @@
 
 .calendar-modal-body p {
   margin: 0 0 var(--space-md) 0;
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-md);
   color: var(--color-text-muted);
 }
 
@@ -304,10 +304,10 @@
   width: 100%;
   padding: var(--space-md) var(--space-lg);
   background-color: var(--color-primary-bg);
-  color: var(--color-bg-white);
+  color: var(--color-bg);
   border: none;
   border-radius: var(--border-radius-sm);
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-md);
   font-weight: var(--font-weight-medium);
   cursor: pointer;
   transition: background-color var(--transition-base), transform var(--transition-fast);
@@ -342,7 +342,7 @@
 
 /* Dark mode support for FullCalendar */
 [data-theme="dark"] .fc-col-header-cell {
-  background-color: var(--color-bg-section) !important;
+  background-color: var(--color-bg) !important;
 }
 
 [data-theme="dark"] .fc-scrollgrid {
@@ -355,7 +355,7 @@
 }
 
 [data-theme="dark"] .fc-daygrid-day {
-  background-color: var(--color-bg-white) !important;
+  background-color: var(--color-bg) !important;
 }
 
 [data-theme="dark"] .fc-col-header-cell-cushion {

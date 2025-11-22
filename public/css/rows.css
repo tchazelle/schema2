@@ -25,7 +25,7 @@ main.rows > article {
 
 main.rows > article:hover {
   transform: translateY(-2px);
-  box-shadow: var(--shadow-md-xl);
+  box-shadow: var(--shadow-sm);
 }
 
 main.rows [data-field],
@@ -54,7 +54,7 @@ main.rows.cards {
 main.rows.cards > article {
   display: block;
   border-radius: 1rem;
-  background: var(--color-bg-white);
+  background: var(--color-bg);
   border: solid var(--border-width) var(--border-card);
   box-shadow: var(--shadow-sm);
   transition: transform var(--transition-base), box-shadow var(--transition-base);
@@ -62,7 +62,7 @@ main.rows.cards > article {
 
 main.rows.cards > article:hover {
   transform: translateY(-4px);
-  box-shadow: var(--shadow-md-large);
+  box-shadow: var(--shadow-sm);
 }
 
 /* En mode cards, on masque les labels */

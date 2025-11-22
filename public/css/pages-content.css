@@ -9,17 +9,17 @@
 .container {
   max-width: var(--container-max-width);
   margin: 0 auto;
-  padding: var(--space-xsxl) var(--space-xl);
+  padding: var(--space-xl) var(--space-xl);
 }
 
 /* Welcome section */
 .welcome {
   text-align: center;
-  margin-bottom: var(--space-xsxl);
+  margin-bottom: var(--space-xl);
 }
 
 .welcome h1 {
-  font-size: var(--font-size-4xl);
+  font-size: var(--font-size-xl);
   color: var(--color-text-heading);
   margin-bottom: var(--space-md);
   font-weight: var(--font-weight-semibold);
@@ -36,14 +36,14 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: var(--space-xl);
-  margin-top: var(--space-xsxl);
+  margin-top: var(--space-xl);
 }
 
 .stat-card {
-  background: var(--color-bg-white);
+  background: var(--color-bg);
   padding: var(--space-xl);
   border-radius: var(--border-radius-lg);
-  border: solid var(--border-width) var(--color-border-light);
+  border: solid var(--border-width) var(--color-border);
   text-align: center;
   transition: transform var(--transition-base), box-shadow var(--transition-base);
 }
@@ -54,7 +54,7 @@
 }
 
 .stat-card h3 {
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-md);
   color: var(--color-text-muted);
   margin-bottom: var(--space-md);
   text-transform: uppercase;
@@ -63,18 +63,18 @@
 }
 
 .stat-card .number {
-  font-size: var(--font-size-4xl);
+  font-size: var(--font-size-xl);
   color: var(--color-primary-text);
   font-weight: var(--font-weight-semibold);
 }
 
 /* Content sections */
 .content-section {
-  margin-bottom: var(--space-xsxl);
+  margin-bottom: var(--space-xl);
 }
 
 .content-section h2 {
-  font-size: var(--font-size-2xl);
+  font-size: var(--font-size-xl);
   color: var(--color-text-heading);
   margin-bottom: var(--space-lg);
   font-weight: var(--font-weight-semibold);
@@ -93,11 +93,11 @@
   }
 
   .welcome h1 {
-    font-size: var(--font-size-2xl);
+    font-size: var(--font-size-xl);
   }
 
   .welcome p {
-    font-size: var(--font-size-base);
+    font-size: var(--font-size-md);
   }
 
   .stats {
@@ -110,7 +110,7 @@
   }
 
   .stat-card .number {
-    font-size: var(--font-size-2xl);
+    font-size: var(--font-size-xl);
   }
 
   .content-section h2 {

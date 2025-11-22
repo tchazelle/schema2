@@ -408,12 +408,9 @@ class AdvancedSearchModal extends React.Component {
           searchGroups.map((group, groupIndex) =>
             e('div', {
               key: groupIndex,
+              className: 'card search-group',
               style: {
-                background: '#f8f9fa',
-                border: '2px solid #dee2e6',
-                borderRadius: '8px',
-                padding: '12px',
-                marginBottom: '12px'
+                marginBottom: '1rem'
               }
             },
               // Group header
@@ -450,13 +447,8 @@ class AdvancedSearchModal extends React.Component {
 
                 return e('div', {
                   key: conditionIndex,
-                  style: {
-                    background: 'white',
-                    border: '1px solid #dee2e6',
-                    borderRadius: '4px',
-                    padding: '8px',
-                    marginBottom: '8px'
-                  }
+                  className: 'card search-condition',
+                  style: { marginBottom: '0.5rem' }
                 },
                   e('div', {
                     style: {
@@ -527,7 +519,7 @@ class AdvancedSearchModal extends React.Component {
                     // Remove button
                     group.conditions.length > 1 && e('button', {
                       onClick: () => this.handleRemoveCondition(groupIndex, conditionIndex),
-                      style: {
+                      _style: {
                         background: '#dc3545',
                         color: 'white',
                         border: 'none',
@@ -545,34 +537,14 @@ class AdvancedSearchModal extends React.Component {
               // Add condition button
               e('button', {
                 onClick: () => this.handleAddCondition(groupIndex),
-                style: {
-                  marginTop: '8px',
-                  padding: '6px 12px',
-                  background: '#28a745',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontSize: '13px'
-                }
+                className: 'btn btn-add'
               }, '+ Ajouter condition ET')
             )
           ),
 
           // Add group button
           e('button', {
-            onClick: this.handleAddGroup,
-            style: {
-              padding: '8px 16px',
-              background: '#007bff',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              fontSize: '14px',
-              marginTop: '8px'
-            }
-          }, '+ Ajouter groupe OU')
+            onClick: this.handleAddGroup, className: 'btn btn-add'}, '+ Ajouter groupe OU')
         ),
         e('div', { className: 'modal-footer' },
           e('button', {

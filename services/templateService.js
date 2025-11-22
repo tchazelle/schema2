@@ -639,7 +639,7 @@ class TemplateService {
     }
 
     .table-results-header:hover {
-      background: var(--color-bg-hover);
+      background: var(--color-bg);
     }
 
     .table-results-header-left {
@@ -701,7 +701,7 @@ class TemplateService {
     }
 
     .result-item:hover {
-      background: var(--color-bg-hover);
+      background: var(--color-bg);
     }
 
     .result-item-link {
@@ -747,7 +747,7 @@ class TemplateService {
       text-align: center;
       padding: 2rem;
       color: var(--color-error);
-      background: var(--color-error-bg, #fee);
+      background: var(--color-bg-error, #fee);
       border-radius: 4px;
       margin-top: 1rem;
     }
