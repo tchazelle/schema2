@@ -1,7 +1,7 @@
 module.exports = {
   // Configuration générale de l'application
-  appName: "Crudable Site",
-  version: "2.0.0",
+  appName: "Site LC⚡️TC",
+  version: "2.1.0",
   country: "FR",
   languages: "fr", // pourra devenir un tableau
   seo: "schema.org microdata",
