@@ -10,6 +10,7 @@ const { authMiddleware, userEnrichMiddleware } = require('./services/authService
 const pool = require('./config/database');
 const schema = require('./schema.js');
 const { syncDatabase } = require('./services/dbSyncService');
+const SchemaOrgService = require('./services/schemaOrgService');
 
 // Import des routes
 
@@ -111,6 +112,9 @@ app.listen(PORT, async () => {
 
   // Vérifier et synchroniser la structure de la base de données
   await syncDatabase();
+
+  // Charger les données Schema.org (traductions françaises)
+  await SchemaOrgService.initialize();
 });
 
 // Gestion de l'arrêt propre du serveur
