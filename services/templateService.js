@@ -200,18 +200,36 @@ class TemplateService {
     </div>`
   }
   static htmlUserMenu(user) {
+  // Generate user avatar: use image if available, otherwise show initials
+  const userAvatar = user.image
+    ? `<img src="${user.image}" alt="${user.fullName}" class="user-avatar-image" />`
+    : `<span class="user-avatar-initials">${user.abbreviation || '?'}</span>`;
+
   return `<div class="user-menu">
 
-    <button class="btn user-button" onclick="toggleUserMenu()">
-      <span class="user-icon">${user.abbreviation}</span>
-      <span>${user.fullName}</span>
+    <button class="btn user-button" onclick="toggleUserMenu()" aria-label="Menu utilisateur">
+      ${userAvatar}
     </button>
 
     <div class="user-dropdown menu-dropdown" id="userDropdown" style="z-index: 200000;">
       ${user.isAuthenticated ? `
         <div class="user-info">
+          <strong>${user.fullName || user.email}</strong><br>
           ${user.email}<br>
-          <strong>Rôles:</strong> ${user.allRoles.join(', ')}
+          <span style="font-size: 0.85em; color: var(--color-text-muted);">Rôles: ${user.allRoles.join(', ')}</span>
+        </div>
+        <div class="divider"></div>
+        <div class="theme-toggle-container">
+          <label class="theme-toggle-label">
+            <span class="theme-label-text">Mode sombre</span>
+            <div class="theme-toggle-switch">
+              <input type="checkbox" id="themeToggle" onchange="toggleTheme()" ${user.theme === 'dark' ? 'checked' : ''}>
+              <span class="theme-toggle-slider">
+                <span class="theme-icon sun">☀️</span>
+                <span class="theme-icon moon">🌙</span>
+              </span>
+            </div>
+          </label>
         </div>
         <div class="divider"></div>
         <a class="menu-item"  href="/_debug/user">Mon profil</a>
@@ -219,6 +237,23 @@ class TemplateService {
         <div class="divider"></div>
         <button class="menu-item" onclick="logout()">Déconnexion</button>
       ` : `
+        <div class="user-info">
+          <strong>Non connecté</strong>
+        </div>
+        <div class="divider"></div>
+        <div class="theme-toggle-container">
+          <label class="theme-toggle-label">
+            <span class="theme-label-text">Mode sombre</span>
+            <div class="theme-toggle-switch">
+              <input type="checkbox" id="themeToggle" onchange="toggleTheme()">
+              <span class="theme-toggle-slider">
+                <span class="theme-icon sun">☀️</span>
+                <span class="theme-icon moon">🌙</span>
+              </span>
+            </div>
+          </label>
+        </div>
+        <div class="divider"></div>
         <a class="menu-item"  href="#" onclick="showLoginForm(); return false;">Connexion</a>
       `}
     </div>
@@ -253,41 +288,32 @@ class TemplateService {
       }
     });
 
-    // Dark mode toggle
-    async function toggleTheme() {
+    // Dark mode toggle (using cookies for non-authenticated users)
+    function toggleTheme() {
       const checkbox = document.getElementById('themeToggle');
       const newTheme = checkbox.checked ? 'dark' : 'light';
 
       // Apply theme immediately
       document.documentElement.setAttribute('data-theme', newTheme);
 
-      // Save to localStorage for persistence across pages
-      localStorage.setItem('theme', newTheme);
-
-      // Save to server
-      try {
-        const response = await fetch('/_user/theme', {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ theme: newTheme })
-        });
-
-        if (!response.ok) {
-          console.error('Failed to save theme preference');
-        }
-      } catch (error) {
-        console.error('Error saving theme:', error);
-      }
+      // Save to cookie (expires in 365 days)
+      const expires = new Date();
+      expires.setDate(expires.getDate() + 365);
+      document.cookie = \`theme=\${newTheme}; path=/; expires=\${expires.toUTCString()}; SameSite=Lax\`;
     }
 
     // Initialize theme on page load
     (function initTheme() {
-      // Priority: localStorage > user preference > default
-      const savedTheme = localStorage.getItem('theme');
-      const userTheme = ${user.isAuthenticated && user.theme ? `'${user.theme}'` : "null"};
-      const theme = savedTheme || userTheme || 'light';
+      // Get theme from cookie
+      const getCookie = (name) => {
+        const value = \`; \${document.cookie}\`;
+        const parts = value.split(\`; \${name}=\`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+        return null;
+      };
+
+      const savedTheme = getCookie('theme');
+      const theme = savedTheme || 'light';
 
       document.documentElement.setAttribute('data-theme', theme);
 
@@ -315,7 +341,6 @@ class TemplateService {
       ${this.htmlSidebar(pages, accessibleTables, hasCalendarAccess)}
       <div class="overlay" id="overlay" onclick="closeMenu()"></div>
       <div class="header-right">
-        ${this.htmlThemeToggle(user)}
         ${this.htmlUserMenu(user)}
         </div>
 
@@ -1612,6 +1637,7 @@ class TemplateService {
     // Sinon, utiliser le rendu en cards (comportement par défaut)
     const relatedTable = relationConfig.relatedTable;
     const relatedTableConfig = SchemaService.getTableConfig(relatedTable);
+    const parentFieldName = relationConfig.relationFieldName; // Le champ qui référence le parent
 
     let template = `${indent}{{#${arrayName}}}\n`;
     template += `${indent}<div class="relation relation-1n ${arrayName}">\n`;
@@ -1627,12 +1653,19 @@ class TemplateService {
     template += baseFieldsTemplate;
 
     // Si maxDepth > 0, ajouter les relations n:1 imbriquées
+    // Mais exclure la relation n:1 vers le parent (déjà exprimée dans la relation 1:n master)
     if (maxDepth > 0) {
       const { relationsN1: nestedRelationsN1 } = SchemaService.getTableRelations(user, relatedTable);
 
       if (Object.keys(nestedRelationsN1).length > 0) {
         template += `${indent}    <!-- Relations n:1 imbriquées -->\n`;
         for (const [nestedFieldName, nestedRelationConfig] of Object.entries(nestedRelationsN1)) {
+          // Ignorer le lien n:1 déjà exprimé dans le lien master
+          // Ex: MusicAlbum -> track -> (ne pas citer idMusicAlbum)
+          if (nestedFieldName === parentFieldName) {
+            continue;
+          }
+
           const nestedTemplate = TemplateService._generateN1RelationTemplate(
             nestedFieldName,
             nestedRelationConfig,
@@ -1658,6 +1691,7 @@ class TemplateService {
     const relatedTable = relationConfig.relatedTable;
     const relatedTableConfig = SchemaService.getTableConfig(relatedTable);
     const systemFields = ['ownerId', 'granted', 'createdAt', 'updatedAt'];
+    const parentFieldName = relationConfig.relationFieldName; // Le champ qui référence le parent
 
     // Récupérer les champs à afficher (non-relations, non-système, non-id)
     const fields = Object.entries(relatedTableConfig.fields)
@@ -1669,10 +1703,17 @@ class TemplateService {
       });
 
     // Récupérer aussi les relations n:1 si maxDepth > 0
+    // Mais exclure la relation n:1 vers le parent (déjà exprimée dans la relation 1:n master)
     let nestedRelationsN1 = {};
     if (maxDepth > 0) {
       const relations = SchemaService.getTableRelations(user, relatedTable);
       nestedRelationsN1 = relations.relationsN1 || {};
+
+      // Ignorer le lien n:1 déjà exprimé dans le lien master
+      // Ex: MusicAlbum -> track -> (ne pas citer idMusicAlbum)
+      if (parentFieldName && nestedRelationsN1[parentFieldName]) {
+        delete nestedRelationsN1[parentFieldName];
+      }
     }
 
     let template = `${indent}<div class="relation relation-1n relation-1n-table ${arrayName}">\n`;
