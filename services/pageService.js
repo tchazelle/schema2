@@ -100,13 +100,15 @@ class PageService {
    * @param {boolean} options.includeWrapper - Inclure le wrapper article (default: true)
    * @param {boolean} options.includeSystemFields - Inclure les champs système (default: false)
    * @param {number} options.maxDepth - Profondeur maximale des relations (default: 2)
+   * @param {string} options.oneToManyStyle - Style d'affichage des relations 1:n: 'cards' ou 'table' (default: 'cards')
    * @returns {string|null} - Template Mustache généré ou null si table non trouvée
    */
   static generateMustacheTemplate(tableName, user, options = {}) {
     const {
       includeWrapper = true,
       includeSystemFields = false,
-      maxDepth = 2
+      maxDepth = 2,
+      oneToManyStyle = 'cards'
     } = options;
 
     // Récupérer la configuration de la table
@@ -156,6 +158,7 @@ class PageService {
           relationConfig,
           user,
           maxDepth - 1,
+          oneToManyStyle,
           '  '
         );
         template += oneNTemplate;
@@ -267,7 +270,13 @@ class PageService {
    * Inclut les relations n:1 imbriquées si maxDepth > 0
    * @private
    */
-  static _generate1NRelationTemplate(arrayName, relationConfig, user, maxDepth = 1, indent = '') {
+  static _generate1NRelationTemplate(arrayName, relationConfig, user, maxDepth = 1, style = 'cards', indent = '') {
+    // Si le style est 'table', utiliser la méthode spécifique
+    if (style === 'table') {
+      return PageService._generate1NRelationTableTemplate(arrayName, relationConfig, user, maxDepth, indent);
+    }
+
+    // Sinon, utiliser le rendu en cards (comportement par défaut)
     const relatedTable = relationConfig.relatedTable;
     const relatedTableConfig = SchemaService.getTableConfig(relatedTable);
 
@@ -304,6 +313,108 @@ class PageService {
     template += `${indent}  </div>\n`;
     template += `${indent}</div>\n`;
     template += `${indent}{{/${arrayName}}}\n`;
+
+    return template;
+  }
+
+  /**
+   * Génère le template pour une relation 1:n sous forme de table HTML
+   * @private
+   */
+  static _generate1NRelationTableTemplate(arrayName, relationConfig, user, maxDepth = 1, indent = '') {
+    const relatedTable = relationConfig.relatedTable;
+    const relatedTableConfig = SchemaService.getTableConfig(relatedTable);
+    const systemFields = ['ownerId', 'granted', 'createdAt', 'updatedAt'];
+
+    // Récupérer les champs à afficher (non-relations, non-système, non-id)
+    const fields = Object.entries(relatedTableConfig.fields)
+      .filter(([fieldName, fieldConfig]) => {
+        if (fieldConfig.isPrimary) return false; // Exclure l'id
+        if (fieldConfig.relation) return false; // Exclure les relations n:1 de la table
+        if (systemFields.includes(fieldName)) return false; // Exclure les champs système
+        return true;
+      });
+
+    // Récupérer aussi les relations n:1 si maxDepth > 0
+    let nestedRelationsN1 = {};
+    if (maxDepth > 0) {
+      const relations = SchemaService.getTableRelations(user, relatedTable);
+      nestedRelationsN1 = relations.relationsN1 || {};
+    }
+
+    let template = `${indent}<div class="relation relation-1n relation-1n-table ${arrayName}">\n`;
+    template += `${indent}  <h3>${PageService._humanizeFieldName(arrayName)}</h3>\n`;
+    template += `${indent}  <table class="relation-table" data-table="${relatedTable}">\n`;
+
+    // En-tête de table
+    template += `${indent}    <thead>\n`;
+    template += `${indent}      <tr>\n`;
+
+    // Colonnes pour les champs de base
+    for (const [fieldName, fieldConfig] of fields) {
+      template += `${indent}        <th data-field="${fieldName}">${PageService._humanizeFieldName(fieldName)}</th>\n`;
+    }
+
+    // Colonnes pour les relations n:1
+    for (const [fieldName, relationN1Config] of Object.entries(nestedRelationsN1)) {
+      template += `${indent}        <th data-field="${fieldName}" data-relation="n1">${PageService._humanizeFieldName(fieldName)}</th>\n`;
+    }
+
+    template += `${indent}      </tr>\n`;
+    template += `${indent}    </thead>\n`;
+
+    // Corps de table
+    template += `${indent}    <tbody>\n`;
+    template += `${indent}      {{#${arrayName}}}\n`;
+    template += `${indent}      <tr data-id="{{id}}">\n`;
+
+    // Cellules pour les champs de base
+    for (const [fieldName, fieldConfig] of fields) {
+      const renderer = fieldConfig.renderer;
+
+      template += `${indent}        <td data-field="${fieldName}" data-type="${fieldConfig.type || 'varchar'}">\n`;
+
+      if (renderer === 'image') {
+        template += `${indent}          {{#${fieldName}}}<img src="{{${fieldName}}}" alt="{{${fieldName}}}" class="table-image" style="max-width: 100px; max-height: 100px;" />{{/${fieldName}}}\n`;
+      } else if (renderer === 'url') {
+        template += `${indent}          {{#${fieldName}}}<a href="{{${fieldName}}}" target="_blank" rel="noopener">🔗</a>{{/${fieldName}}}\n`;
+      } else if (renderer === 'email') {
+        template += `${indent}          {{#${fieldName}}}<a href="mailto:{{${fieldName}}}">{{${fieldName}}}</a>{{/${fieldName}}}\n`;
+      } else if (renderer === 'telephone') {
+        template += `${indent}          {{#${fieldName}}}<a href="tel:{{${fieldName}}}">{{${fieldName}}}</a>{{/${fieldName}}}\n`;
+      } else if (renderer === 'datetime' || renderer === 'date' || renderer === 'time') {
+        template += `${indent}          {{#${fieldName}}}<time datetime="{{${fieldName}}}">{{${fieldName}}}</time>{{/${fieldName}}}\n`;
+      } else if (fieldConfig.type === 'text') {
+        template += `${indent}          {{#${fieldName}}}<div class="text-preview" style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{${fieldName}}}</div>{{/${fieldName}}}\n`;
+      } else {
+        template += `${indent}          {{${fieldName}}}\n`;
+      }
+
+      template += `${indent}        </td>\n`;
+    }
+
+    // Cellules pour les relations n:1
+    for (const [fieldName, relationN1Config] of Object.entries(nestedRelationsN1)) {
+      const relatedTable = relationN1Config.relatedTable;
+      const displayFields = SchemaService.getDisplayFields(relatedTable) || ['name'];
+
+      template += `${indent}        <td data-field="${fieldName}" data-relation="n1">\n`;
+      template += `${indent}          {{#${fieldName}}}\n`;
+
+      // Afficher les displayFields de la relation
+      for (const displayField of displayFields) {
+        template += `${indent}            {{${displayField}}}\n`;
+      }
+
+      template += `${indent}          {{/${fieldName}}}\n`;
+      template += `${indent}        </td>\n`;
+    }
+
+    template += `${indent}      </tr>\n`;
+    template += `${indent}      {{/${arrayName}}}\n`;
+    template += `${indent}    </tbody>\n`;
+    template += `${indent}  </table>\n`;
+    template += `${indent}</div>\n`;
 
     return template;
   }
