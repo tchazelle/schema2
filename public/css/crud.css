@@ -341,7 +341,7 @@ tr.detail-row td {
 /* Grille de champs responsive */
 .detail-fields {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(350px, 100%), 1fr));
+  grid-template-columns: 1fr; /* Une seule colonne pour tous les champs */
   gap: var(--space-md);
   margin-bottom: var(--space-md);
   grid-auto-flow: row; /* Remplissage ligne par ligne avec wrap automatique */
@@ -539,7 +539,7 @@ tr.detail-row td {
 
 .edit-form-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(350px, 100%), 1fr));
+  grid-template-columns: 1fr; /* Une seule colonne pour tous les champs */
   gap: var(--space-lg);
   grid-auto-flow: row; /* Remplissage ligne par ligne avec wrap automatique */
 }
