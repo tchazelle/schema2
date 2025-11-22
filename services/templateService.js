@@ -342,10 +342,7 @@ class TemplateService {
 
     return `
     <header>
-
       <div class="logo">${schema.appName}</div>
-      ${this.htmlSidebar(pages, accessibleTables, hasCalendarAccess)}
-      <div class="overlay" id="overlay" onclick="closeMenu()"></div>
       <div class="header-right">
         ${this.htmlUserMenu(user)}
 
@@ -357,6 +354,8 @@ class TemplateService {
         </button>
       </div>
     </header>
+    ${this.htmlSidebar(pages, accessibleTables, hasCalendarAccess)}
+    <div class="overlay" id="overlay" onclick="closeMenu()"></div>
   `}
 
   /**
