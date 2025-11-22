@@ -93,7 +93,10 @@ class TemplateService {
   <!-- 3. Date Components (no dependencies) -->
   <script src="/js/components/dates/CalendarDateRangeTool.js"></script>
 
-  <!-- 4. Form Input Components (small, few dependencies) -->
+  <!-- 4. Search & Menu Components (small, few dependencies) -->
+  <script src="/js/components/search/PinnedActions.js"></script>
+
+  <!-- 5. Form Input Components (small, few dependencies) -->
   <script src="/js/components/forms/GrantedSelector.js"></script>
   <script src="/js/components/forms/RelationAutocomplete.js"></script>
   <script src="/js/components/forms/ImageFieldUploader.js"></script>
