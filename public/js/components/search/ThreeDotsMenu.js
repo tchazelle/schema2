@@ -176,51 +176,10 @@ class ThreeDotsMenu extends React.Component {
           e('div', { key: 'create-divider', className: 'menu-divider divider' })
         ],
 
-        // Display mode section (hide for sub-lists)
-        !isSubList && e('div', { className: 'menu-section' },
-          e('div', { className: 'menu-label' }, 'Sélection des colonnes'),
-          e('button', {
-            className: `menu-item ${displayMode === 'default' ? 'active' : ''}`,
-            onClick: () => {
-              this.handleOptionClick('onDisplayModeChange');
-              onDisplayModeChange('default');
-            }
-          }, displayMode === 'default' ? '✓ ' : '', 'Par défaut (masquer champs système)'),
-          e('button', {
-            className: `menu-item ${displayMode === 'all' ? 'active' : ''}`,
-            onClick: () => {
-              this.handleOptionClick('onDisplayModeChange');
-              onDisplayModeChange('all');
-            }
-          }, displayMode === 'all' ? '✓ ' : '', 'Tous les champs'),
-          e('button', {
-            className: `menu-item ${displayMode === 'raw' ? 'active' : ''}`,
-            onClick: () => {
-              this.handleOptionClick('onDisplayModeChange');
-              onDisplayModeChange('raw');
-            }
-          }, displayMode === 'raw' ? '✓ ' : '', 'Données brutes'),
-          e('button', {
-            className: `menu-item ${displayMode === 'custom' ? 'active' : ''}`,
-            onClick: () => {
-              this.handleOptionClick('onDisplayModeChange');
-              onDisplayModeChange('custom');
-            }
-          }, displayMode === 'custom' ? '✓ ' : '', 'Sélection personnalisée')
-        ),
-        !isSubList && e('div', { className: 'menu-divider divider' }),
-        !isSubList && this.renderMenuItem({
-          key: 'fieldSelect',
-          label: 'Sélectionner les champs',
-          icon: '🎯',
-          onClick: () => this.handleOptionClick('onFieldSelect'),
-          isActive: false,
-          canPin: true
-        }),
-        !isSubList && e('div', { className: 'menu-divider divider' }),
+        // Search and Sort (main list only)
         !isSubList && onAdvancedSearch && this.renderMenuItem({
           key: 'advancedSearch',
-          label: 'Recherche avancée...',
+          label: 'Recherche...',
           icon: '🔍',
           onClick: () => this.handleOptionClick('onAdvancedSearch'),
           isActive: hasAdvancedSearch,
@@ -228,46 +187,103 @@ class ThreeDotsMenu extends React.Component {
         }),
         !isSubList && onAdvancedSort && this.renderMenuItem({
           key: 'advancedSort',
-          label: 'Tri avancé...',
+          label: 'Tri...',
           icon: '📊',
           onClick: () => this.handleOptionClick('onAdvancedSort'),
           isActive: hasAdvancedSort,
           canPin: true
         }),
 
+        // Delete mode (for main list only)
+        !isSubList && onToggleDelete && [
+          e('div', { key: 'divider-delete', className: 'menu-divider' }),
+          this.renderMenuItem({
+            key: 'toggleDelete',
+            label: 'Mode suppression',
+            icon: '🗑️',
+            onClick: () => this.handleOptionClick('onToggleDelete'),
+            isActive: showDeleteButtons,
+            canPin: true
+          })
+        ],
+
+        // Display mode section at the end (hide for sub-lists)
+        !isSubList && [
+          e('div', { key: 'divider-columns', className: 'menu-divider divider' }),
+          e('div', { key: 'columns-section', className: 'menu-section' },
+            e('div', { className: 'menu-label' }, 'Sélection des colonnes'),
+            e('button', {
+              className: `menu-item ${displayMode === 'default' ? 'active' : ''}`,
+              onClick: () => {
+                this.handleOptionClick('onDisplayModeChange');
+                onDisplayModeChange('default');
+              }
+            }, displayMode === 'default' ? '✓ ' : '', 'Par défaut (masquer champs système)'),
+            e('button', {
+              className: `menu-item ${displayMode === 'all' ? 'active' : ''}`,
+              onClick: () => {
+                this.handleOptionClick('onDisplayModeChange');
+                onDisplayModeChange('all');
+              }
+            }, displayMode === 'all' ? '✓ ' : '', 'Tous les champs'),
+            e('button', {
+              className: `menu-item ${displayMode === 'raw' ? 'active' : ''}`,
+              onClick: () => {
+                this.handleOptionClick('onDisplayModeChange');
+                onDisplayModeChange('raw');
+              }
+            }, displayMode === 'raw' ? '✓ ' : '', 'Données brutes'),
+            e('button', {
+              className: `menu-item ${displayMode === 'custom' ? 'active' : ''}`,
+              onClick: () => {
+                this.handleOptionClick('onDisplayModeChange');
+                onDisplayModeChange('custom');
+              }
+            }, displayMode === 'custom' ? '✓ ' : '', 'Sélection personnalisée')
+          ),
+          e('div', { key: 'divider-fieldselect', className: 'menu-divider divider' }),
+          this.renderMenuItem({
+            key: 'fieldSelect',
+            label: 'Colonnes...',
+            icon: '🎯',
+            onClick: () => this.handleOptionClick('onFieldSelect'),
+            isActive: false,
+            canPin: true
+          })
+        ],
+
         // Sub-list specific options
         isSubList && [
-          e('button', {
+          this.renderMenuItem({
             key: 'sublist-delete',
-            className: `menu-item ${showDeleteButtons ? 'active' : ''}`,
-            onClick: () => this.handleOptionClick('onToggleDelete')
-          }, showDeleteButtons ? '✓ ' : '', '🗑️ Mode suppression'),
-          e('button', {
+            label: 'Mode suppression',
+            icon: '🗑️',
+            onClick: () => this.handleOptionClick('onToggleDelete'),
+            isActive: showDeleteButtons,
+            canPin: true
+          }),
+          this.renderMenuItem({
             key: 'sublist-sort',
-            className: 'menu-item',
-            onClick: () => this.handleOptionClick('onAdvancedSort')
-          }, '📊 Tri avancé...'),
-          onExtendAuthorization && e('button', {
+            label: 'Tri...',
+            icon: '📊',
+            onClick: () => this.handleOptionClick('onAdvancedSort'),
+            isActive: false,
+            canPin: true
+          }),
+          onExtendAuthorization && this.renderMenuItem({
             key: 'sublist-extend-auth',
-            className: 'menu-item',
-            onClick: () => this.handleOptionClick('onExtendAuthorization')
-          }, '🔐 Étendre l\'autorisation aux fiches liées'),
+            label: 'Étendre l\'autorisation aux fiches liées',
+            icon: '🔐',
+            onClick: () => this.handleOptionClick('onExtendAuthorization'),
+            isActive: false,
+            canPin: true
+          }),
           e('div', { key: 'sublist-divider', className: 'menu-divider' }),
           e('button', {
             key: 'sublist-link',
             className: 'menu-item',
             onClick: () => this.handleOptionClick('onLinkToTable')
           }, `🔗 Lien vers la table ${tableName || ''}`)
-        ],
-
-        // Delete mode (for main list only)
-        !isSubList && onToggleDelete && [
-          e('div', { key: 'divider-delete', className: 'menu-divider' }),
-          e('button', {
-            key: 'toggle-delete',
-            className: `menu-item ${showDeleteButtons ? 'active' : ''}`,
-            onClick: () => this.handleOptionClick('onToggleDelete')
-          }, showDeleteButtons ? '✓ ' : '', '🗑️ Mode suppression')
         ]
       )
     );

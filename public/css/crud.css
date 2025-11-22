@@ -70,7 +70,7 @@
   cursor: pointer;
   font-size: 16px;
   padding: 4px 8px;
-  opacity: 0.3;
+  opacity: 0.5;
   transition: opacity var(--transition-fast), transform var(--transition-fast);
 }
 

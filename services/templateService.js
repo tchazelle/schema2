@@ -121,6 +121,7 @@ class TemplateService {
   <script src="/js/components/details/AttachmentsTab.js"></script>
   <script src="/js/components/details/SubList.js"></script>
   <script src="/js/components/details/RowDetailView.js"></script>
+  <script src="/js/components/details/RowDetailMenu.js"></script>
   <script src="/js/components/details/RowDetailModal.js"></script>
 
   <!-- 9. Large Form Components (depends on many others) -->

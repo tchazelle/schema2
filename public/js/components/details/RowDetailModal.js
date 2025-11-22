@@ -12,6 +12,7 @@
  * - GrantedSelector (forms component)
  * - EditForm (forms component)
  * - RowDetailView (details component)
+ * - RowDetailMenu (details component)
  *
  * @component
  */
@@ -21,54 +22,26 @@ class RowDetailModal extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      showDuplicateMenu: false,
       showRelationSelector: false,
       duplicating: false,
       showNotifyModal: false,
       notifying: false
     };
-    this.menuRef = React.createRef();
   }
 
   componentDidMount() {
     // Prevent body scroll when modal is open
     document.body.style.overflow = 'hidden';
-    // Add click listener for closing duplicate menu
-    document.addEventListener('click', this.handleClickOutside);
   }
 
   componentWillUnmount() {
     // Restore body scroll
     document.body.style.overflow = '';
-    // Remove click listener
-    document.removeEventListener('click', this.handleClickOutside);
-  }
-
-  handleClickOutside = (event) => {
-    if (this.menuRef.current && !this.menuRef.current.contains(event.target)) {
-      this.setState({ showDuplicateMenu: false });
-    }
-  }
-
-  toggleDuplicateMenu = (ev) => {
-    ev.stopPropagation();
-    this.setState(prev => ({ showDuplicateMenu: !prev.showDuplicateMenu }), () => {
-      // After opening, adjust dropdown position to prevent overflow
-      if (this.state.showDuplicateMenu && this.menuRef.current) {
-        const dropdown = this.menuRef.current.querySelector('.menu-dropdown');
-        if (dropdown && window.adjustDropdownPosition) {
-          // Use requestAnimationFrame to ensure dropdown is rendered
-          requestAnimationFrame(() => {
-            window.adjustDropdownPosition(dropdown);
-          });
-        }
-      }
-    });
   }
 
   handleDuplicate = async () => {
     const { tableName, row, onClose } = this.props;
-    this.setState({ showDuplicateMenu: false, duplicating: true });
+    this.setState({ duplicating: true });
 
     try {
       const response = await fetch(`/_api/${tableName}/${row.id}/duplicate`, {
@@ -93,7 +66,7 @@ class RowDetailModal extends React.Component {
   }
 
   handleDuplicateWithRelations = () => {
-    this.setState({ showDuplicateMenu: false, showRelationSelector: true });
+    this.setState({ showRelationSelector: true });
   }
 
   handleConfirmDuplicateWithRelations = async (selectedRelations) => {
@@ -170,8 +143,6 @@ class RowDetailModal extends React.Component {
     if (!confirm(`Êtes-vous sûr de vouloir supprimer cette fiche ?\n\n${tableName}: ${cardTitle}\n\nCette action est irréversible.`)) {
       return;
     }
-
-    this.setState({ showDuplicateMenu: false });
 
     try {
       const response = await fetch(`/_api/${tableName}/${row.id}`, {
@@ -282,49 +253,16 @@ class RowDetailModal extends React.Component {
           ),
           // Action buttons section
           e('div', { style: { display: 'flex', alignItems: 'center', gap: '8px' } },
-            // Actions menu (only show if not in edit mode and has permissions)
-            !editMode && permissions && (permissions.canCreate || permissions.canRead) && e('div', {
-              className: '_menu-dots',
-              ref: this.menuRef,
-              style: { position: 'relative' }
-            },
-              e('button', {
-                className: 'btn btn-menu btn-icon three-dots',
-                onClick: this.toggleDuplicateMenu,
-                title: 'Actions',
-                disabled: this.state.duplicating || this.state.notifying,
-                style: {
-                  cursor: (this.state.duplicating || this.state.notifying) ? 'wait' : 'pointer',
-                }
-              }, '⋮'),
-              this.state.showDuplicateMenu && e('div',
-                {
-                  className: 'menu-dropdown open align-right',
-                  style: { top: '100%', marginTop: '4px' }
-                },
-                // Notify option (only show if has read permission)
-                permissions.canRead && e('button', {
-                  className: 'menu-item',
-                  onClick: () => {
-                    this.setState({ showDuplicateMenu: false });
-                    this.handleNotifyClick();
-                  },
-                  disabled: this.state.notifying
-                }, this.state.notifying ? '⏳ Envoi...' : '📧 Notifier'),
-                // Separator (only if both notify and duplicate options are visible)
-                permissions.canRead && permissions.canCreate && e('div', {className: 'menu-divider divider' }),
-                // Duplicate options (only show if has create permission)
-                permissions.canCreate && e('button', { className: 'menu-item',onClick: this.handleDuplicate }, '📋 Dupliquer'),
-                permissions.canCreate && e('button', { className: 'menu-item', onClick: this.handleDuplicateWithRelations }, '📋 Dupliquer avec relations...'),
-                // Delete option (only show if has delete permission)
-                permissions.canDelete && e('div', {className: 'menu-divider divider' }),
-                permissions.canDelete && e('button', {
-                  className: 'menu-item',
-                  onClick: this.handleDelete,
-                  style: { color: 'var(--color-danger, #dc3545)' }
-                }, '🗑️ Supprimer cette fiche...')
-              )
-            ),
+            // Actions menu (with pinning support, visible in both view and edit modes)
+            permissions && (permissions.canCreate || permissions.canRead || permissions.canDelete) && e(RowDetailMenu, {
+              tableName,
+              permissions,
+              onNotify: this.handleNotifyClick,
+              onDuplicate: this.handleDuplicate,
+              onDuplicateWithRelations: this.handleDuplicateWithRelations,
+              onDelete: this.handleDelete,
+              disabled: this.state.duplicating || this.state.notifying
+            }),
             // Close button (X exits edit mode if in edit, otherwise closes modal)
             // Special case: if parentTable is set and in edit mode, close the entire modal
             // instead of going back to detail view (for sub-records)
