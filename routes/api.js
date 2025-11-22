@@ -120,8 +120,8 @@ router.get('/:tableName/:id', async (req, res) => {
   try {
     const { tableName, id } = req.params;
     const user = req.user;
-    const { relation, includeSchema, compact, renderer, resolvedRelations } = req.query;
-    const response = await getTableData(user, tableName, {id, relation, includeSchema, compact, renderer, resolvedRelations})
+    const { relation, includeSchema, compact, renderer, resolvedRelations, noSystemFields, noId } = req.query;
+    const response = await getTableData(user, tableName, {id, relation, includeSchema, compact, renderer, resolvedRelations, noSystemFields, noId})
     res.json(response);
 
   } catch (error) {
