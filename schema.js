@@ -325,7 +325,7 @@ module.exports = {
         recordLabel: { type: "integer", relation: "Organization", foreignKey: "id", arrayName: "Albums produits", relationshipStrength: "Weak" }, // schemaorgProperty: recordLabel
         url: { type: "varchar", renderer: "url" }, // schemaorgProperty: url
         image: { type: "varchar", renderer: "image" }, // schemaorgProperty: image
-        duration: { type: "varchar" }, // schemaorgProperty: duration (format ISO 8601: PT37M53S)
+        duration: { type: "varchar", renderer: "duration" }, // schemaorgProperty: duration (format ISO 8601: PT37M53S)
         // + commonFields
       }
     },
@@ -339,7 +339,7 @@ module.exports = {
         name: { type: "varchar" }, // schemaorgProperty: name
         description: { type: "text" }, // schemaorgProperty: description
         image: { type: "varchar", renderer: "image" }, // schemaorgProperty: image - Artwork de l'enregistrement
-        duration: { type: "varchar" }, // schemaorgProperty: duration (format ISO 8601: PT3M29S)
+        duration: { type: "varchar", renderer: "duration" }, // schemaorgProperty: duration (format ISO 8601: PT3M29S)
         byArtist: { type: "integer", relation: "Organization", foreignKey: "id", arrayName: "Enregistrements", relationshipStrength: "Weak" }, // schemaorgProperty: byArtist
         // ... commonFields
       }

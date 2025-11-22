@@ -1524,6 +1524,7 @@ class TemplateService {
    * @param {boolean} options.includeSystemFields - Inclure les champs système (default: false)
    * @param {number} options.maxDepth - Profondeur maximale des relations (default: 2)
    * @param {string} options.oneToManyStyle - Style d'affichage des relations 1:n: 'cards' ou 'table' (default: 'cards')
+   * @param {boolean} options.compact - Mode compact pour les relations n:1 (default: false)
    * @returns {string|null} - Template Mustache généré ou null si table non trouvée
    */
   static generateMustacheTemplate(tableName, user, options = {}) {
@@ -1532,6 +1533,7 @@ class TemplateService {
       includeSystemFields = false,
       maxDepth = 2,
       oneToManyStyle = 'table', // 'cards' ou 'table'
+      compact = false, // Mode compact pour les relations n:1 dans les 1:n
     } = options;
     
     // Récupérer la configuration de la table
@@ -1566,7 +1568,8 @@ class TemplateService {
         const n1Template = TemplateService._generateN1RelationTemplate(
           fieldName,
           relationConfig,
-          '  '
+          '  ',
+          true // compact=true pour les relations n:1 au premier niveau
         );
         template += n1Template;
       }
@@ -1582,7 +1585,8 @@ class TemplateService {
           user,
           maxDepth - 1,
           oneToManyStyle,
-          '  '
+          '  ',
+          compact // Passer le paramètre compact
         );
         template += oneNTemplate;
       }
@@ -1632,10 +1636,19 @@ class TemplateService {
         template += `${indent}  {{#${fieldName}}}<a href="tel:{{${fieldName}}}">{{${fieldName}}}</a>{{/${fieldName}}}\n`;
         template += `${indent}</div>\n`;
       } else if (renderer === 'datetime' || renderer === 'date' || renderer === 'time') {
+        template += `${indent}{{#${fieldName}}}\n`;
         template += `${indent}<div class="field field-${renderer} ${fieldName}">\n`;
         template += `${indent}  <label>${TemplateService._humanizeFieldName(fieldName)}</label>\n`;
-        template += `${indent}  {{#${fieldName}}}<time datetime="{{${fieldName}}}">{{${fieldName}}}</time>{{/${fieldName}}}\n`;
+        template += `${indent}  <time datetime="{{${fieldName}}}">{{_${fieldName}}}</time>\n`;
         template += `${indent}</div>\n`;
+        template += `${indent}{{/${fieldName}}}\n`;
+      } else if (renderer === 'duration') {
+        template += `${indent}{{#${fieldName}}}\n`;
+        template += `${indent}<div class="field field-duration ${fieldName}">\n`;
+        template += `${indent}  <label>${TemplateService._humanizeFieldName(fieldName)}</label>\n`;
+        template += `${indent}  <div class="value" content="{{${fieldName}}}">{{_${fieldName}}}</div>\n`;
+        template += `${indent}</div>\n`;
+        template += `${indent}{{/${fieldName}}}\n`;
       } else if (fieldConfig.type === 'text') {
         template += `${indent}<div class="field field-text ${fieldName}">\n`;
         template += `${indent}  <label>${TemplateService._humanizeFieldName(fieldName)}</label>\n`;
@@ -1656,8 +1669,12 @@ class TemplateService {
   /**
    * Génère le template pour une relation n:1 (many-to-one)
    * @private
+   * @param {string} fieldName - Nom du champ de relation
+   * @param {Object} relationConfig - Configuration de la relation
+   * @param {string} indent - Indentation
+   * @param {boolean} compact - Si true, n'afficher que les displayFields. Si false, afficher tous les champs
    */
-  static _generateN1RelationTemplate(fieldName, relationConfig, indent = '') {
+  static _generateN1RelationTemplate(fieldName, relationConfig, indent = '', compact = true) {
     const relatedTable = relationConfig.relatedTable;
     const relatedTableConfig = SchemaService.getTableConfig(relatedTable);
     const displayFields = SchemaService.getDisplayFields(relatedTable) || ['name'];
@@ -1666,20 +1683,32 @@ class TemplateService {
     template += `${indent}<div class="relation relation-n1 ${fieldName}" data-table="${relatedTable}">\n`;
     template += `${indent}  <label>${TemplateService._humanizeFieldName(fieldName)}</label>\n`;
 
-    // Afficher les champs d'affichage de la table liée
-    for (const displayField of displayFields) {
-      const fieldConfig = relatedTableConfig?.fields?.[displayField];
+    if (compact) {
+      // Mode compact : afficher seulement les displayFields
+      for (const displayField of displayFields) {
+        const fieldConfig = relatedTableConfig?.fields?.[displayField];
 
-      if (fieldConfig?.renderer === 'image') {
-        template += `${indent}  {{#${displayField}}}<img src="{{${displayField}}}" alt="{{${displayField}}}" class="relation-image" />{{/${displayField}}}\n`;
-      } else {
-        template += `${indent}  <div class="relation-value">{{${displayField}}}</div>\n`;
+        if (fieldConfig?.renderer === 'image') {
+          template += `${indent}  {{#${displayField}}}<img src="{{${displayField}}}" alt="{{${displayField}}}" class="relation-image" />{{/${displayField}}}\n`;
+        } else {
+          template += `${indent}  <div class="relation-value">{{${displayField}}}</div>\n`;
+        }
       }
-    }
 
-    // Ajouter description si elle existe
-    if (relatedTableConfig?.fields?.description) {
-      template += `${indent}  {{#description}}<div class="relation-description">{{description}}</div>{{/description}}\n`;
+      // Ajouter description si elle existe
+      if (relatedTableConfig?.fields?.description) {
+        template += `${indent}  {{#description}}<div class="relation-description">{{description}}</div>{{/description}}\n`;
+      }
+    } else {
+      // Mode non-compact : afficher tous les champs de la relation n:1
+      template += `${indent}  <div class="relation-n1-fields">\n`;
+      const baseFieldsTemplate = TemplateService._generateBaseFieldsTemplate(
+        relatedTableConfig.fields,
+        false, // Ne pas inclure les champs système
+        `${indent}    `
+      );
+      template += baseFieldsTemplate;
+      template += `${indent}  </div>\n`;
     }
 
     template += `${indent}</div>\n`;
@@ -1692,11 +1721,18 @@ class TemplateService {
    * Génère le template pour une relation 1:n (one-to-many)
    * Inclut les relations n:1 imbriquées si maxDepth > 0
    * @private
+   * @param {string} arrayName - Nom du tableau de la relation 1:n
+   * @param {Object} relationConfig - Configuration de la relation
+   * @param {Object} user - Utilisateur (pour vérifier les permissions)
+   * @param {number} maxDepth - Profondeur maximale des relations
+   * @param {string} style - Style d'affichage ('cards' ou 'table')
+   * @param {string} indent - Indentation
+   * @param {boolean} compact - Mode compact (affecte les relations n:1 imbriquées)
    */
-  static _generate1NRelationTemplate(arrayName, relationConfig, user, maxDepth = 1, style = 'cards', indent = '') {
+  static _generate1NRelationTemplate(arrayName, relationConfig, user, maxDepth = 1, style = 'cards', indent = '', compact = false) {
     // Si le style est 'table', utiliser la méthode spécifique
     if (style === 'table') {
-      return TemplateService._generate1NRelationTableTemplate(arrayName, relationConfig, user, maxDepth, indent);
+      return TemplateService._generate1NRelationTableTemplate(arrayName, relationConfig, user, maxDepth, indent, compact);
     }
 
     // Sinon, utiliser le rendu en cards (comportement par défaut)
@@ -1731,10 +1767,13 @@ class TemplateService {
             continue;
           }
 
+          // Pour les relations n:1 dans les 1:n, utiliser compact=false par défaut
+          // sauf si compact est explicitement passé à true
           const nestedTemplate = TemplateService._generateN1RelationTemplate(
             nestedFieldName,
             nestedRelationConfig,
-            `${indent}    `
+            `${indent}    `,
+            compact // Utiliser le paramètre compact passé
           );
           template += nestedTemplate;
         }
@@ -1751,8 +1790,14 @@ class TemplateService {
   /**
    * Génère le template pour une relation 1:n sous forme de table HTML
    * @private
+   * @param {string} arrayName - Nom du tableau de la relation 1:n
+   * @param {Object} relationConfig - Configuration de la relation
+   * @param {Object} user - Utilisateur (pour vérifier les permissions)
+   * @param {number} maxDepth - Profondeur maximale des relations
+   * @param {string} indent - Indentation
+   * @param {boolean} compact - Mode compact (affecte l'affichage des relations n:1)
    */
-  static _generate1NRelationTableTemplate(arrayName, relationConfig, user, maxDepth = 1, indent = '') {
+  static _generate1NRelationTableTemplate(arrayName, relationConfig, user, maxDepth = 1, indent = '', compact = false) {
     const relatedTable = relationConfig.relatedTable;
     const relatedTableConfig = SchemaService.getTableConfig(relatedTable);
     const systemFields = ['ownerId', 'granted', 'createdAt', 'updatedAt'];
@@ -1822,7 +1867,9 @@ class TemplateService {
       } else if (renderer === 'telephone') {
         template += `${indent}          {{#${fieldName}}}<a href="tel:{{${fieldName}}}">{{${fieldName}}}</a>{{/${fieldName}}}\n`;
       } else if (renderer === 'datetime' || renderer === 'date' || renderer === 'time') {
-        template += `${indent}          {{#${fieldName}}}<time datetime="{{${fieldName}}}">{{${fieldName}}}</time>{{/${fieldName}}}\n`;
+        template += `${indent}          {{#${fieldName}}}<time datetime="{{${fieldName}}}">{{_${fieldName}}}</time>{{/${fieldName}}}\n`;
+      } else if (renderer === 'duration') {
+        template += `${indent}          {{#${fieldName}}}<span content="{{${fieldName}}}">{{_${fieldName}}}</span>{{/${fieldName}}}\n`;
       } else if (fieldConfig.type === 'text') {
         template += `${indent}          {{#${fieldName}}}<div class="text-preview" style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{${fieldName}}}</div>{{/${fieldName}}}\n`;
       } else {
