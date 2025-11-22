@@ -307,7 +307,7 @@
 }
 
 .three-dots.open {
-  transform: rotate(45deg);
+  transform: rotate(90deg);
 }
 
 .three-dots::before {
