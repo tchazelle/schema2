@@ -319,7 +319,7 @@ module.exports = {
         name: { type: "varchar" }, // schemaorgProperty: name
         description: { type: "text" }, // schemaorgProperty: description
         byArtist: { type: "integer", relation: "Organization", foreignKey: "id", arrayName: "Albums", relationshipStrength: "Weak", defaultSort: { field: "datePublished", order: "DESC" } }, // schemaorgProperty: byArtist, peut pointer vers MusicGroup (Organization) ou Person
-        datePublished: { type: "date" }, // schemaorgProperty: datePublished
+        datePublished: { type: "date", renderer: "date" }, // schemaorgProperty: datePublished
         genre: { type: "varchar" }, // schemaorgProperty: genre
         recordLabel: { type: "integer", relation: "Organization", foreignKey: "id", arrayName: "Albums produits", relationshipStrength: "Weak" }, // schemaorgProperty: recordLabel
         url: { type: "varchar", renderer: "url" }, // schemaorgProperty: url

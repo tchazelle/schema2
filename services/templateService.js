@@ -1526,7 +1526,7 @@ class TemplateService {
     if (includeWrapper) {
       template += '</article>\n';
     }
-
+    console.log('Generated template for table', tableName, ':\n', template);
     return template;
   }
 
