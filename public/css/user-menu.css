@@ -173,6 +173,8 @@
   top: 50%;
   transform: translateY(-50%);
   transition: opacity var(--transition-base);
+  pointer-events: none;
+  z-index: 1;
 }
 
 .theme-icon.sun {

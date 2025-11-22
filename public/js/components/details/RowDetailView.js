@@ -409,21 +409,33 @@ class RowDetailView extends React.Component {
                   return null;
                 })()
               ),
-              // Right side: "+ ajouter" button and three-dots menu on same line
+              // Right side: Pinned actions and three-dots menu
               e('div', { style: { display: 'flex', alignItems: 'center', gap: '8px' } },
-                e('button', {
-                  className: 'btn btn-add-relation-item btn-primary',
-                  onClick: (ev) => {
-                    ev.stopPropagation();
-                    this.handleOpenCreateModal(relatedTable);
-                  },
-                  title: count === 0 ? `Créer la première fiche ${relatedTable}` : `Ajouter un ${relatedTable}`
-                }, count === 0 ? '+ Créer la première fiche' : '+ Ajouter'),
+                // Pinned actions
+                e(PinnedActions, {
+                  tableName: relatedTable,
+                  actions: {
+                    create: {
+                      label: count === 0 ? 'Créer la première fiche' : 'Ajouter',
+                      icon: '+',
+                      onClick: (ev) => {
+                        if (ev) ev.stopPropagation();
+                        this.handleOpenCreateModal(relatedTable);
+                      },
+                      show: true // Assume user can create if they can see the relation
+                    }
+                  }
+                }),
                 // Three-dots menu
                 e(ThreeDotsMenu, {
                   isSubList: true,
                   tableName: relatedTable,
                   showDeleteButtons: this.subListRefs[relName]?.state?.showDeleteButtons || false,
+                  onCreate: (ev) => {
+                    if (ev) ev.stopPropagation();
+                    this.handleOpenCreateModal(relatedTable);
+                  },
+                  canCreate: true, // Assume user can create if they can see the relation
                   onToggleDelete: () => {
                     if (this.subListRefs[relName]) {
                       this.subListRefs[relName].handleToggleDeleteButtons();

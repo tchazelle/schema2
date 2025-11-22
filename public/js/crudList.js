@@ -757,14 +757,36 @@ class CrudList extends React.Component {
           )
         ),
         e('div', { className: 'crud-actions' },
-          (() => {
-            return data && data.permissions && data.permissions.canCreate && e('button', {
-              className: 'btn btn-add-record',
-              onClick: (e) => {
-                this.handleAddNew();
+          // Pinned actions (quick access buttons)
+          e(PinnedActions, {
+            tableName: this.props.tableName,
+            actions: {
+              create: {
+                label: 'Nouveau',
+                icon: '+',
+                onClick: () => this.handleAddNew(),
+                show: data && data.permissions && data.permissions.canCreate
+              },
+              fieldSelect: {
+                label: 'Champs',
+                icon: '🎯',
+                onClick: () => this.handleShowFieldSelector(),
+                show: true
+              },
+              advancedSearch: {
+                label: 'Recherche',
+                icon: '🔍',
+                onClick: () => this.handleShowAdvancedSearch(),
+                show: true
+              },
+              advancedSort: {
+                label: 'Tri',
+                icon: '📊',
+                onClick: () => this.handleShowAdvancedSort(),
+                show: true
               }
-            }, '+ Nouveau');
-          })(),
+            }
+          }),
           e('input', {
             type: 'text',
             className: 'search-input',
@@ -781,7 +803,10 @@ class CrudList extends React.Component {
             onAdvancedSearch: this.handleShowAdvancedSearch,
             onAdvancedSort: this.handleShowAdvancedSort,
             hasAdvancedSearch: !!advancedSearchCriteria,
-            hasAdvancedSort: advancedSortCriteria && advancedSortCriteria.length > 0
+            hasAdvancedSort: advancedSortCriteria && advancedSortCriteria.length > 0,
+            onCreate: () => this.handleAddNew(),
+            canCreate: data && data.permissions && data.permissions.canCreate,
+            tableName: this.props.tableName
           })
         )
       ),

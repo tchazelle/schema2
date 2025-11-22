@@ -17,7 +17,9 @@ function generateToken(user) {
     email: user.email,
     roles: user.roles,
     givenName: user.givenName,
-    familyName: user.familyName
+    familyName: user.familyName,
+    image: user.image, // Photo de profil
+    theme: user.theme  // Préférence de thème
   };
 
   return jwt.sign(payload, JWT_SECRET, {

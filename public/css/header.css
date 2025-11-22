@@ -95,15 +95,21 @@ header {
 
 .theme-toggle-header .theme-icon {
   font-size: 12px;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
   z-index: 1;
   transition: opacity var(--transition-base);
+  pointer-events: none;
 }
 
 .theme-toggle-header .theme-icon.sun {
+  left: 5px;
   opacity: 1;
 }
 
 .theme-toggle-header .theme-icon.moon {
+  right: 5px;
   opacity: 0.4;
 }
 
