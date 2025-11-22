@@ -784,6 +784,12 @@ class CrudList extends React.Component {
                 icon: '📊',
                 onClick: () => this.handleShowAdvancedSort(),
                 show: true
+              },
+              toggleDelete: {
+                label: 'Mode suppression',
+                icon: '🗑️',
+                onClick: () => this.handleToggleDeleteButtons(),
+                show: true
               }
             }
           }),

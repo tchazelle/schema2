@@ -158,6 +158,37 @@
   /* Inherits most styles from .overlay in generic.css */
 }
 
+/* Sidebar search box */
+.sidebar-search {
+  padding: var(--space-md);
+  border-bottom: solid var(--border-width) var(--color-border);
+  background: var(--color-bg);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.sidebar-search-input {
+  width: 100%;
+  padding: var(--space-sm) var(--space-md);
+  border: solid var(--border-width) var(--color-border);
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+  background: var(--color-bg-subtle);
+  transition: border-color var(--transition-base), box-shadow var(--transition-base);
+}
+
+.sidebar-search-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-alpha);
+}
+
+.sidebar-search-input::placeholder {
+  color: var(--color-text-muted);
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .sidebar {

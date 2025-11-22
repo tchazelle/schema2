@@ -256,6 +256,7 @@ class RowDetailModal extends React.Component {
             // Pinned actions (quick access buttons)
             permissions && (permissions.canCreate || permissions.canRead || permissions.canDelete) && e(PinnedActions, {
               tableName,
+              storageKeyPrefix: 'pinnedRowDetailActions',
               actions: {
                 notify: {
                   label: 'Notifier',

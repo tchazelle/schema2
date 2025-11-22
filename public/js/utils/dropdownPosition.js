@@ -100,16 +100,37 @@ function autoAdjustDropdown(dropdown, trigger) {
  * Call this on page load or after dynamic content is added
  */
 function setupDropdownPositioning() {
+  // WeakSet to track dropdowns currently being adjusted (prevents infinite loops)
+  const adjustingDropdowns = new WeakSet();
+
   // Use MutationObserver to detect when dropdowns are opened
   const observer = new MutationObserver((mutations) => {
     mutations.forEach((mutation) => {
       if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
         const element = mutation.target;
 
-        // Check if dropdown was just opened
+        // Skip if we're currently adjusting this dropdown (prevents infinite loop)
+        if (adjustingDropdowns.has(element)) {
+          return;
+        }
+
+        // Check if dropdown was just opened (has both 'menu-dropdown' and 'open' classes)
         if (element.classList.contains('menu-dropdown') && element.classList.contains('open')) {
+          // Mark as being adjusted
+          adjustingDropdowns.add(element);
+
           const trigger = element.previousElementSibling;
-          autoAdjustDropdown(element, trigger);
+
+          // Adjust position
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              adjustDropdownPosition(element, trigger);
+              // Remove from adjusting set after a short delay to allow mutations to settle
+              setTimeout(() => {
+                adjustingDropdowns.delete(element);
+              }, 100);
+            });
+          });
         }
       }
     });

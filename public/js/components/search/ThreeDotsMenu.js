@@ -87,18 +87,9 @@ class ThreeDotsMenu extends React.Component {
 
   toggleMenu = (ev) => {
     ev.stopPropagation();
-    this.setState(prev => ({ isOpen: !prev.isOpen }), () => {
-      // After opening, adjust dropdown position to prevent overflow
-      if (this.state.isOpen && this.menuRef.current) {
-        const dropdown = this.menuRef.current.querySelector('.menu-dropdown');
-        if (dropdown && window.adjustDropdownPosition) {
-          // Use requestAnimationFrame to ensure dropdown is rendered
-          requestAnimationFrame(() => {
-            window.adjustDropdownPosition(dropdown);
-          });
-        }
-      }
-    });
+    this.setState(prev => ({ isOpen: !prev.isOpen }));
+    // Note: Dropdown position adjustment is now handled automatically
+    // by the MutationObserver in dropdownPosition.js
   }
 
   handleOptionClick = (action) => {

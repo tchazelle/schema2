@@ -10,6 +10,7 @@
  *
  * Props:
  * - tableName: Name of the table (for localStorage key)
+ * - storageKeyPrefix: Optional prefix for localStorage key (default: 'pinnedActions')
  * - actions: Object mapping action keys to action configs
  *   Example: {
  *     create: { label: 'Nouveau', icon: '+', onClick: () => {...}, show: true },
@@ -46,15 +47,20 @@ class PinnedActions extends React.Component {
     }
   }
 
+  getStorageKey() {
+    const prefix = this.props.storageKeyPrefix || 'pinnedActions';
+    return `${prefix}_${this.props.tableName || 'default'}`;
+  }
+
   handleStorageChange(e) {
-    if (e.key === `pinnedActions_${this.props.tableName || 'default'}`) {
+    if (e.key === this.getStorageKey()) {
       this.setState({ pinnedActions: this.loadPinnedActions() });
     }
   }
 
   loadPinnedActions() {
     try {
-      const saved = localStorage.getItem(`pinnedActions_${this.props.tableName || 'default'}`);
+      const saved = localStorage.getItem(this.getStorageKey());
       return saved ? JSON.parse(saved) : [];
     } catch (e) {
       return [];
