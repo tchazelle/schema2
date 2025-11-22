@@ -768,19 +768,19 @@ class CrudList extends React.Component {
                 show: data && data.permissions && data.permissions.canCreate
               },
               fieldSelect: {
-                label: 'Champs',
+                label: 'Colonnes...',
                 icon: '🎯',
                 onClick: () => this.handleShowFieldSelector(),
                 show: true
               },
               advancedSearch: {
-                label: 'Recherche',
+                label: 'Recherche...',
                 icon: '🔍',
                 onClick: () => this.handleShowAdvancedSearch(),
                 show: true
               },
               advancedSort: {
-                label: 'Tri',
+                label: 'Tri...',
                 icon: '📊',
                 onClick: () => this.handleShowAdvancedSort(),
                 show: true
