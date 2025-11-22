@@ -323,7 +323,7 @@ class ImageFieldUploader extends React.Component {
           alignItems: 'center',
           minHeight: '100px',
           maxHeight: '200px',
-          backgroundColor: '#fff',
+          _backgroundColor: '#fff',
           borderRadius: '4px',
           overflow: 'visible',
           position: 'relative'

@@ -341,20 +341,21 @@ tr.detail-row td {
 /* Grille de champs responsive */
 .detail-fields {
   display: grid;
-  grid-template-columns: 1fr; /* Une seule colonne pour tous les champs */
+  grid-template-columns: 1fr; /* Une seule colonne par défaut */
   gap: var(--space-md);
   margin-bottom: var(--space-md);
-  grid-auto-flow: row; /* Remplissage ligne par ligne avec wrap automatique */
-}
-
-/* Layout horizontal : remplissage ligne par ligne (comportement par défaut) */
-.detail-fields.layout-horizontal {
   grid-auto-flow: row;
+
 }
 
-/* Layout vertical : remplissage colonne par colonne */
+/* Deux colonnes — remplissage ligne par ligne */
+.detail-fields.layout-horizontal {
+  grid-template-columns: 1fr 1fr;
+}
+
+/* Remplissage colonne par colonne (vertical) */
 .detail-fields.layout-vertical {
-  grid-auto-flow: row; /* Garde le comportement row pour compatibilité avec auto-fill */
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
 }
 
 .detail-field {
@@ -551,6 +552,7 @@ tr.detail-row td {
 
 /* Layout vertical : remplissage colonne par colonne */
 .edit-form-grid.layout-vertical {
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   grid-auto-flow: row; /* Garde le comportement row pour compatibilité avec auto-fill */
 }
 

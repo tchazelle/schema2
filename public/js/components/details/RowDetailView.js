@@ -351,7 +351,7 @@ class RowDetailView extends React.Component {
                       style: { fontSize: '1.2em', textDecoration: 'none', marginLeft: '5px' }
                     }, '📅')
                   ]
-                : label
+                : label + (isMarkdown ? ' 🪶  markdown ' : '')
             ),
             e('div', { className: 'detail-value' },
               relationN1

@@ -158,8 +158,7 @@ class TemplateService {
   static htmlMenuTable(accessibleTables) {
     return accessibleTables?.length > 0
       ? `<div class="sidebar-section">
-          <h3>Tables</h3>
-          <ul>
+            <ul>
             <li><a href="/_crud">🔍 Recherche</a></li>
             ${accessibleTables.map(table => `<li><a href="/_crud/${table}">${table}</a></li>`).join('')}
           </ul>
@@ -170,7 +169,6 @@ class TemplateService {
   static htmlMenuCalendar(hasCalendarAccess) {
     return hasCalendarAccess
       ? `<div class="sidebar-section">
-          <h3>Outils</h3>
           <ul>
             <li><a href="/_calendar">📅 Calendrier</a></li>
           </ul>

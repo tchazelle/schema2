@@ -438,7 +438,7 @@ class EditForm extends React.Component {
     switch (field.type) {
       case 'text':
         return e('div', { key: fieldName, className: fieldClasses },
-          e('label', { className: 'edit-field-label' }, label),
+          e('label', { className: 'edit-field-label' }, label+ (isMarkdown ? ' 🪶markdown ' : '')),
           e('div', { className: 'textarea-with-fullscreen' },
             e('textarea', {
               className: 'edit-field-textarea',
