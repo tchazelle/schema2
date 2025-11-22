@@ -1080,11 +1080,7 @@ class TemplateService {
     <div class="calendar-modal">
       <div class="calendar-modal-header">
         <h3>Créer un événement</h3>
-        <button type="button" class name {
-          constructor(parameters) {
-            
-          }
-        }="btn btn-close calendar-modal-close" id="closeModal">&times;</button>
+        <button type="button" class="btn btn-close calendar-modal-close" id="closeModal">&times;</button>
       </div>
       <div class="calendar-modal-date" id="modalDate"></div>
       <div class="calendar-modal-body">

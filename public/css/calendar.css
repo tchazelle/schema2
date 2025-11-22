@@ -6,15 +6,15 @@
 
 .calendar-container {
   max-width: var(--container-max-width);
-  margin: var(--space-xl) auto;
-  padding: var(--space-xl);
+  margin: var(--space-xs) auto;
+  padding: var(--space-md);
   background-color: var(--color-bg);
   border-radius: var(--border-radius-lg);
   box-shadow: var(--shadow-sm);
 }
 
 .calendar-header {
-  _display: flex;
+  display: flex;
   display: none; /* modifié par TC Thierry Chazelle */
   justify-content: space-between;
   align-items: center;
@@ -45,7 +45,7 @@
 
 /* Styles pour FullCalendar */
 #calendar {
-  margin-top: var(--space-xl);
+  margin-top: 0;
 }
 
 /* Personnalisation des événements */
@@ -270,13 +270,10 @@
   background-color: var(--color-bg);
   border-radius: var(--border-radius-sm);
   font-size: var(--font-size-md);
-  color: var(--color-text-muted);
-  text-align: center;
+  color: var(--color);
+  _text-align: center;
 }
 
-.calendar-modal-date strong {
-  color: var(--color-text-heading);
-}
 
 .calendar-modal-body {
   margin-bottom: var(--space-lg);
