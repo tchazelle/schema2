@@ -21,6 +21,7 @@
   width: 40px;
   height: 40px;
   border-radius: var(--border-radius-circle);
+  flex-shrink: 0;
 }
 
 .user-button:hover {

@@ -11,24 +11,25 @@
   position: relative;
   width: 40px;
   height: 40px;
-  padding: 8px;
+  padding: 0;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   z-index: var(--z-header-items, 1100);
   transition: all 0.3s ease;
   background: transparent;
   border: none;
   cursor: pointer;
+  flex-shrink: 0;
 }
 
 /* Hamburger bars */
 .menu-toggle .bar {
   display: block;
-  width: 24px;
-  height: 3px;
+  width: 22px;
+  height: 2.5px;
   background-color: var(--color-text-heading);
   border-radius: 2px;
   transition: all 0.3s ease;
@@ -37,7 +38,7 @@
 
 /* Animation to transform into X when menu is open */
 .menu-toggle.active .bar:nth-child(1) {
-  transform: translateY(9px) rotate(45deg);
+  transform: translateY(7.5px) rotate(45deg);
 }
 
 .menu-toggle.active .bar:nth-child(2) {
@@ -46,7 +47,7 @@
 }
 
 .menu-toggle.active .bar:nth-child(3) {
-  transform: translateY(-9px) rotate(-45deg);
+  transform: translateY(-7.5px) rotate(-45deg);
 }
 
 /* Sidebar container */
@@ -88,13 +89,25 @@
 }
 
 .__sidebar-close {
-  /* Base styles from .btn-icon in generic.css */
-  font-size: var(--font-size-xl);
-  line-height: var(--line-height-tight);
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-size: 24px;
+  line-height: 1;
+  color: var(--color-text-muted);
+  transition: color var(--transition-base), transform var(--transition-base);
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
 .__sidebar-close:hover {
   color: var(--color-text-heading);
+  transform: rotate(90deg);
 }
 
 /* Sidebar sections */
