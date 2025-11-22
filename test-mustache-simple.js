@@ -1,6 +1,8 @@
 /**
  * Test simple du générateur de templates Mustache
  * Sans dépendances à la base de données
+ *
+ * Note: generateMustacheTemplate est maintenant dans TemplateService
  */
 
 const schema = require('./schema.js');

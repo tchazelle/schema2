@@ -2,7 +2,7 @@
 
 ## Vue d'ensemble
 
-Le générateur de templates Mustache `PageService.generateMustacheTemplate()` supporte maintenant deux modes d'affichage pour les relations 1:n (one-to-many) :
+Le générateur de templates Mustache `TemplateService.generateMustacheTemplate()` supporte maintenant deux modes d'affichage pour les relations 1:n (one-to-many) :
 
 - **Mode `cards`** (par défaut) : Affichage en cartes/divs avec tous les champs
 - **Mode `table`** : Affichage en table HTML avec lignes et colonnes
@@ -12,9 +12,9 @@ Le générateur de templates Mustache `PageService.generateMustacheTemplate()` s
 ### Syntaxe
 
 ```javascript
-const PageService = require('./services/pageService');
+const TemplateService = require('./services/templateService');
 
-const template = PageService.generateMustacheTemplate(tableName, user, {
+const template = TemplateService.generateMustacheTemplate(tableName, user, {
   includeWrapper: true,          // Inclure le wrapper <article>
   includeSystemFields: false,    // Exclure les champs système (ownerId, granted, etc.)
   maxDepth: 2,                   // Profondeur des relations imbriquées
@@ -25,7 +25,7 @@ const template = PageService.generateMustacheTemplate(tableName, user, {
 ### Exemple 1 : Organization avec membres en table
 
 ```javascript
-const template = PageService.generateMustacheTemplate('Organization', user, {
+const template = TemplateService.generateMustacheTemplate('Organization', user, {
   oneToManyStyle: 'table'
 });
 ```
@@ -65,7 +65,7 @@ const template = PageService.generateMustacheTemplate('Organization', user, {
 ### Exemple 2 : MusicAlbum avec tracks en table
 
 ```javascript
-const template = PageService.generateMustacheTemplate('MusicAlbum', user, {
+const template = TemplateService.generateMustacheTemplate('MusicAlbum', user, {
   oneToManyStyle: 'table',
   maxDepth: 2
 });
@@ -217,11 +217,13 @@ Vous pouvez utiliser ce template dans le champ `mustache` d'une Section :
 
 ```javascript
 // Dans routes/api.js ou un endpoint personnalisé
+const TemplateService = require('./services/templateService');
+
 router.get('/template/:table', (req, res) => {
   const { table } = req.params;
   const { style = 'cards' } = req.query;
 
-  const template = PageService.generateMustacheTemplate(table, req.user, {
+  const template = TemplateService.generateMustacheTemplate(table, req.user, {
     oneToManyStyle: style
   });
 
@@ -250,15 +252,23 @@ Ce script génère des exemples de templates pour :
 
 ### Fichiers modifiés
 
-- **services/pageService.js** (lignes 93-420)
-  - Ajout du paramètre `oneToManyStyle` dans `generateMustacheTemplate()`
-  - Modification de `_generate1NRelationTemplate()` pour router selon le style
-  - Nouvelle méthode `_generate1NRelationTableTemplate()` pour le rendu table
+- **services/templateService.js** (lignes ~1426-1766)
+  - Ajout de l'import `SchemaService`
+  - Ajout de la méthode publique `generateMustacheTemplate()` avec le paramètre `oneToManyStyle`
+  - Nouvelles méthodes privées :
+    - `_generateBaseFieldsTemplate()` - Génère les champs de base
+    - `_generateN1RelationTemplate()` - Génère les relations n:1
+    - `_generate1NRelationTemplate()` - Route entre mode cards et table
+    - `_generate1NRelationTableTemplate()` - Génère les tables HTML pour relations 1:n
+    - `_humanizeFieldName()` - Formatte les noms de champs
+
+- **services/pageService.js**
+  - Suppression des méthodes de génération de templates (déplacées vers TemplateService)
 
 ### Architecture
 
 ```
-generateMustacheTemplate()
+TemplateService.generateMustacheTemplate()
   ↓
   options.oneToManyStyle = 'table'
   ↓
