@@ -293,12 +293,37 @@ async function getTableData(user, tableName, options = {}) {
   // Ajouter ORDER BY si spécifié
   // Replace _dateRange with actual database field if needed (_dateRange is a virtual computed field)
   let finalOrderBy = orderBy;
+  let sortInMemory = false;
+  let inMemorySortField = null;
+  let inMemorySortOrder = null;
+
   if (orderBy && orderBy.includes('_dateRange') && hasCalendar(table)) {
     const calendarConfig = getCalendarConfig(table);
     const startDateField = calendarConfig.startDate || 'startDate';
     // Replace _dateRange with the actual startDate field
     // Handle both simple field and prefixed field (e.g., "Todo._dateRange" -> "Todo.startDate")
     finalOrderBy = orderBy.replace(/_dateRange/g, startDateField);
+  }
+
+  // Check if orderBy is a JavaScript calculated field (cannot be used in SQL ORDER BY)
+  if (orderBy) {
+    // Extract field name if it's prefixed with table name (e.g., "Organization.memberCount" -> "memberCount")
+    let fieldName = orderBy;
+    if (orderBy.includes('.')) {
+      const parts = orderBy.split('.');
+      // If it's table.field format and the table matches our current table
+      if (parts.length === 2 && parts[0] === table) {
+        fieldName = parts[1];
+      }
+    }
+
+    if (SchemaService.isCalculatedJsField(table, fieldName)) {
+      // Skip SQL ORDER BY and sort in-memory after calculating fields
+      sortInMemory = true;
+      inMemorySortField = fieldName;
+      inMemorySortOrder = order && order.toUpperCase() === 'DESC' ? 'DESC' : 'ASC';
+      finalOrderBy = null;
+    }
   }
 
   if (finalOrderBy) {
@@ -427,6 +452,30 @@ async function getTableData(user, tableName, options = {}) {
     }
 
     filteredRows.push(filteredRow);
+  }
+
+  // Sort in-memory if ordering by JavaScript calculated field
+  if (sortInMemory && inMemorySortField) {
+    filteredRows.sort((a, b) => {
+      const aVal = a[inMemorySortField];
+      const bVal = b[inMemorySortField];
+
+      // Handle null/undefined values (put them at the end)
+      if (aVal === null || aVal === undefined) return 1;
+      if (bVal === null || bVal === undefined) return -1;
+
+      // Compare values
+      let comparison = 0;
+      if (typeof aVal === 'number' && typeof bVal === 'number') {
+        comparison = aVal - bVal;
+      } else {
+        // Convert to string for comparison
+        comparison = String(aVal).localeCompare(String(bVal));
+      }
+
+      // Apply sort order
+      return inMemorySortOrder === 'DESC' ? -comparison : comparison;
+    });
   }
 
   // Calculer les statistiques si des champs ont stat défini
