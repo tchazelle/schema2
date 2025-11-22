@@ -12,6 +12,7 @@ const TemplateService = require('../services/templateService');
 const { getTableData } = require('../services/tableDataService');
 const CrudService = require('../services/crudService');
 const SchemaService = require('./schemaService');
+const mustache = require('mustache');
 
 class PageService {
 
@@ -64,7 +65,28 @@ class PageService {
       canDelete: user && EntityService.canPerformAction(user, 'Page', 'delete', page),
       canAddSection: user && hasPermission(user, 'Section', 'create')
     }
+    var main = "vide"
+    var data = {}
+    if (page.sections?.length) {
+      data = await PageService.buildSectionsAsTableData(user, page.sections)
+      main = page.sections.map((section, i) => {
 
+        console.log("Generating mustache template for section:", section.slug, "table:", section.sqlTable)
+        const mustacheAuto =  this.generateMustacheTemplate(user, section.sqlTable, {
+          includeWrapper: true,
+          includeSystemFields: section.apiNoSystemFields ? false : true,
+          maxDepth: 2
+        })
+        const mustacheWithRows = "{{#rows}}" + mustacheAuto + "{{/rows}}"
+        const html = mustache.render(mustacheWithRows, data[i])
+
+        return html
+        return 
+        return TemplateService.htmlSectionMustache(section, mustache, data)
+      }).join("\n")
+    }
+
+    /*
     // traitement des sections si disponibles
     let data = []
     let htmlSections =  (page.css ? `<style>${page.css}</style>`: "")
@@ -85,7 +107,9 @@ class PageService {
       htmlSections += newSectionsWithRows.map(section => TemplateService.htmlSection(section))
     }
     const main = options.debug ? TemplateService.htmlDebugJSON(page) : htmlSections
+    */
     const accessibleTables = user ? CrudService.getMenuTables(user) : [];
+    
     const html = TemplateService.htmlSitePage({user, pages, main, accessibleTables})
     return html
   }
