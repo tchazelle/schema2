@@ -1391,6 +1391,8 @@ a.modal-subtitle:hover {
 }
 
 .fullscreen-editor-textarea {
+  background-color: var(--color-bg);
+  color: var(--color);
   position: absolute;
   top: 0;
   left: 0;
@@ -1398,7 +1400,8 @@ a.modal-subtitle:hover {
   bottom: 0;
   width: 100% !important;
   max-width: none !important;
-  border: none;
+  border:none;
+  border-top: solid var(--border-width) var(--color-border) ;
   border-radius: 0;
   padding: var(--space-xl);
   font-size: var(--font-size-md);
