@@ -265,15 +265,19 @@ class TemplateService {
     function toggleMenu() {
       const sidebar = document.getElementById('sidebar');
       const overlay = document.getElementById('overlay');
+      const menuToggle = document.getElementById('menuToggle');
       sidebar.classList.toggle('open');
       overlay.classList.toggle('open');
+      menuToggle.classList.toggle('active');
     }
 
     function closeMenu() {
       const sidebar = document.getElementById('sidebar');
       const overlay = document.getElementById('overlay');
+      const menuToggle = document.getElementById('menuToggle');
       sidebar.classList.remove('open');
       overlay.classList.remove('open');
+      menuToggle.classList.remove('active');
     }
 
     // Toggle user menu
@@ -345,10 +349,13 @@ class TemplateService {
       <div class="overlay" id="overlay" onclick="closeMenu()"></div>
       <div class="header-right">
         ${this.htmlUserMenu(user)}
-        </div>
 
         <!-- Menu hamburger -->
-        <button class="btn menu-toggle" onclick="toggleMenu()">☰</button>
+        <button class="btn menu-toggle" id="menuToggle" onclick="toggleMenu()">
+          <span class="bar"></span>
+          <span class="bar"></span>
+          <span class="bar"></span>
+        </button>
       </div>
     </header>
   `}
