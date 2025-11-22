@@ -207,7 +207,7 @@ class TemplateService {
 
   return `<div class="user-menu">
 
-    <button class="btn user-button" onclick="toggleUserMenu()" aria-label="Menu utilisateur">
+    <button class="user-button" onclick="toggleUserMenu()" aria-label="Menu utilisateur">
       ${userAvatar}
     </button>
 

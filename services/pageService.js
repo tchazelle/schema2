@@ -79,7 +79,7 @@ class PageService {
         })
         const mustacheWithRows = `{{#rows}}<div class="card">${mustacheAuto}{{/rows}}</div>`
         const html = mustache.render(mustacheWithRows, data[i])
-
+        
         return html
         return 
         return TemplateService.htmlSectionMustache(section, mustache, data)
