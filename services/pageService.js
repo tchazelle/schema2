@@ -65,7 +65,7 @@ class PageService {
       canDelete: user && EntityService.canPerformAction(user, 'Page', 'delete', page),
       canAddSection: user && hasPermission(user, 'Section', 'create')
     }
-    var main = "<style>img {max-width: 50%; height: auto;}</style>"
+    var main = "<style>img {max-width: 100px; height: auto;}</style>"
     var data = {}
     if (page.sections?.length) {
       data = await PageService.buildSectionsAsTableData(user, page.sections)
@@ -77,7 +77,7 @@ class PageService {
           includeSystemFields: section.apiNoSystemFields ? false : true,
           maxDepth: 2
         })
-        const mustacheWithRows = "{{#rows}}" + mustacheAuto + "{{/rows}}"
+        const mustacheWithRows = `{{#rows}}<div class="card">${mustacheAuto}{{/rows}}</div>`
         const html = mustache.render(mustacheWithRows, data[i])
 
         return html
