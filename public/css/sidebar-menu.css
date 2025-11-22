@@ -155,10 +155,8 @@
   background: var(--color-bg-subtle);
 }
 
-/* Overlay to close sidebar - extends .overlay from generic.css */
-.overlay {
-  /* Inherits most styles from .overlay in generic.css */
-}
+
+
 
 /* Sidebar search box */
 .sidebar-search {
