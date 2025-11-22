@@ -1441,9 +1441,9 @@ class TemplateService {
       includeWrapper = true,
       includeSystemFields = false,
       maxDepth = 2,
-      oneToManyStyle = 'cards'
+      oneToManyStyle = 'table', // 'cards' ou 'table'
     } = options;
-
+    
     // Récupérer la configuration de la table
     const tableConfig = SchemaService.getTableConfig(tableName);
     if (!tableConfig) {

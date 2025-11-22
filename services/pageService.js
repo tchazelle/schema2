@@ -65,14 +65,14 @@ class PageService {
       canDelete: user && EntityService.canPerformAction(user, 'Page', 'delete', page),
       canAddSection: user && hasPermission(user, 'Section', 'create')
     }
-    var main = "vide"
+    var main = "<style>img {max-width: 50%; height: auto;}</style>"
     var data = {}
     if (page.sections?.length) {
       data = await PageService.buildSectionsAsTableData(user, page.sections)
-      main = page.sections.map((section, i) => {
+      main += page.sections.map((section, i) => {
 
         console.log("Generating mustache template for section:", section.slug, "table:", section.sqlTable)
-        const mustacheAuto =  this.generateMustacheTemplate(user, section.sqlTable, {
+        const mustacheAuto =  TemplateService.generateMustacheTemplate(section.sqlTable, user, {
           includeWrapper: true,
           includeSystemFields: section.apiNoSystemFields ? false : true,
           maxDepth: 2
