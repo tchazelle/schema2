@@ -1,6 +1,6 @@
 module.exports = {
   // Configuration générale de l'application
-  appName: "Site LC⚡️TC",
+  appName: "LC⚡️TC",
   version: "2.1.0",
   country: "FR",
   languages: "fr", // pourra devenir un tableau

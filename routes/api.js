@@ -8,6 +8,7 @@ const SchemaService = require('../services/schemaService');
 const PermissionService = require('../services/permissionService');
 const ReorderService = require('../services/reorderService');
 const { GRANTED_VALUES, isPublishedRole, extractRoleFromGranted } = require('../constants/permissions');
+const TemplateService = require('../services/templateService');
 
 /**
  * GET /_api/search/:table
@@ -83,6 +84,34 @@ router.get('/search/:tableName', async (req, res) => {
     });
   }
 });
+
+router.get('/template/:tableName', async (req, res) => {
+  try {
+    function escapeHTML(str) {
+    return str
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+    const { tableName } = req.params;
+    const user = req.user;
+    const { debug, ...other } = req.query;
+    const template = await TemplateService.generateMustacheTemplate(tableName, user, other);
+  
+    res.send(debug ? "<pre><code>" + escapeHTML(template) + "</code></pre>" : template);
+    
+  } catch (error) {
+    console.error('Erreur lors de la recherche:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erreur serveur lors de la génération ddu template',
+      details: error.message
+    });
+  }
+});
+
 
 /**
  * GET /_api/:table

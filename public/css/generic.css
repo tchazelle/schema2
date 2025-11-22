@@ -68,7 +68,7 @@ header {
 /* Sidebar sections */
 .sidebar-section {
   
-  padding: var(--space-xl);
+  padding: var(--space-md);
   border-bottom: solid var(--border-width) var(--color-border);
 }
 
