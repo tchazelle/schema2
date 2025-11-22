@@ -466,19 +466,11 @@ class CrudList extends React.Component {
   }
 
   handleCreateSuccess = () => {
-    // Check if we came from calendar
-    const returnView = sessionStorage.getItem('calendarReturnView');
-    const returnDate = sessionStorage.getItem('calendarReturnDate');
-
-    if (returnView && returnDate) {
-      // Return to calendar with saved view and date
-      window.location.href = '/_calendar';
-    } else {
-      // Reload data after successful creation
-      // NOTE: Do NOT close the form here - the form now auto-saves and should stay open
-      // User can close it manually with the close button
-      this.loadData();
-    }
+    // Reload data after successful creation (auto-save)
+    // NOTE: Do NOT close the form or redirect here - the form auto-saves and should stay open
+    // User can close it manually with the close button, which will trigger handleCloseCreateForm
+    // and handle any calendar redirect logic there
+    this.loadData();
   }
 
   handleShowAdvancedSearch = () => {
