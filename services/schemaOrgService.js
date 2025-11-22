@@ -56,28 +56,12 @@ class SchemaOrgService {
         const line = lines[i].trim();
         if (!line) continue;
 
-        // Parser la ligne CSV (gérer les guillemets)
-        const match = line.match(/^"?([^"]+)"?,"?([^"]*)"?,"?(.*)?"?$/);
-        if (!match) {
-          // Essayer un parsing plus robuste pour les CSV avec des virgules dans les valeurs
-          const parts = this._parseCSVLine(line);
-          if (parts.length >= 3) {
-            const id = parts[0];
-            const label = parts[1];
-            const comment = parts[2];
-
-            // Extraire le nom simple de l'ID (ex: http://schema.org/about -> about)
-            const simpleName = id.split('/').pop();
-
-            targetMap.set(simpleName, {
-              id,
-              label,
-              comment
-            });
-            count++;
-          }
-        } else {
-          const [, id, label, comment] = match;
+        // Parser la ligne CSV avec la fonction robuste
+        const parts = this._parseCSVLine(line);
+        if (parts.length >= 3) {
+          const id = parts[0];
+          const label = parts[1];
+          const comment = parts[2];
 
           // Extraire le nom simple de l'ID (ex: http://schema.org/about -> about)
           const simpleName = id.split('/').pop();
