@@ -185,9 +185,8 @@ class TemplateService {
   
   static htmlSidebar(pages, accessibleTables, hasCalendarAccess = false) {
     return `<nav class="sidebar" id="sidebar">
-      <button class="btn btn-close sidebar-close" onclick="closeMenu()" aria-label="Fermer le menu">✖️</button>
       ${this.htmlMenu(pages, accessibleTables, hasCalendarAccess)}
-    </nav>` 
+    </nav>`
   }
 
   static htmlThemeToggle(user) {
@@ -350,7 +349,7 @@ class TemplateService {
         ${this.htmlUserMenu(user)}
 
         <!-- Menu hamburger -->
-        <button class="btn menu-toggle" id="menuToggle" onclick="toggleMenu()">
+        <button class="menu-toggle" id="menuToggle" onclick="toggleMenu()">
           <span class="bar"></span>
           <span class="bar"></span>
           <span class="bar"></span>

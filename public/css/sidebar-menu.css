@@ -55,7 +55,7 @@
   height: 100vh;
   background: var(--color-bg);
   box-shadow: var(--shadow-left);
-  transition: right var(--transition-slow) ease;
+  transition: right 0.5s ease;
   z-index: var(--z-dropdown);
   overflow-y: auto;
 }
