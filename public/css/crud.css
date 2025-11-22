@@ -119,7 +119,7 @@
 }
 
 .display-mode select {
-  padding: var(----space-xs) var(--space-xs);
+  padding: var(--space-xs) var(--space-xs);
   border: solid var(--border-width) var(--color-border);
   border-radius: var(--border-radius-sm);
   font-size: var(--font-size-sm);
@@ -238,7 +238,7 @@
   text-decoration: none;
   display: inline-flex;
   align-items: center;
-  gap: var(----space-xs);
+  gap: var(--space-xs);
 }
 
 .relation-link:hover {
@@ -274,7 +274,7 @@ tr.detail-row td {
 .detail-field {
   display: flex;
   flex-direction: column;
-  gap: var(----space-xs);
+  gap: var(--space-xs);
 }
 
 /* Markdown fields take full width in detail view */
@@ -858,9 +858,9 @@ tr.detail-row td {
     background: var(--color-bg);
     margin-bottom: var(--space-md);
     padding: var(--space-lg);
-    border-radius: var(--border-radius-lg);
-    box-shadow: var(--shadow-sm);
-    border: solid var(--border-width) var(--color-border);
+    _border-radius: var(--border-radius-lg);
+    _box-shadow: var(--shadow-sm);
+    border-bottom: solid var(--border-width) var(--color-border);
   }
 
   .crud-table tbody tr.data-row:hover {
@@ -958,7 +958,7 @@ tr.detail-row td {
     font-size: var(--font-size-sm);
     color: var(--color-text-label);
     font-weight: var(--font-weight-semibold);
-    margin-bottom: var(----space-xs);
+    margin-bottom: var(--space-xs);
     letter-spacing: var(--letter-spacing-tight);
   }
 

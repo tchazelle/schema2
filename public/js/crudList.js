@@ -693,7 +693,6 @@ class CrudList extends React.Component {
       e('div', { className: 'crud-header' },
         e('div', { className: 'crud-title-container' },
           e('h1', { className: 'crud-title' },
-            '📋 ',
             table,
             // Add calendar icon if table has calendar configuration
             (() => {

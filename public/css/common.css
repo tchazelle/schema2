@@ -73,7 +73,7 @@ h2 {
 /* Responsive */
 @media (max-width: 768px) {
   body {
-    padding: var(--space-md);
+    padding: 0;
   }
 
   h1 {

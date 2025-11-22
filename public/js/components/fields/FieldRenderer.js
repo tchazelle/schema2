@@ -120,11 +120,7 @@ class FieldRenderer extends React.Component {
                 // Open in new tab
                 window.open(value, '_blank');
               }
-            }),
-            e('span', {
-              className: 'image-icon',
-              title: 'Ouvrir l\'image'
-            }, '🖼️')
+            })
           );
         } else {
           // Full image in detail view

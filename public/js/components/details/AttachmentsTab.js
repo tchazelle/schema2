@@ -929,9 +929,6 @@ class AttachmentsTab extends React.Component {
               // Filename
               e('div', {
                 style: {
-                  fontWeight: '600',
-                  fontSize: '14px',
-                  color: '#212529',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap'
@@ -942,7 +939,6 @@ class AttachmentsTab extends React.Component {
               e('div', {
                 style: {
                   fontSize: '12px',
-                  color: '#6c757d',
                   display: 'flex',
                   gap: '8px',
                   alignItems: 'center'

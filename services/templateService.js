@@ -1156,7 +1156,7 @@ class TemplateService {
           tableList.innerHTML = creatableTables.map(table => {
             // Get bgColor from table's calendar config
             const bgColor = table.calendar && table.calendar.bgColor ? table.calendar.bgColor : '#007bff';
-            const style = 'background-color: ' + bgColor + '; color: white;';
+            const style = 'background-color: ' + bgColor + '; color: black;';
 
             return '<li class="calendar-table-item">' +
               '<button type="button" class="calendar-table-button" style="' + style + '" data-date="' + dateForCreate + '" data-table="' + table.name + '">' +
@@ -1368,7 +1368,7 @@ class TemplateService {
           }
 
           return {
-            html: '<div class="fc-event-main-frame">' +
+            html: '<div class="t-main-frame">' +
                   '<div class="fc-event-time">' + timeText + '</div>' +
                   '<div class="fc-event-title-container">' +
                   '<div class="fc-event-title">' + title + '</div>' +

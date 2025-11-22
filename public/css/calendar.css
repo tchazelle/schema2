@@ -50,9 +50,9 @@
 
 /* Personnalisation des événements */
 .fc-event {
-  padding: var(----space-xs);
+  padding: var(--space-xs);
   text-wrap: wrap;
-  color: var(--color-text-heading);
+  _color: var(--color-black);
   cursor: pointer;
   transition: transform var(--transition-base), box-shadow var(--transition-base);
 }
@@ -167,7 +167,7 @@
 
 /* Amélioration du contraste */
 .fc-daygrid-day-events {
-  margin-bottom: var(----space-xs);
+  margin-bottom: var(--space-xs);
 }
 
 /* Message de chargement */

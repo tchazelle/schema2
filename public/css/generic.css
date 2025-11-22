@@ -50,7 +50,6 @@ header {
 
 .sidebar {
   position: fixed;
-  border: solid 1px red;
   top: 0;
   right: -300px;
   width: 300px;
