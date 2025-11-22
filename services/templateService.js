@@ -389,14 +389,14 @@ class TemplateService {
     <header>
       <div class="logo">${schema.appName}</div>
       <div class="header-right">
-        ${this.htmlUserMenu(user)}
         <div class="overlay" id="overlay" onclick="closeMenu()"></div>
         ${this.htmlSidebar(pages, accessibleTables, hasCalendarAccess)}
+        ${this.htmlUserMenu(user)}
         <!-- Menu hamburger -->
         <button class="menu-toggle" id="menuToggle" onclick="toggleMenu()" style="z-index: 2000000;" aria-label="Ouvrir le menu">
           <span class="bar"></span>
           <span class="bar"></span>
-          <span class="bar"></span>
+          <span class="bar"></span> 
         </button>
       </div>
     </header>

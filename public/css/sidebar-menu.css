@@ -9,14 +9,14 @@
 .menu-toggle {
   /* Inherits styles from .toggle-menu in generic.css */
   position: relative;
-  width: 40px;
-  height: 40px;
+  width: 42px;
+  height: 42px;
   padding: 0;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  gap: 5px;
+  gap: 8px;
   
   transition: all 0.3s ease;
   background: transparent;
@@ -33,6 +33,8 @@
   display: block;
   width: 22px;
   height: 2.5px;
+  width: 32px;
+  height: 3px;
   background-color: var(--color-text-heading);
   border-radius: 2px;
   transition: all 0.3s ease;
@@ -41,7 +43,7 @@
 
 /* Animation to transform into X when menu is open */
 .menu-toggle.active .bar:nth-child(1) {
-  transform: translateY(7.5px) rotate(45deg);
+  transform: translateY(11px) rotate(45deg);
 }
 
 .menu-toggle.active .bar:nth-child(2) {
@@ -50,7 +52,7 @@
 }
 
 .menu-toggle.active .bar:nth-child(3) {
-  transform: translateY(-7.5px) rotate(-45deg);
+  transform: translateY(-11px) rotate(-45deg);
 }
 
 /* Sidebar container */
@@ -169,7 +171,7 @@
 }
 
 .sidebar-search-input {
-  width: 100%;
+  width: 85%;
   padding: var(--space-sm) var(--space-md);
   border: solid var(--border-width) var(--color-border);
   border-radius: var(--border-radius-sm);

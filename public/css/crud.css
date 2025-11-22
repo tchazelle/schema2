@@ -1872,12 +1872,9 @@ a.modal-subtitle:hover {
 
 .notify-modal-header {
   background-color: var(--color-bg);
-  border-bottom: 2px solid var(--color-primary);
+  border-bottom: var(--border-width) solid var(--color-border);
 }
 
-.notify-modal-header h2 {
-  color: var(--color-primary-text);
-}
 
 .notify-params-column {
   background-color: var(--color-bg);

@@ -155,60 +155,33 @@ class NotifyModal extends React.Component {
         // Header
         e('div', {
           className: 'modal-header notify-modal-header',
-          style: {
-            padding: '20px 24px',
-            flexShrink: 0
-          }
+          style: { padding: '20px 24px',   flexShrink: 0 }
         },
-          e('h2', {
-            style: {
-              margin: 0,
-              fontSize: '20px',
-              fontWeight: 'bold'
-            }
+          e('p', {
+            style: {   margin: 0, fontSize: '20px',   fontWeight: 'bold' }
           }, '📧 Envoyer une notification')
         ),
 
         // Two-column layout container
         e('div', {
           className: 'notify-modal-body',
-          style: {
-            flex: 1,
-            display: 'flex',
-            overflow: 'hidden',
-            minHeight: 0
-          }
+          style: { flex: 1,   display: 'flex', overflow: 'hidden', minHeight: 0 }
         },
 
           // Loading state
           loading && e('div', {
-            style: {
-              flex: 1,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '40px'
-            }
+            style: { flex: 1, display: 'flex', alignItems: 'center',   justifyContent: 'center', padding: '40px'}
           }, '⏳ Chargement des destinataires...'),
-
           // Error state
           error && e('div', {
             className: 'error',
-            style: {
-              flex: 1,
-              margin: '20px',
-              padding: '20px'
-            }
+            style: {   flex: 1, margin: '20px',   padding: '20px' }
           }, error),
 
           // Left column: Parameters
           !loading && !error && e('div', {
             className: 'notify-params-column',
-            style: {
-              flex: '0 0 400px',
-              padding: '20px 24px',
-              overflow: 'auto',
-              borderRight: '1px solid var(--color-border)'
+            style: { flex: '0 0 400px',   padding: '20px 24px', overflow: 'auto',   borderRight: '1px solid var(--color-border)'
             }
           },
           // Recipients list
@@ -217,24 +190,20 @@ class NotifyModal extends React.Component {
             style: { marginBottom: '20px' }
           },
             e('h3', {
-              style: {
-                margin: '0 0 12px 0',
-                fontSize: '16px',
-                color: '#333'
-              }
+              style: { margin: '0 0 12px 0', fontSize: '16px', color: '#333' }
             }, `Destinataires (${recipients.length})`),
 
             recipients.length === 0
               ? e('p', {
                   style: {
-                    color: '#999',
+                    _color: '#999',
                     fontStyle: 'italic',
                     margin: '12px 0'
                   }
                 }, 'Aucun destinataire trouvé')
               : e('div', {
                   style: {
-                    backgroundColor: '#f8f9fa',
+                    _backgroundColor: '#f8f9fa',
                     border: '1px solid #dee2e6',
                     borderRadius: '4px',
                     padding: '12px',
@@ -252,10 +221,10 @@ class NotifyModal extends React.Component {
                     }
                   },
                     e('div', {
-                      style: { fontWeight: 'bold', color: '#333' }
+                      style: { fontWeight: 'bold' }
                     }, recipient.name),
                     e('div', {
-                      style: { color: '#666', fontSize: '12px' }
+                      style: {  fontSize: '12px' }
                     }, recipient.email)
                   )
                 )
@@ -328,17 +297,10 @@ class NotifyModal extends React.Component {
             style: { marginBottom: '20px' }
           },
             e('label', {
-              style: {
-                display: 'block',
-                marginBottom: '8px',
-                fontSize: '14px',
-                fontWeight: 'bold',
-                color: '#333'
-              }
+              style: { display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 'bold', color: '#333' }
             }, 'Relations à inclure dans l\'email'),
             e('div', {
               style: {
-                backgroundColor: '#f8f9fa',
                 border: '1px solid #dee2e6',
                 borderRadius: '4px',
                 padding: '12px',
@@ -408,6 +370,7 @@ class NotifyModal extends React.Component {
             emailPreview && e('iframe', {
               srcDoc: emailPreview,
               style: {
+              
                 flex: 1,
                 width: '100%',
                 minHeight: '400px',
