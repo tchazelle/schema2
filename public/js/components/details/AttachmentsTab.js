@@ -755,14 +755,14 @@ class AttachmentsTab extends React.Component {
               // Three-dot menu button (top right of preview)
               e('button', {
                 type: 'button',
-                className: 'btn three-dots image-menu',
+                className: `btn three-dots image-menu ${this.state.showMenuId === att.id ? 'open' : ''}`,
                 style: {
                   position: 'absolute',
                   top: '8px',
                   right: '8px',
                   width: '32px',
                   height: '32px',
-                  
+
                   fontSize: '18px',
                   display: 'flex',
                   alignItems: 'center',

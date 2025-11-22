@@ -188,6 +188,7 @@ class RowDetailView extends React.Component {
     // Check if table has attachments enabled
     const tableConfig = SCHEMA_CONFIG?.tables?.[tableName];
     const hasAttachmentsTab = tableConfig?.hasAttachmentsTab || false;
+    const formLayout = tableConfig?.formLayout || 'vertical'; // Default to vertical
 
     // Get calendar config from structure if available
     const hasCalendar = structure.calendar;
@@ -307,7 +308,7 @@ class RowDetailView extends React.Component {
     return e('div', { className: 'row-detail' },
       // Fields grid - clickable to edit
       e('div', {
-        className: 'detail-fields',
+        className: `detail-fields layout-${formLayout}`,
         title: permissions && permissions.canUpdate ? 'Cliquer sur un champ pour éditer' : ''
       },
         allFields.map(fieldName => {

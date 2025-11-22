@@ -57,6 +57,7 @@ module.exports = {
       "dev": ["read", "create", "update", "delete", "publish"]
     },
     hasAttachmentsTab: true, // peut-on attacher des pièces jointes à chaque row ?
+    formLayout: "vertical", // "vertical" (colonnes remplies de haut en bas) ou "horizontal" (lignes remplies de gauche à droite)
   },
 
   users: { // comment trouver les users ?

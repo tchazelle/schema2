@@ -307,7 +307,8 @@ class ImageFieldUploader extends React.Component {
         backgroundColor: dragOver ? '#f0f8ff' : '#fafafa',
         transition: 'all 0.3s',
         position: 'relative',
-        overflow: 'visible'
+        overflow: 'visible',
+        zIndex: 1
       },
       onDragOver: this.handleDragOver,
       onDragLeave: this.handleDragLeave,
@@ -324,7 +325,7 @@ class ImageFieldUploader extends React.Component {
           maxHeight: '200px',
           backgroundColor: '#fff',
           borderRadius: '4px',
-          overflow: 'hidden',
+          overflow: 'visible',
           position: 'relative'
         }
       },
@@ -367,14 +368,14 @@ class ImageFieldUploader extends React.Component {
         // Three-dot menu button (top right of image)
         e('button', {
           type: 'button',
-          className: 'btn three-dots image-menu',
+          className: `btn three-dots image-menu ${showMenu ? 'open' : ''}`,
           style: {
             position: 'absolute',
             top: '8px',
             right: '8px',
             width: '32px',
             height: '32px',
-            
+
             fontSize: '18px',
             display: 'flex',
             alignItems: 'center',

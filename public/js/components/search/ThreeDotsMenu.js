@@ -144,7 +144,7 @@ class ThreeDotsMenu extends React.Component {
 
     return e('div', { className: 'menu-dots', ref: this.menuRef },
       e('button', {
-        className: 'btn btn-menu btn-icon three-dots',
+        className: `btn btn-menu btn-icon three-dots ${isOpen ? 'open' : ''}`,
         onClick: this.toggleMenu,
         'aria-label': 'Options'
       }, '⋮'),

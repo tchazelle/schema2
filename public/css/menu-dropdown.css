@@ -296,13 +296,18 @@
   font-size: var(--font-size-xl);
   font-weight: var(--font-weight-bold);
   line-height: 1;
-  transition: color var(--transition-fast), background var(--transition-fast);
+  transition: color var(--transition-fast), background var(--transition-fast), transform var(--transition-fast);
   border-radius: var(--border-radius-sm);
+  transform: rotate(0deg);
 }
 
 .three-dots:hover {
   background: var(--color-bg);
   color: var(--color-text-primary);
+}
+
+.three-dots.open {
+  transform: rotate(45deg);
 }
 
 .three-dots::before {
