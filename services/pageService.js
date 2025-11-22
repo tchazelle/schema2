@@ -126,7 +126,7 @@ class PageService {
    * @param {number} options.maxDepth - Profondeur maximale des relations (default: 2)
    * @returns {string|null} - Template Mustache généré ou null si table non trouvée
    */
-  static  (user, tableName, options = {}) {
+  static generateMustacheTemplate (user, tableName, options = {}) {
     const {
       includeWrapper = true,
       includeSystemFields = false,
