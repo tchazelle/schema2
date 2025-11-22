@@ -22,12 +22,16 @@ header {
   font-size: var(--font-size-xl);
   font-weight: var(--font-weight-semibold);
   color: var(--color-text-heading);
+  flex-shrink: 1;
+  min-width: 0;
 }
 
 .header-right {
   display: flex;
   align-items: center;
   gap: var(--space-lg);
+  flex-wrap: nowrap;
+  flex-shrink: 0;
 }
 
 /* Theme toggle in header */
@@ -129,5 +133,9 @@ header {
 
   .logo {
     font-size: var(--font-size-lg);
+  }
+
+  .header-right {
+    gap: var(--space-md);
   }
 }
