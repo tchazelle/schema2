@@ -253,6 +253,36 @@ class RowDetailModal extends React.Component {
           ),
           // Action buttons section
           e('div', { style: { display: 'flex', alignItems: 'center', gap: '8px' } },
+            // Pinned actions (quick access buttons)
+            permissions && (permissions.canCreate || permissions.canRead || permissions.canDelete) && e(PinnedActions, {
+              tableName,
+              actions: {
+                notify: {
+                  label: 'Notifier',
+                  icon: '📧',
+                  onClick: this.handleNotifyClick,
+                  show: permissions.canRead
+                },
+                duplicate: {
+                  label: 'Dupliquer',
+                  icon: '📋',
+                  onClick: this.handleDuplicate,
+                  show: permissions.canCreate
+                },
+                duplicateWithRelations: {
+                  label: 'Dupliquer avec relations',
+                  icon: '📋',
+                  onClick: this.handleDuplicateWithRelations,
+                  show: permissions.canCreate
+                },
+                delete: {
+                  label: 'Supprimer',
+                  icon: '🗑️',
+                  onClick: this.handleDelete,
+                  show: permissions.canDelete
+                }
+              }
+            }),
             // Actions menu (with pinning support, visible in both view and edit modes)
             permissions && (permissions.canCreate || permissions.canRead || permissions.canDelete) && e(RowDetailMenu, {
               tableName,
