@@ -43,12 +43,15 @@ class PageService {
           .map(([newKey, oldKey]) => [newKey, section[oldKey]])
       );
       tableDataOptions.resolvedRelations = 1;
+      tableDataOptions.renderer = 1;
       // DEBUG : ici on a bien les options noId et noSystemFields
+      console.log("Section tableDataOptions:", tableDataOptions);
       return ({ tableName: tableDataOptions.tableName, tableDataOptions });
     })
       // prépare les query
     const promises = newSections.map(section => {
       const {tableName, tableDataOptions} = section
+      tableDataOptions.user = user
       return getTableData(user, tableName, tableDataOptions)
     })
     return Promise.all(promises);
@@ -65,13 +68,14 @@ class PageService {
       canDelete: user && EntityService.canPerformAction(user, 'Page', 'delete', page),
       canAddSection: user && hasPermission(user, 'Section', 'create')
     }
-    var main = "<style>img {max-width: 100px; height: auto;}</style>"
+    var main = "<style>img {max-width: 100px; height: auto;} label { font-size:11px; color:#999; }</style>"
     var data = {}
     if (page.sections?.length) {
       data = await PageService.buildSectionsAsTableData(user, page.sections)
+      console.log(data[0].rows)
       main += page.sections.map((section, i) => {
 
-        console.log("Generating mustache template for section:", section.slug, "table:", section.sqlTable)
+        //console.log("Generating mustache template for section:", section.slug, "table:", section.sqlTable)
         const mustacheAuto =  TemplateService.generateMustacheTemplate(section.sqlTable, user, {
           includeWrapper: true,
           includeSystemFields: section.apiNoSystemFields ? false : true,

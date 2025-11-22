@@ -445,7 +445,7 @@ async function getTableData(user, tableName, options = {}) {
     }
 
     // Enrich with rendered fields if renderer option is enabled
-    if (renderer === '1' || renderer === 'true' || renderer === true) {
+    if (renderer ) {
       const enrichedRow = await RendererService.enrichRowWithRenderers(filteredRow, table, { compact });
       // Replace filteredRow with enriched version
       Object.assign(filteredRow, enrichedRow);
