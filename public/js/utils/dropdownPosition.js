@@ -25,7 +25,7 @@ function adjustDropdownPosition(dropdown, trigger = null) {
   // Get dropdown dimensions and position
   const dropdownRect = dropdown.getBoundingClientRect();
   const viewportWidth = window.innerWidth;
-  const viewportHeight = window.innerHeight();
+  const viewportHeight = window.innerHeight;
 
   // Safety margins from viewport edges
   const EDGE_MARGIN = 16; // pixels
