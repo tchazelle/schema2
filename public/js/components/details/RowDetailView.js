@@ -423,6 +423,37 @@ class RowDetailView extends React.Component {
                         this.handleOpenCreateModal(relatedTable);
                       },
                       show: true // Assume user can create if they can see the relation
+                    },
+                    'sublist-delete': {
+                      label: 'Mode suppression',
+                      icon: '🗑️',
+                      onClick: () => {
+                        if (this.subListRefs[relName]) {
+                          this.subListRefs[relName].handleToggleDeleteButtons();
+                          this.forceUpdate();
+                        }
+                      },
+                      show: true
+                    },
+                    'sublist-sort': {
+                      label: 'Tri...',
+                      icon: '📊',
+                      onClick: () => {
+                        if (this.subListRefs[relName]) {
+                          this.subListRefs[relName].handleAdvancedSort();
+                        }
+                      },
+                      show: true
+                    },
+                    'sublist-extend-auth': {
+                      label: 'Étendre autorisation',
+                      icon: '🔐',
+                      onClick: () => {
+                        if (this.subListRefs[relName]) {
+                          this.subListRefs[relName].handleExtendAuthorization();
+                        }
+                      },
+                      show: true
                     }
                   }
                 }),
