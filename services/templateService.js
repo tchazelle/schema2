@@ -7,6 +7,7 @@ const schema = require('../schema.js');
 const mustache = require('mustache');
 const CalendarService = require('./calendarService');
 const SchemaService = require('./schemaService');
+const SchemaOrgService = require('./schemaOrgService');
 
 class TemplateService {
 
@@ -1614,52 +1615,67 @@ class TemplateService {
       if (fieldConfig.isPrimary) continue; // Ignorer l'id (déjà dans data-id)
 
       const renderer = fieldConfig.renderer;
+      const label = TemplateService._getFieldLabel(fieldName);
+      const hasSchemaOrg = SchemaOrgService.hasProperty(fieldName);
+      const itemprop = hasSchemaOrg ? ` itemprop="${fieldName}"` : '';
 
       if (renderer === 'image') {
+        template += `${indent}{{#${fieldName}}}\n`;
         template += `${indent}<div class="field field-image ${fieldName}">\n`;
-        template += `${indent}  <label>${TemplateService._humanizeFieldName(fieldName)}</label>\n`;
-        template += `${indent}  {{#${fieldName}}}<img src="{{${fieldName}}}" alt="{{${fieldName}}}" class="image-preview" />{{/${fieldName}}}\n`;
+        template += `${indent}  <label>${label}</label>\n`;
+        template += `${indent}  <img src="{{${fieldName}}}" alt="{{${fieldName}}}" class="image-preview"${itemprop} />\n`;
         template += `${indent}</div>\n`;
+        template += `${indent}{{/${fieldName}}}\n`;
       } else if (renderer === 'url') {
+        template += `${indent}{{#${fieldName}}}\n`;
         template += `${indent}<div class="field field-url ${fieldName}">\n`;
-        template += `${indent}  <label>${TemplateService._humanizeFieldName(fieldName)}</label>\n`;
-        template += `${indent}  {{#${fieldName}}}<a href="{{${fieldName}}}" target="_blank" rel="noopener">{{${fieldName}}}</a>{{/${fieldName}}}\n`;
+        template += `${indent}  <label>${label}</label>\n`;
+        template += `${indent}  <a href="{{${fieldName}}}" target="_blank" rel="noopener"${itemprop}>{{${fieldName}}}</a>\n`;
         template += `${indent}</div>\n`;
+        template += `${indent}{{/${fieldName}}}\n`;
       } else if (renderer === 'email') {
+        template += `${indent}{{#${fieldName}}}\n`;
         template += `${indent}<div class="field field-email ${fieldName}">\n`;
-        template += `${indent}  <label>${TemplateService._humanizeFieldName(fieldName)}</label>\n`;
-        template += `${indent}  {{#${fieldName}}}<a href="mailto:{{${fieldName}}}">{{${fieldName}}}</a>{{/${fieldName}}}\n`;
+        template += `${indent}  <label>${label}</label>\n`;
+        template += `${indent}  <a href="mailto:{{${fieldName}}}"${itemprop}>{{${fieldName}}}</a>\n`;
         template += `${indent}</div>\n`;
+        template += `${indent}{{/${fieldName}}}\n`;
       } else if (renderer === 'telephone') {
+        template += `${indent}{{#${fieldName}}}\n`;
         template += `${indent}<div class="field field-telephone ${fieldName}">\n`;
-        template += `${indent}  <label>${TemplateService._humanizeFieldName(fieldName)}</label>\n`;
-        template += `${indent}  {{#${fieldName}}}<a href="tel:{{${fieldName}}}">{{${fieldName}}}</a>{{/${fieldName}}}\n`;
+        template += `${indent}  <label>${label}</label>\n`;
+        template += `${indent}  <a href="tel:{{${fieldName}}}"${itemprop}>{{${fieldName}}}</a>\n`;
         template += `${indent}</div>\n`;
+        template += `${indent}{{/${fieldName}}}\n`;
       } else if (renderer === 'datetime' || renderer === 'date' || renderer === 'time') {
         template += `${indent}{{#${fieldName}}}\n`;
         template += `${indent}<div class="field field-${renderer} ${fieldName}">\n`;
-        template += `${indent}  <label>${TemplateService._humanizeFieldName(fieldName)}</label>\n`;
-        template += `${indent}  <time datetime="{{${fieldName}}}">{{_${fieldName}}}</time>\n`;
+        template += `${indent}  <label>${label}</label>\n`;
+        template += `${indent}  <time datetime="{{${fieldName}}}"${itemprop}>{{_${fieldName}}}</time>\n`;
         template += `${indent}</div>\n`;
         template += `${indent}{{/${fieldName}}}\n`;
       } else if (renderer === 'duration') {
         template += `${indent}{{#${fieldName}}}\n`;
         template += `${indent}<div class="field field-duration ${fieldName}">\n`;
-        template += `${indent}  <label>${TemplateService._humanizeFieldName(fieldName)}</label>\n`;
-        template += `${indent}  <div class="value" content="{{${fieldName}}}">{{_${fieldName}}}</div>\n`;
+        template += `${indent}  <label>${label}</label>\n`;
+        template += `${indent}  <div class="value" content="{{${fieldName}}}"${itemprop}>{{_${fieldName}}}</div>\n`;
         template += `${indent}</div>\n`;
         template += `${indent}{{/${fieldName}}}\n`;
       } else if (fieldConfig.type === 'text') {
+        template += `${indent}{{#${fieldName}}}\n`;
         template += `${indent}<div class="field field-text ${fieldName}">\n`;
-        template += `${indent}  <label>${TemplateService._humanizeFieldName(fieldName)}</label>\n`;
-        template += `${indent}  {{#${fieldName}}}<div class="text-content">{{{${fieldName}}}}</div>{{/${fieldName}}}\n`;
+        template += `${indent}  <label>${label}</label>\n`;
+        template += `${indent}  <div class="text-content"${itemprop}>{{{${fieldName}}}}</div>\n`;
         template += `${indent}</div>\n`;
+        template += `${indent}{{/${fieldName}}}\n`;
       } else {
         // Champ simple (varchar, integer, etc.)
+        template += `${indent}{{#${fieldName}}}\n`;
         template += `${indent}<div class="field field-simple ${fieldName}">\n`;
-        template += `${indent}  <label>${TemplateService._humanizeFieldName(fieldName)}</label>\n`;
-        template += `${indent}  <div class="value">{{${fieldName}}}</div>\n`;
+        template += `${indent}  <label>${label}</label>\n`;
+        template += `${indent}  <div class="value"${itemprop}>{{${fieldName}}}</div>\n`;
         template += `${indent}</div>\n`;
+        template += `${indent}{{/${fieldName}}}\n`;
       }
     }
 
@@ -1678,10 +1694,13 @@ class TemplateService {
     const relatedTable = relationConfig.relatedTable;
     const relatedTableConfig = SchemaService.getTableConfig(relatedTable);
     const displayFields = SchemaService.getDisplayFields(relatedTable) || ['name'];
+    const label = TemplateService._getFieldLabel(fieldName);
+    const hasSchemaOrg = SchemaOrgService.hasProperty(fieldName);
+    const itemprop = hasSchemaOrg ? ` itemprop="${fieldName}"` : '';
 
     let template = `${indent}{{#${fieldName}}}\n`;
-    template += `${indent}<div class="relation relation-n1 ${fieldName}" data-table="${relatedTable}">\n`;
-    template += `${indent}  <label>${TemplateService._humanizeFieldName(fieldName)}</label>\n`;
+    template += `${indent}<div class="relation relation-n1 ${fieldName}" data-table="${relatedTable}"${itemprop}>\n`;
+    template += `${indent}  <label>${label}</label>\n`;
 
     if (compact) {
       // Mode compact : afficher seulement les displayFields
@@ -1739,10 +1758,11 @@ class TemplateService {
     const relatedTable = relationConfig.relatedTable;
     const relatedTableConfig = SchemaService.getTableConfig(relatedTable);
     const parentFieldName = relationConfig.relationFieldName; // Le champ qui référence le parent
+    const label = TemplateService._getFieldLabel(arrayName);
 
     let template = `${indent}{{#${arrayName}}}\n`;
     template += `${indent}<div class="relation relation-1n ${arrayName}">\n`;
-    template += `${indent}  <label>${TemplateService._humanizeFieldName(arrayName)}</label>\n`;
+    template += `${indent}  <label>${label}</label>\n`;
     template += `${indent}  <div class="relation-items">\n`;
 
     // Afficher les champs de base de la relation
@@ -1802,6 +1822,7 @@ class TemplateService {
     const relatedTableConfig = SchemaService.getTableConfig(relatedTable);
     const systemFields = ['ownerId', 'granted', 'createdAt', 'updatedAt'];
     const parentFieldName = relationConfig.relationFieldName; // Le champ qui référence le parent
+    const label = TemplateService._getFieldLabel(arrayName);
 
     // Récupérer les champs à afficher (non-relations, non-système, non-id)
     const fields = Object.entries(relatedTableConfig.fields)
@@ -1827,7 +1848,7 @@ class TemplateService {
     }
 
     let template = `${indent}<div class="relation relation-1n relation-1n-table ${arrayName}">\n`;
-    template += `${indent}  <label>${TemplateService._humanizeFieldName(arrayName)}</label>\n`;
+    template += `${indent}  <label>${label}</label>\n`;
     template += `${indent}  <table class="relation-table" data-table="${relatedTable}">\n`;
 
     // En-tête de table
@@ -1836,12 +1857,14 @@ class TemplateService {
 
     // Colonnes pour les champs de base
     for (const [fieldName, fieldConfig] of fields) {
-      template += `${indent}        <th data-field="${fieldName}">${TemplateService._humanizeFieldName(fieldName)}</th>\n`;
+      const fieldLabel = TemplateService._getFieldLabel(fieldName);
+      template += `${indent}        <th data-field="${fieldName}">${fieldLabel}</th>\n`;
     }
 
     // Colonnes pour les relations n:1
     for (const [fieldName, relationN1Config] of Object.entries(nestedRelationsN1)) {
-      template += `${indent}        <th data-field="${fieldName}" data-relation="n1">${TemplateService._humanizeFieldName(fieldName)}</th>\n`;
+      const fieldLabel = TemplateService._getFieldLabel(fieldName);
+      template += `${indent}        <th data-field="${fieldName}" data-relation="n1">${fieldLabel}</th>\n`;
     }
 
     template += `${indent}      </tr>\n`;
@@ -1855,25 +1878,27 @@ class TemplateService {
     // Cellules pour les champs de base
     for (const [fieldName, fieldConfig] of fields) {
       const renderer = fieldConfig.renderer;
+      const hasSchemaOrg = SchemaOrgService.hasProperty(fieldName);
+      const itemprop = hasSchemaOrg ? ` itemprop="${fieldName}"` : '';
 
       template += `${indent}        <td data-field="${fieldName}" data-type="${fieldConfig.type || 'varchar'}">\n`;
 
       if (renderer === 'image') {
-        template += `${indent}          {{#${fieldName}}}<img src="{{${fieldName}}}" alt="{{${fieldName}}}" class="table-image" style="max-width: 100px; max-height: 100px;" />{{/${fieldName}}}\n`;
+        template += `${indent}          {{#${fieldName}}}<img src="{{${fieldName}}}" alt="{{${fieldName}}}" class="table-image" style="max-width: 100px; max-height: 100px;"${itemprop} />{{/${fieldName}}}\n`;
       } else if (renderer === 'url') {
-        template += `${indent}          {{#${fieldName}}}<a href="{{${fieldName}}}" target="_blank" rel="noopener">🔗</a>{{/${fieldName}}}\n`;
+        template += `${indent}          {{#${fieldName}}}<a href="{{${fieldName}}}" target="_blank" rel="noopener"${itemprop}>🔗</a>{{/${fieldName}}}\n`;
       } else if (renderer === 'email') {
-        template += `${indent}          {{#${fieldName}}}<a href="mailto:{{${fieldName}}}">{{${fieldName}}}</a>{{/${fieldName}}}\n`;
+        template += `${indent}          {{#${fieldName}}}<a href="mailto:{{${fieldName}}}"${itemprop}>{{${fieldName}}}</a>{{/${fieldName}}}\n`;
       } else if (renderer === 'telephone') {
-        template += `${indent}          {{#${fieldName}}}<a href="tel:{{${fieldName}}}">{{${fieldName}}}</a>{{/${fieldName}}}\n`;
+        template += `${indent}          {{#${fieldName}}}<a href="tel:{{${fieldName}}}"${itemprop}>{{${fieldName}}}</a>{{/${fieldName}}}\n`;
       } else if (renderer === 'datetime' || renderer === 'date' || renderer === 'time') {
-        template += `${indent}          {{#${fieldName}}}<time datetime="{{${fieldName}}}">{{_${fieldName}}}</time>{{/${fieldName}}}\n`;
+        template += `${indent}          {{#${fieldName}}}<time datetime="{{${fieldName}}}"${itemprop}>{{_${fieldName}}}</time>{{/${fieldName}}}\n`;
       } else if (renderer === 'duration') {
-        template += `${indent}          {{#${fieldName}}}<span content="{{${fieldName}}}">{{_${fieldName}}}</span>{{/${fieldName}}}\n`;
+        template += `${indent}          {{#${fieldName}}}<span content="{{${fieldName}}}"${itemprop}>{{_${fieldName}}}</span>{{/${fieldName}}}\n`;
       } else if (fieldConfig.type === 'text') {
-        template += `${indent}          {{#${fieldName}}}<div class="text-preview" style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{${fieldName}}}</div>{{/${fieldName}}}\n`;
+        template += `${indent}          {{#${fieldName}}}<div class="text-preview" style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"${itemprop}>{{${fieldName}}}</div>{{/${fieldName}}}\n`;
       } else {
-        template += `${indent}          {{${fieldName}}}\n`;
+        template += `${indent}          {{#${fieldName}}}<span${itemprop}>{{${fieldName}}}</span>{{/${fieldName}}}\n`;
       }
 
       template += `${indent}        </td>\n`;
@@ -1916,6 +1941,23 @@ class TemplateService {
       .replace(/([a-z])([A-Z])/g, '$1 $2')
       // Capitaliser la première lettre
       .replace(/^./, str => str.toUpperCase());
+  }
+
+  /**
+   * Récupère le label d'un champ (depuis Schema.org si disponible, sinon humanize)
+   * @private
+   * @param {string} fieldName - Nom du champ
+   * @returns {string} - Label du champ
+   */
+  static _getFieldLabel(fieldName) {
+    // Essayer de récupérer depuis Schema.org
+    const schemaOrgProperty = SchemaOrgService.getProperty(fieldName);
+    if (schemaOrgProperty && schemaOrgProperty.label) {
+      return schemaOrgProperty.label;
+    }
+
+    // Sinon, utiliser humanize
+    return this._humanizeFieldName(fieldName);
   }
 
 }
