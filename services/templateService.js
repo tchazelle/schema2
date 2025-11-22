@@ -186,12 +186,6 @@ class TemplateService {
   
   static htmlSidebar(pages, accessibleTables, hasCalendarAccess = false) {
     return `<nav class="sidebar" id="sidebar">
-      <div class="sidebar-header">
-        <div class="sidebar-header-content">
-          <h2>Menu</h2>
-        </div>
-        <button class="btn-icon __sidebar-close" onclick="closeMenu()" aria-label="Fermer le menu">✖️</button>
-      </div>
       ${this.htmlMenu(pages, accessibleTables, hasCalendarAccess)}
     </nav>`
   }
@@ -358,17 +352,18 @@ class TemplateService {
       <div class="logo">${schema.appName}</div>
       <div class="header-right">
         ${this.htmlUserMenu(user)}
-
+        <div class="overlay" id="overlay" onclick="closeMenu()"></div>
+        ${this.htmlSidebar(pages, accessibleTables, hasCalendarAccess)}
         <!-- Menu hamburger -->
-        <button class="menu-toggle" id="menuToggle" onclick="toggleMenu()">
+        <button class="menu-toggle" id="menuToggle" onclick="toggleMenu()" style="z-index: 2000000;" aria-label="Ouvrir le menu">
           <span class="bar"></span>
           <span class="bar"></span>
           <span class="bar"></span>
         </button>
       </div>
     </header>
-    ${this.htmlSidebar(pages, accessibleTables, hasCalendarAccess)}
-    <div class="overlay" id="overlay" onclick="closeMenu()"></div>
+    
+    
   `}
 
   /**

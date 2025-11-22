@@ -116,7 +116,7 @@ header {
 
 .user-button {
   background: var(--color-bg);
-  border: solid var(--border-width) var(--color-border);
+  _border: solid var(--border-width) var(--color-border);
   padding: var(--space-sm) var(--space-lg);
   border-radius: var(--border-radius-pill);
   cursor: pointer;
