@@ -61,12 +61,19 @@ header {
   left: 0;
   right: 0;
   bottom: 0;
+  background-color: #cbd5e1;
+  border: 1px solid rgba(0, 0, 0, 0.1);
   border-radius: 20px;
   transition: all var(--transition-base);
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 4px;
+}
+
+.theme-toggle-header .theme-toggle-switch input:checked + .theme-toggle-slider {
+  background-color: #1e3a5f;
+  border-color: #4da3ff;
 }
 
 .theme-toggle-header .theme-toggle-slider::before {
@@ -76,10 +83,10 @@ header {
   width: 18px;
   left: 3px;
   bottom: 3px;
-  background-color: var(--color-bg);
+  background-color: #ffffff;
   border-radius: 50%;
-  transition: transform var(--transition-base);
-  box-shadow: var(--shadow-sm);
+  transition: transform var(--transition-base), box-shadow var(--transition-base);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .theme-toggle-header .theme-toggle-switch input:checked + .theme-toggle-slider::before {
