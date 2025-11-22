@@ -162,6 +162,38 @@ class RowDetailModal extends React.Component {
     }
   }
 
+  handleDelete = async () => {
+    const { tableName, row, onClose } = this.props;
+    const cardTitle = buildCardTitle(row, tableName) || `#${row.id}`;
+
+    // Confirmation dialog
+    if (!confirm(`Êtes-vous sûr de vouloir supprimer cette fiche ?\n\n${tableName}: ${cardTitle}\n\nCette action est irréversible.`)) {
+      return;
+    }
+
+    this.setState({ showDuplicateMenu: false });
+
+    try {
+      const response = await fetch(`/_api/${tableName}/${row.id}`, {
+        method: 'DELETE'
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        alert('Fiche supprimée avec succès');
+        // Close modal and refresh the list
+        onClose();
+        window.location.reload();
+      } else {
+        alert(`Erreur lors de la suppression : ${data.error}`);
+      }
+    } catch (error) {
+      console.error('Delete error:', error);
+      alert(`Erreur lors de la suppression : ${error.message}`);
+    }
+  }
+
   handleOverlayClick = (e) => {
     if (e.target === e.currentTarget) {
       this.props.onClose();
@@ -283,7 +315,14 @@ class RowDetailModal extends React.Component {
                 permissions.canRead && permissions.canCreate && e('div', {className: 'menu-divider divider' }),
                 // Duplicate options (only show if has create permission)
                 permissions.canCreate && e('button', { className: 'menu-item',onClick: this.handleDuplicate }, '📋 Dupliquer'),
-                permissions.canCreate && e('button', { className: 'menu-item', onClick: this.handleDuplicateWithRelations }, '📋 Dupliquer avec relations...')
+                permissions.canCreate && e('button', { className: 'menu-item', onClick: this.handleDuplicateWithRelations }, '📋 Dupliquer avec relations...'),
+                // Delete option (only show if has delete permission)
+                permissions.canDelete && e('div', {className: 'menu-divider divider' }),
+                permissions.canDelete && e('button', {
+                  className: 'menu-item',
+                  onClick: this.handleDelete,
+                  style: { color: 'var(--color-danger, #dc3545)' }
+                }, '🗑️ Supprimer cette fiche...')
               )
             ),
             // Close button (X exits edit mode if in edit, otherwise closes modal)

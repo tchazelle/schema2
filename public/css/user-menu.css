@@ -10,23 +10,48 @@
 }
 
 .user-button {
-  background: var(--color-bg);
-  border: solid var(--border-width) var(--color-border);
-  padding: var(--space-sm) var(--space-lg);
-  border-radius: var(--border-radius-pill);
+  background: transparent;
+  border: none;
+  padding: 0;
   cursor: pointer;
-  font-size: var(--font-size-md);
-  color: var(--color-text-primary);
   display: flex;
   align-items: center;
-  gap: var(--space-sm);
-  transition: background var(--transition-base);
+  justify-content: center;
+  transition: opacity var(--transition-base);
+  width: 40px;
+  height: 40px;
+  border-radius: var(--border-radius-circle);
 }
 
 .user-button:hover {
-  background: var(--color-bg);
+  opacity: 0.8;
 }
 
+/* User avatar - initials version (circle with background) */
+.user-avatar-initials {
+  width: 40px;
+  height: 40px;
+  background: var(--color-primary);
+  color: white;
+  border-radius: var(--border-radius-circle);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-md);
+  text-transform: uppercase;
+}
+
+/* User avatar - image version (circle) */
+.user-avatar-image {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--border-radius-circle);
+  object-fit: cover;
+  border: 2px solid var(--color-border);
+}
+
+/* Legacy user-icon class (for backwards compatibility) */
 .user-icon {
   width: 24px;
   height: 24px;
